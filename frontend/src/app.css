@@ -28,7 +28,8 @@ mark { background: #ffe58a; color: #17171a; border-radius: 2px; }
 
 /* header */
 header.top { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-bottom: 1px solid var(--line); background: var(--panel); }
-.logo { font-weight: 700; letter-spacing: -.02em; white-space: nowrap; }
+.logo { font-weight: 700; letter-spacing: -.02em; white-space: nowrap; display: flex; align-items: center; gap: 8px; }
+.logo img { border-radius: 5px; }
 .logo span { color: var(--accent); }
 .crumbs { display: flex; gap: 2px; align-items: center; font-family: var(--mono); font-size: 13px; flex: 1; min-width: 0; overflow: hidden; }
 .crumbs button { background: none; border: 0; font: inherit; color: var(--mute); padding: 4px 6px; border-radius: 4px; cursor: pointer; white-space: nowrap; }

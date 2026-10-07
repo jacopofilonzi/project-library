@@ -1,3 +1,5 @@
+<p align="center"><img src="build/appicon.png" width="96" alt="Project Library"></p>
+
 # Project Library
 
 App desktop per sfogliare i progetti in `~/Development/{source}/…`, vederne README e stato git e aprirli con l'editor scelto.

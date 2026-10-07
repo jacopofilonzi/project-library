@@ -2,6 +2,7 @@
   import { store, ui } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
   import { icons } from '../lib/icons'
+  import logo from '../assets/logo.svg'
 
   let crumbs = $derived([store.rootLabel, ...store.path])
 
@@ -11,7 +12,7 @@
 </script>
 
 <header class="top">
-  <div class="logo">project<span>/</span>library</div>
+  <div class="logo"><img src={logo} alt="" width="22" height="22" />project<span>/</span>library</div>
   <nav class="crumbs" aria-label="Path">
     {#each crumbs as c, i}
       {#if i > 0}<i>/</i>{/if}

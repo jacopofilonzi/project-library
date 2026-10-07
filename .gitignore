@@ -1,0 +1,20 @@
+# build Wails
+/build/bin/
+/bin/
+
+# frontend
+/frontend/node_modules/
+/frontend/dist/
+/frontend/bindings/
+
+# Go
+*.exe
+*.test
+*.out
+
+# editor e sistema
+.idea/
+.vscode/
+.DS_Store
+Thumbs.db
+desktop.ini

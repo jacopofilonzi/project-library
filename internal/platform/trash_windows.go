@@ -1,0 +1,53 @@
+package platform
+
+import (
+	"errors"
+	"fmt"
+	"syscall"
+)
+
+var (
+	shell32          = syscall.NewLazyDLL("shell32.dll")
+	procSHFileOpertn = shell32.NewProc("SHFileOperationW")
+)
+
+// shFileOpStruct è SHFILEOPSTRUCTW. Su 64 bit shellapi.h usa l'allineamento
+// naturale, che è anche quello di Go; su 386 usa pack(1), vedi trash_windows_386.go.
+type shFileOpStruct struct {
+	hwnd                  uintptr
+	wFunc                 uint32
+	pFrom                 *uint16
+	pTo                   *uint16
+	fFlags                uint16
+	fAnyOperationsAborted int32
+	hNameMappings         uintptr
+	lpszProgressTitle     *uint16
+}
+
+const (
+	foDelete          = 0x0003
+	fofSilent         = 0x0004
+	fofNoConfirmation = 0x0010
+	fofAllowUndo      = 0x0040
+	fofNoErrorUI      = 0x0400
+)
+
+// MoveToTrash sposta path nel Cestino (recuperabile da lì).
+func MoveToTrash(path string) error {
+	from, err := syscall.UTF16FromString(path)
+	if err != nil {
+		return err
+	}
+	from = append(from, 0) // la lista deve terminare con un doppio NUL
+	return shFileOperation(&from[0])
+}
+
+func shFileOperationResult(ret uintptr, aborted int32) error {
+	if aborted != 0 {
+		return errors.New("operation aborted")
+	}
+	if ret != 0 {
+		return fmt.Errorf("SHFileOperation failed (code 0x%x)", ret)
+	}
+	return nil
+}

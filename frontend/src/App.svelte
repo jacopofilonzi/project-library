@@ -1,106 +1,137 @@
 <script lang="ts">
-  import {onMount} from 'svelte';
-  import {Events, WML} from "@wailsio/runtime";
-  import {GreetService} from "../bindings/github.com/jacopofilonzi/project-library";
-
-  const wailsVersion = "v3.0.0-beta.28";
-
-  let name: string = $state('');
-  let time: string = $state('Listening for Time event...');
-
-  let titleNameEl: HTMLElement;
-  let toastEl: HTMLElement;
-  let resultEl: HTMLElement;
-  let toastTimer: ReturnType<typeof setTimeout>;
+  import { onMount } from 'svelte'
+  import { store } from './lib/state.svelte'
+  import { t, tn } from './lib/i18n/index.svelte'
+  import Header from './components/Header.svelte'
+  import Columns from './components/Columns.svelte'
+  import ProjectCard from './components/ProjectCard.svelte'
+  import EmptyCard from './components/EmptyCard.svelte'
+  import Palette from './components/Palette.svelte'
+  import Settings from './components/Settings.svelte'
+  import Wizard from './components/Wizard.svelte'
+  import Dialogs from './components/dialogs/Dialogs.svelte'
+  import ContextMenu from './components/ContextMenu.svelte'
+  import Toasts from './components/Toasts.svelte'
+  import type { Node } from './lib/api'
 
   onMount(() => {
-    Events.On('time', (v: any) => {
-      // On a narrow screen the full RFC1123 stamp is too wide for the footer, so
-      // show just the clock time there (matching the CSS breakpoint).
-      const full = v.data;
-      const compact = (full.match(/\d{1,2}:\d{2}:\d{2}/) || [full])[0];
-      time = window.matchMedia('(max-width: 640px)').matches ? compact : full;
-    });
-    // Wire up data-wml-openURL links (logos + footer "Docs" link).
-    WML.Reload();
-  });
+    store.init()
+  })
 
-  // Crossfade the framework word in the heading ("Wails + Svelte") to the name
-  // the user entered ("Wails + <name>"): the old word fades out while the new one
-  // fades in over the same spot.
-  function swapTitleName(name: string): void {
-    const current = titleNameEl.querySelector('.title-name-text:not(.is-outgoing)');
-    if (!current || current.textContent === name) {
-      return;
+  let overlay = $derived(store.paletteOpen || store.settingsOpen || store.wizardOpen || !!store.dialog || !!store.ctx)
+
+  // ---------- navigazione da tastiera nelle colonne ----------
+  function kids(names: string[]): Node[] {
+    return (store.nodeAt(names)?.children ?? []).filter((c): c is Node => !!c)
+  }
+  function moveSelection(d: number) {
+    // l'elemento attivo è il progetto selezionato o l'ultima cartella del percorso
+    const inLast = store.sel !== null || !store.path.length
+    const parent = inLast ? store.path : store.path.slice(0, -1)
+    const list = kids(parent)
+    if (!list.length) return
+    const current = store.sel ?? store.path.at(-1)
+    const i = list.findIndex((c) => c.name === current)
+    const next = list[Math.max(0, Math.min(list.length - 1, i < 0 ? 0 : i + d))]
+    if (next.kind === 'project') store.go(parent, next.name)
+    else store.go([...parent, next.name])
+  }
+  function moveIn() {
+    if (store.sel) return
+    const first = kids(store.path)[0]
+    if (!first) return
+    if (first.kind === 'project') store.go(store.path, first.name)
+    else store.go([...store.path, first.name])
+  }
+  function moveOut() {
+    if (store.sel) store.go(store.path)
+    else if (store.path.length) store.go(store.path.slice(0, -1))
+  }
+
+  function onkey(e: KeyboardEvent) {
+    const mod = e.ctrlKey || e.metaKey
+    const k = e.key.toLowerCase()
+    if (store.wizardOpen) return
+    if (mod && k === 'k') {
+      e.preventDefault()
+      store.settingsOpen = false
+      store.paletteOpen = !store.paletteOpen
+      return
     }
-    const incoming = document.createElement('span');
-    incoming.className = 'title-name-text is-entering';
-    incoming.textContent = name;
-    current.classList.add('is-outgoing');
-    titleNameEl.appendChild(incoming);
-    // Force a reflow so the transitions run from the starting state.
-    void incoming.offsetWidth;
-    incoming.classList.remove('is-entering');
-    current.classList.add('is-leaving');
-    current.addEventListener('transitionend', () => current.remove(), {once: true});
-  }
+    // Ctrl/⌘ P (e Ctrl ,): impostazioni. Blocca anche la stampa della webview.
+    if (mod && (k === 'p' || k === ',')) {
+      e.preventDefault()
+      if (store.settingsOpen) store.settingsOpen = false
+      else store.openSettings()
+      return
+    }
+    if (e.key === 'Escape') {
+      if (store.ctx) store.ctx = null
+      else if (store.dialog && store.dialog.kind !== 'clone') store.dialog = null
+      else if (store.paletteOpen) store.paletteOpen = false
+      else if (store.settingsOpen) store.settingsOpen = false
+      return
+    }
+    if (overlay) return
+    const target = e.target as HTMLElement
+    if (target.matches('input, textarea, select')) return
 
-  // Pop the toast with the message Go returned, then auto-dismiss it.
-  function showToast(message: string): void {
-    resultEl.innerText = message;
-    toastEl.classList.add('is-visible');
-    clearTimeout(toastTimer);
-    toastTimer = setTimeout(() => toastEl.classList.remove('is-visible'), 4000);
-  }
-
-  const doGreet = (): void => {
-    let n = name || 'anonymous';
-    swapTitleName(n);
-    GreetService.Greet(n).then(showToast).catch(console.error);
+    const tgt = store.target
+    const node = store.selected ?? store.current
+    if (mod && e.shiftKey && k === 'n') {
+      e.preventDefault()
+      const dir = store.current
+      if (dir && dir.kind !== 'root' && !dir.missing) store.dialog = { kind: 'newFolder', parent: dir.path }
+    } else if (e.key === 'Delete' || (e.metaKey && e.key === 'Backspace')) {
+      if (node && store.path.length) { e.preventDefault(); store.askDelete(node) }
+    } else if (e.key === 'F2') {
+      if (node && store.path.length) { e.preventDefault(); store.dialog = { kind: 'rename', path: node.path, name: node.name } }
+    } else if (e.key === 'Enter' && !target.matches('button')) {
+      if (tgt) { e.preventDefault(); store.open(tgt) }
+    } else if (mod && /^[1-9]$/.test(e.key)) {
+      const l = store.enabledLaunchers[+e.key - 1]
+      if (l && tgt) { e.preventDefault(); store.open(tgt, l.id) }
+    } else if (mod && k === 'e') {
+      e.preventDefault()
+      const p = tgt?.path ?? store.current?.path
+      if (p) store.reveal(p)
+    } else if (e.key === '/') {
+      e.preventDefault()
+      store.paletteOpen = true
+    } else if (e.key === 'ArrowDown') { e.preventDefault(); moveSelection(1) }
+    else if (e.key === 'ArrowUp') { e.preventDefault(); moveSelection(-1) }
+    else if (e.key === 'ArrowRight') { e.preventDefault(); moveIn() }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); moveOut() }
   }
 </script>
 
-<main class="container">
-  <header class="brand">
-    <span class="brand-mark" data-wml-openURL="https://v3.wails.io">
-      <img src="/wails.png" class="brand-logo" alt="Wails logo"/>
-    </span>
-    <span class="brand-badge" data-wml-openURL="https://svelte.dev">
-      <img src="/svelte.svg" alt="Svelte logo"/>
-    </span>
-  </header>
+<svelte:window onkeydown={onkey} />
 
-  <h1 class="title"><span class="title-accent">Wails +</span> <span class="title-name" bind:this={titleNameEl}><span class="title-name-text">Svelte</span></span></h1>
-  <p class="subtitle">Build beautiful cross-platform apps with Go and Svelte.</p>
-
-  <div class="greet">
-    <div class="input-box">
-      <svg class="input-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20 21v-2a4 4 0 0 0-4-4H8a4 4 0 0 0-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
-      <input aria-label="input" class="input" bind:value={name} type="text" placeholder="Your name" autocomplete="off"/>
-      <button aria-label="greet-btn" class="btn" onclick={doGreet}>Greet
-        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg>
-      </button>
-    </div>
+{#if store.ready}
+  <div class="app">
+    <Header />
+    <main class="view">
+      <Columns />
+      {#if store.selected}
+        {#key store.selected.path}<ProjectCard node={store.selected} />{/key}
+      {:else if store.current && store.path.length && store.current.kind === 'empty' && !store.current.missing}
+        <EmptyCard node={store.current} />
+      {:else}
+        <div class="empty">
+          {#if store.current?.count}
+            {tn('summary.projects', store.current.count, { name: store.path.at(-1) ?? store.rootLabel })}
+          {:else}
+            {t('summary.none')}
+          {/if}
+        </div>
+      {/if}
+    </main>
   </div>
-</main>
 
-<hr class="footer-divider"/>
-<footer class="footer">
-  <span class="footer-version">{wailsVersion}</span>
-  <span class="footer-time">
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
-    <span>{time}</span>
-  </span>
-  <a class="footer-docs" data-wml-openURL="https://v3.wails.io" aria-label="Wails documentation">Docs
-    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><line x1="7" y1="17" x2="17" y2="7"/><polyline points="7 7 17 7 17 17"/></svg>
-  </a>
-</footer>
-
-<div class="toast" bind:this={toastEl} role="status" aria-live="polite">
-  <span class="toast-label">From Go</span>
-  <span aria-label="result" class="toast-msg" bind:this={resultEl}></span>
-</div>
-
-<style>
-  /* Put your standard CSS here */
-</style>
+  {#if store.paletteOpen}<Palette />{/if}
+  {#if store.settingsOpen}<Settings />{/if}
+  <Dialogs />
+  <ContextMenu />
+  {#if store.wizardOpen}<Wizard />{/if}
+{/if}
+<Toasts />

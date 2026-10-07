@@ -291,7 +291,7 @@ img.lico { border-radius: 0; }
 .wiz .bd { padding: 22px 28px 8px; overflow-y: auto; display: flex; flex-direction: column; gap: 14px; }
 .wiz h2 { margin: 0; font-size: 24px; letter-spacing: -.02em; }
 .wiz p.sub { margin: 0; color: var(--mute); }
-.wiz .opt { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--card); }
+.wiz .opt { display: flex; align-items: center; gap: 12px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 10px; cursor: pointer; background: var(--card); font: inherit; color: inherit; text-align: left; width: 100%; }
 .wiz .opt.on { border-color: var(--accent); box-shadow: 0 0 0 1px var(--accent); }
 .wiz .opt b { flex: 1; }
 .wiz .ed { display: flex; align-items: center; gap: 12px; padding: 12px 14px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); }

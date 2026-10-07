@@ -1,5 +1,6 @@
 <script lang="ts">
   import { onMount } from 'svelte'
+  import { Events } from '@wailsio/runtime'
   import { store } from './lib/state.svelte'
   import { t, tn } from './lib/i18n/index.svelte'
   import Header from './components/Header.svelte'
@@ -16,6 +17,11 @@
 
   onMount(() => {
     store.init()
+    return Events.On('shortcut:settings', () => {
+      if (store.wizardOpen) return
+      if (store.settingsOpen) store.settingsOpen = false
+      else store.openSettings()
+    })
   })
 
   let overlay = $derived(store.paletteOpen || store.settingsOpen || store.wizardOpen || !!store.dialog || !!store.ctx)
@@ -58,11 +64,10 @@
       store.paletteOpen = !store.paletteOpen
       return
     }
-    // Ctrl/⌘ P (e Ctrl ,): impostazioni. Blocca anche la stampa della webview.
+    // Ctrl/⌘ P e Ctrl/⌘ , arrivano dal backend come evento "shortcut:settings" (vedi main.go);
+    // qui si blocca solo l'eventuale stampa.
     if (mod && (k === 'p' || k === ',')) {
       e.preventDefault()
-      if (store.settingsOpen) store.settingsOpen = false
-      else store.openSettings()
       return
     }
     if (e.key === 'Escape') {

@@ -43,10 +43,11 @@
         store.goToPath(created)
         store.toast(t('dlg.created', { name: name.trim() }))
       } else {
+        // se stavi guardando l'elemento rinominato (o qualcosa al suo interno) resti lì
+        const wasHere = store.selected?.path === path || store.current?.path === path || !!store.current?.path.startsWith(path + (path.includes('\\') ? '\\' : '/'))
         const renamed = await lib.Rename(path, name)
-        const wasSelected = store.selected?.path === path
         store.setTree(await lib.Tree())
-        if (wasSelected || store.current?.path === renamed) store.goToPath(renamed)
+        if (wasHere) store.goToPath(renamed)
         store.toast(t('dlg.renamed', { name: name.trim() }))
       }
       store.dialog = null

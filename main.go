@@ -72,6 +72,11 @@ func main() {
 		MinWidth: 920, MinHeight: 600,
 		BackgroundColour: bg,
 		URL:              "/",
+		// Ctrl/⌘ P non arriva alla pagina (WebView2 la riserva alla stampa): la gestisce la finestra.
+		KeyBindings: map[string]func(application.Window){
+			"CmdOrCtrl+P": func(application.Window) { app.Event.Emit("shortcut:settings") },
+			"CmdOrCtrl+,": func(application.Window) { app.Event.Emit("shortcut:settings") },
+		},
 	})
 	core.MainWindow = win
 

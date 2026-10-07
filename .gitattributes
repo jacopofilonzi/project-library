@@ -1,0 +1,11 @@
+# fine riga LF su tutte le piattaforme (Windows, macOS, Linux)
+* text=auto eol=lf
+
+# script Windows: CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+
+*.png binary
+*.ico binary
+*.icns binary

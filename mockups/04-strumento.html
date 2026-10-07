@@ -1,0 +1,147 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>04 · Strumento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Chivo:wght@400;600;800;900&family=Chivo+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #e7e6e1; --mod: #f3f2ee; --ink: #121212; --mute: #77756f; --line: #c9c7bf; --org: #ff5a00; --lcd: #1c1f1a; --lcdtxt: #c8f06a; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body { background: var(--bg); color: var(--ink); font: 13px/1.35 Chivo, system-ui, sans-serif; padding: 20px; }
+  .rig { height: calc(100vh - 40px); min-height: 560px; display: grid; grid-template-columns: 340px minmax(0, 1fr) 220px; grid-template-rows: auto minmax(0, 1fr); gap: 12px; }
+  .mod { background: var(--mod); border: 1px solid var(--line); border-radius: 6px; padding: 14px; position: relative; display: flex; flex-direction: column; min-height: 0; }
+  .lbl { font: 500 10px 'Chivo Mono', monospace; letter-spacing: .12em; text-transform: uppercase; color: var(--mute); display: flex; justify-content: space-between; margin-bottom: 10px; }
+  .screen { grid-column: 1 / -1; background: var(--lcd); color: var(--lcdtxt); border-radius: 6px; padding: 14px 18px; display: flex; align-items: center; gap: 18px; font: 500 15px 'Chivo Mono', monospace; }
+  .screen .p { color: #8fa65a; white-space: nowrap; }
+  .screen .p b { color: var(--lcdtxt); font-weight: 500; cursor: pointer; }
+  .screen .p b:hover { text-decoration: underline; }
+  .screen input { flex: 1; min-width: 0; background: transparent; border: 0; outline: none; color: var(--lcdtxt); font: inherit; caret-color: var(--org); }
+  .screen input::placeholder { color: #5d6e3c; }
+  .switch { display: flex; background: #000; border-radius: 4px; padding: 3px; gap: 3px; }
+  .switch button { background: transparent; border: 0; color: #6d7a55; font: 700 11px 'Chivo Mono', monospace; letter-spacing: .1em; padding: 6px 10px; border-radius: 3px; cursor: pointer; }
+  .switch button.on { background: var(--org); color: #000; }
+  .list { overflow-y: auto; margin: 0 -6px; }
+  .r { display: grid; grid-template-columns: 30px minmax(0, 1fr) auto; gap: 8px; align-items: center; padding: 7px 6px; border-top: 1px solid var(--line); cursor: pointer; }
+  .r:hover { background: #e9e8e2; }
+  .r.on { background: var(--ink); color: #fff; }
+  .r .ix { font: 500 11px 'Chivo Mono', monospace; color: var(--mute); }
+  .r.on .ix, .r.on .ct { color: #aaa; }
+  .r .nm { font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .r .ct { font: 11px 'Chivo Mono', monospace; color: var(--mute); }
+  .r.dir .nm::after { content: ' /'; color: var(--org); }
+  .r.glob { border: 1px dashed var(--org); color: var(--org); margin-top: 8px; border-radius: 4px; }
+  .r .sq { width: 10px; height: 10px; display: inline-block; }
+  .big { flex: 1; display: flex; flex-direction: column; justify-content: space-between; }
+  .big h1 { font-size: clamp(36px, 5vw, 72px); font-weight: 900; letter-spacing: -.04em; line-height: .92; margin: 0; word-break: break-word; }
+  .big p { font-size: 16px; max-width: 520px; margin: 14px 0 0; }
+  .meta { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0; border-top: 1px solid var(--line); margin-top: 18px; }
+  .meta div { padding: 10px 0; border-right: 1px solid var(--line); padding-left: 10px; }
+  .meta div:first-child { padding-left: 0; }
+  .meta div:last-child { border-right: 0; }
+  .meta span { display: block; font: 500 10px 'Chivo Mono', monospace; color: var(--mute); letter-spacing: .1em; text-transform: uppercase; }
+  .meta b { font-weight: 600; }
+  .keys { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .key { aspect-ratio: 1; background: #fbfbf9; border: 1px solid var(--line); border-bottom-width: 4px; border-radius: 8px; font: 800 13px Chivo, sans-serif; display: flex; flex-direction: column; justify-content: space-between; align-items: flex-start; padding: 10px; cursor: pointer; text-align: left; }
+  .key:active { border-bottom-width: 1px; transform: translateY(3px); }
+  .key small { font: 500 10px 'Chivo Mono', monospace; color: var(--mute); }
+  .key.org { background: var(--org); border-color: #c24400; }
+  .key.org small { color: #3a1400; }
+  .key.blk { background: var(--ink); color: #fff; border-color: #000; }
+  .key.blk small { color: #999; }
+  mark { background: var(--org); color: #000; }
+  .r.on mark { color: #000; }
+</style>
+</head>
+<body>
+<div class="rig">
+  <div class="screen">
+    <span class="p" id="crumbs"></span>
+    <label for="q" style="position:absolute;left:-9999px">Cerca</label>
+    <input id="q" placeholder="_cerca" autocomplete="off">
+    <div class="switch" role="group" aria-label="Ambito ricerca">
+      <button id="sw-here" class="on">QUI</button><button id="sw-all">OVUNQUE</button>
+    </div>
+  </div>
+  <section class="mod" aria-label="Contenuto cartella">
+    <div class="lbl"><span id="ttl">dir</span><span id="cnt"></span></div>
+    <div class="list" id="list"></div>
+  </section>
+  <section class="mod">
+    <div class="lbl"><span>progetto</span><span id="lang"></span></div>
+    <div class="big" id="big"></div>
+  </section>
+  <section class="mod">
+    <div class="lbl"><span>apri con</span><span>3/3</span></div>
+    <div class="keys" id="keys"></div>
+    <div class="lbl" style="margin-top:auto;padding-top:14px"><span>launcher custom</span><span>+</span></div>
+  </section>
+</div>
+
+<script src="shared/data.js"></script>
+<script>
+const S = { path: ['github', 'jacopofilonzi'], q: '', global: false, sel: null };
+const $ = (id) => document.getElementById(id);
+let items = [];
+
+function render() {
+  $('crumbs').innerHTML = '<b data-up="0">~/dev</b>/' + S.path.map((s, i) => `<b data-up="${i + 1}">${PL.esc(s)}</b>/`).join('');
+  $('sw-here').classList.toggle('on', !S.global);
+  $('sw-all').classList.toggle('on', S.global);
+  items = [];
+  if (!S.q && !S.global) {
+    PL.sorted(PL.get(S.path)).forEach((c) => items.push(c.type === 'dir' ? { kind: 'dir', node: c } : { kind: 'proj', node: c, path: S.path }));
+    $('ttl').textContent = S.path.at(-1) || 'development';
+  } else {
+    const r = PL.search(S.q, S.global ? [] : S.path);
+    r.here.forEach((e) => items.push({ kind: 'proj', node: e.project, path: e.path, rel: S.global ? e.path.join('/') : PL.rel(e.path, S.path) }));
+    if (!S.global && S.path.length) items.push({ kind: 'glob', n: r.elsewhere.length });
+    $('ttl').textContent = S.global ? 'ricerca · ovunque' : 'ricerca · ' + (S.path.at(-1) || 'development');
+  }
+  $('cnt').textContent = items.filter((i) => i.kind !== 'glob').length + ' voci';
+  if (!S.sel || !items.some((i) => i.kind === 'proj' && i.node === S.sel)) S.sel = (items.find((i) => i.kind === 'proj') || {}).node || null;
+  $('list').innerHTML = items.map((it, i) => {
+    const ix = String(i + 1).padStart(2, '0');
+    if (it.kind === 'glob') return `<div class="r glob" data-i="${i}"><span class="ix">**</span><span class="nm">cerca ovunque →</span><span class="ct">+${it.n}</span></div>`;
+    if (it.kind === 'dir') return `<div class="r dir" data-i="${i}"><span class="ix">${ix}</span><span class="nm">${PL.esc(it.node.name)}</span><span class="ct">${PL.count(it.node)}</span></div>`;
+    const on = it.node === S.sel ? ' on' : '';
+    return `<div class="r${on}" data-i="${i}"><span class="ix">${ix}</span><span class="nm">${PL.highlight(it.node.name, S.q)}</span><span class="ct">${PL.esc(it.rel || '')}<span class="sq" style="background:${PL.LANG[it.node.lang]};margin-left:6px"></span></span></div>`;
+  }).join('') || '<div class="r"><span></span><span class="nm" style="color:var(--mute)">vuoto</span></div>';
+  const it = items.find((i) => i.node === S.sel);
+  const p = S.sel;
+  $('lang').textContent = p ? p.lang : '';
+  $('big').innerHTML = p ? `<div><h1>${PL.esc(p.name)}</h1><p>${p.desc ? PL.esc(p.desc) : '<span style="color:var(--mute)">— nessuna descrizione —</span>'}</p></div>
+    <div class="meta"><div><span>sorgente</span><b>${PL.esc(it.path[0] || '—')}</b></div><div><span>gruppo</span><b>${PL.esc(it.path.slice(1).join('/') || '—')}</b></div><div><span>tipo</span><b>${p.lang}</b></div></div>`
+    : '<div style="color:var(--mute)">Seleziona un progetto</div>';
+  $('keys').innerHTML = PL.LAUNCHERS.map((l, i) => `<button class="key${i === 0 ? ' org' : i === 2 ? ' blk' : ''}" data-launch="${l.id}">${l.short.toUpperCase()}<small>${l.key}</small></button>`).join('') + `<button class="key" data-launch="copy">COPY<small>path</small></button>`;
+}
+
+document.addEventListener('click', (e) => {
+  const up = e.target.closest('[data-up]');
+  if (up) { S.path = S.path.slice(0, +up.dataset.up); S.q = ''; $('q').value = ''; S.global = false; return render(); }
+  const r = e.target.closest('.r[data-i]');
+  if (r) {
+    const it = items[+r.dataset.i];
+    if (it.kind === 'dir') { S.path.push(it.node.name); S.sel = null; }
+    else if (it.kind === 'glob') S.global = true;
+    else S.sel = it.node;
+    return render();
+  }
+  const k = e.target.closest('[data-launch]');
+  if (k && S.sel) { if (k.dataset.launch === 'copy') PL.toast('Percorso copiato'); else PL.launch(k.dataset.launch, S.sel); }
+});
+$('sw-here').onclick = () => { S.global = false; render(); };
+$('sw-all').onclick = () => { S.global = true; render(); };
+$('q').addEventListener('input', (e) => { S.q = e.target.value; render(); });
+$('q').addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && !e.target.value) { if (S.global) S.global = false; else S.path.pop(); render(); }
+  if (e.key === 'Enter' && e.ctrlKey) { S.global = true; render(); }
+  else if (e.key === 'Enter' && S.sel) PL.launch('vscode', S.sel);
+  if (e.key === 'Escape') { e.target.value = ''; S.q = ''; S.global = false; render(); }
+});
+render();
+</script>
+</body>
+</html>

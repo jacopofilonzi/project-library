@@ -1,0 +1,113 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>08 · Cassetto</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Courier+Prime:wght@400;700&family=Familjen+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #2f3a33; --manila: #e8cf95; --manila2: #dcbd78; --card: #fbf7ee; --ink: #231f17; --mute: #6f6553; --red: #c0392b; --line: #d9cfb9; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 15px/1.4 'Familjen Grotesk', system-ui, sans-serif; min-height: 100vh; padding: 28px 36px 60px; }
+  .top { display: flex; align-items: flex-end; gap: 18px; flex-wrap: wrap; margin-bottom: 26px; }
+  .label { background: var(--card); padding: 10px 18px 12px; border-radius: 3px; box-shadow: 0 3px 0 rgba(0,0,0,.25); flex: 1; min-width: 260px; }
+  .label .crumbs { font: 12px 'Courier Prime', monospace; color: var(--mute); }
+  .label .crumbs a { color: var(--mute); cursor: pointer; }
+  .label .crumbs a:hover { color: var(--red); }
+  .label h1 { margin: 2px 0 0; font: 700 28px 'Courier Prime', monospace; letter-spacing: -.02em; }
+  .find { background: var(--card); border-radius: 3px; box-shadow: 0 3px 0 rgba(0,0,0,.25); display: flex; align-items: center; gap: 8px; padding: 6px 6px 6px 14px; width: 440px; max-width: 100%; }
+  .find input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: 16px 'Courier Prime', monospace; padding: 8px 0; }
+  .stamp { border: 2px solid var(--red); color: var(--red); font: 700 11px 'Courier Prime', monospace; text-transform: uppercase; letter-spacing: .1em; padding: 3px 8px; transform: rotate(-3deg); background: transparent; cursor: pointer; white-space: nowrap; }
+  .stamp.g { background: var(--red); color: var(--card); }
+  .drawer { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 34px 22px; }
+  .folder { position: relative; padding-top: 22px; cursor: pointer; }
+  .folder .tab { position: absolute; top: 0; left: 18px; background: var(--manila); border-radius: 8px 8px 0 0; padding: 4px 14px; font: 700 13px 'Courier Prime', monospace; max-width: 80%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .folder .body { background: var(--manila); border-radius: 0 8px 8px 8px; height: 150px; padding: 14px 16px; position: relative; box-shadow: 0 6px 0 var(--manila2), 0 12px 0 #c9a862, 0 18px 20px rgba(0,0,0,.25); display: flex; flex-direction: column; justify-content: space-between; transition: transform .15s; }
+  .folder:hover .body { transform: translateY(-4px); }
+  .folder .papers { font: 12px 'Courier Prime', monospace; color: #5f4f2c; line-height: 1.55; }
+  .folder .n { font: 700 40px 'Courier Prime', monospace; color: #7a6233; align-self: flex-end; line-height: 1; }
+  .card { background: var(--card); border-radius: 4px; box-shadow: 0 4px 0 rgba(0,0,0,.18), 0 10px 20px rgba(0,0,0,.18); padding: 0; display: flex; flex-direction: column; min-height: 172px; }
+  .card .hole { height: 26px; border-bottom: 2px solid #e8a3a3; display: flex; align-items: center; justify-content: space-between; padding: 0 14px; font: 11px 'Courier Prime', monospace; color: var(--mute); }
+  .card .hole i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; margin-right: 6px; vertical-align: -1px; }
+  .card .cnt { padding: 12px 14px; flex: 1; background-image: repeating-linear-gradient(transparent 0 21px, #e6edf5 21px 22px); }
+  .card h3 { margin: 0 0 4px; font: 700 18px 'Familjen Grotesk', sans-serif; word-break: break-word; }
+  .card p { margin: 0; font: 14px/22px 'Courier Prime', monospace; color: #463e30; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; overflow: hidden; }
+  .card .acts { display: flex; gap: 0; border-top: 1px solid var(--line); }
+  .card .acts button { flex: 1; background: transparent; border: 0; border-right: 1px solid var(--line); padding: 10px 6px; font: 600 13px 'Familjen Grotesk', sans-serif; cursor: pointer; }
+  .card .acts button:last-child { border-right: 0; }
+  .card .acts button:hover { background: #f1e9d6; }
+  .card .acts button:first-child { color: var(--red); }
+  .note { grid-column: 1 / -1; font: 13px 'Courier Prime', monospace; color: #c8d3c9; }
+  .slip { background: #fff3a6; transform: rotate(-1.5deg); box-shadow: 0 8px 18px rgba(0,0,0,.25); padding: 18px; cursor: pointer; font: 16px 'Courier Prime', monospace; display: flex; flex-direction: column; justify-content: space-between; min-height: 150px; }
+  .slip b { font-size: 22px; }
+  mark { background: #fff07a; color: inherit; }
+</style>
+</head>
+<body>
+<div class="top">
+  <div class="label"><div class="crumbs" id="crumbs"></div><h1 id="here"></h1></div>
+  <div class="find">
+    <label for="q" style="position:absolute;left:-9999px">Cerca</label>
+    <input id="q" placeholder="cerca nel cassetto…" autocomplete="off">
+    <button class="stamp" id="stamp"></button>
+  </div>
+</div>
+<div class="drawer" id="drawer"></div>
+
+<script src="shared/data.js"></script>
+<script>
+const S = { path: ['github', 'jacopofilonzi'], q: '', global: false };
+const $ = (id) => document.getElementById(id);
+
+const card = (p, where) => `<div class="card" data-name="${PL.esc(p.name)}">
+  <div class="hole"><span><i style="background:${PL.LANG[p.lang]}"></i>${p.lang}</span><span>${PL.esc(where || '')}</span></div>
+  <div class="cnt"><h3>${PL.highlight(p.name, S.q)}</h3><p>${p.desc ? PL.highlight(p.desc, S.q) : '<span style="color:var(--mute)">(nessuna nota)</span>'}</p></div>
+  <div class="acts">${PL.LAUNCHERS.map((l) => `<button data-launch="${l.id}">${l.label}</button>`).join('')}</div>
+</div>`;
+
+function render() {
+  const here = S.path.at(-1) || 'Development';
+  $('crumbs').innerHTML = ['Development', ...S.path].slice(0, -1).map((s, i) => `<a data-up="${i}">${PL.esc(s)}</a> › `).join('') || '&nbsp;';
+  $('here').textContent = here;
+  $('stamp').textContent = S.global ? 'ovunque' : 'solo qui';
+  $('stamp').classList.toggle('g', S.global);
+  let html = '';
+  if (!S.q && !S.global) {
+    const node = PL.get(S.path);
+    for (const c of PL.sorted(node)) {
+      if (c.type === 'dir') {
+        const papers = PL.sorted(c).slice(0, 4).map((k) => '— ' + PL.esc(k.name)).join('<br>');
+        html += `<div class="folder" data-dir="${PL.esc(c.name)}"><div class="tab">${PL.esc(c.name)}</div><div class="body"><div class="papers">${papers}</div><div class="n">${PL.count(c)}</div></div></div>`;
+      } else html += card(c, '');
+    }
+  } else {
+    const r = PL.search(S.q, S.global ? [] : S.path);
+    html += `<div class="note">${S.global ? 'tutto il cassetto' : 'in ' + PL.esc(here)} — ${r.here.length} schede</div>`;
+    html += r.here.map((e) => card(e.project, (S.global ? e.path : e.path.slice(S.path.length)).join('/'))).join('');
+    if (!S.global && S.path.length) html += `<div class="slip" data-global><span>Non è qui?</span><b>Cerca in tutto il cassetto →</b><span>${r.elsewhere.length} altre schede · Ctrl ↵</span></div>`;
+  }
+  $('drawer').innerHTML = html;
+}
+
+document.addEventListener('click', (e) => {
+  const l = e.target.closest('[data-launch]');
+  if (l) return PL.launch(l.dataset.launch, { name: l.closest('[data-name]').dataset.name });
+  const up = e.target.closest('[data-up]');
+  if (up) { S.path = S.path.slice(0, +up.dataset.up); S.q = ''; $('q').value = ''; S.global = false; return render(); }
+  const d = e.target.closest('[data-dir]');
+  if (d) { S.path.push(d.dataset.dir); return render(); }
+  if (e.target.closest('[data-global]')) { S.global = true; render(); }
+});
+$('stamp').onclick = () => { S.global = !S.global; render(); };
+$('q').addEventListener('input', (e) => { S.q = e.target.value; render(); });
+$('q').addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && !e.target.value) { if (S.global) S.global = false; else S.path.pop(); render(); }
+  if (e.key === 'Enter' && e.ctrlKey) { S.global = true; render(); }
+  if (e.key === 'Escape') { e.target.value = ''; S.q = ''; S.global = false; render(); }
+});
+render();
+</script>
+</body>
+</html>

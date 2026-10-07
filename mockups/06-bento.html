@@ -1,0 +1,121 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>06 · Bento</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400;12..96,600;12..96,800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+  :root { --bg: #eef0ea; --tile: #fff; --ink: #14170f; --mute: #6a6f61; --line: #dde0d6; --accent: #3a5a1c; --lime: #d6f25e; }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; }
+  body { background: var(--bg); color: var(--ink); font: 14px/1.4 'Bricolage Grotesque', system-ui, sans-serif; padding: 24px; min-height: 100vh; }
+  header { display: flex; align-items: center; gap: 14px; margin-bottom: 18px; flex-wrap: wrap; }
+  .back { width: 40px; height: 40px; border-radius: 12px; border: 1px solid var(--line); background: var(--tile); font: inherit; font-size: 18px; cursor: pointer; }
+  .back:disabled { opacity: .35; cursor: default; }
+  .crumbs { flex: 1; min-width: 0; font: 13px 'DM Mono', monospace; color: var(--mute); }
+  .crumbs a { cursor: pointer; color: var(--mute); text-decoration: none; }
+  .crumbs a:hover { color: var(--ink); }
+  .crumbs strong { display: block; font: 800 30px/1.1 'Bricolage Grotesque', sans-serif; color: var(--ink); letter-spacing: -.02em; }
+  .search { display: flex; align-items: center; background: var(--tile); border: 1px solid var(--line); border-radius: 14px; padding: 4px; width: 420px; max-width: 100%; }
+  .search input { flex: 1; min-width: 0; border: 0; outline: none; background: transparent; font: inherit; font-size: 15px; padding: 9px 12px; }
+  .seg { display: flex; background: var(--bg); border-radius: 10px; padding: 3px; }
+  .seg button { border: 0; background: transparent; font: 600 12px 'Bricolage Grotesque', sans-serif; padding: 6px 10px; border-radius: 8px; cursor: pointer; color: var(--mute); }
+  .seg button.on { background: var(--ink); color: #fff; }
+  .grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); grid-auto-rows: 150px; grid-auto-flow: dense; gap: 12px; }
+  .t { background: var(--tile); border: 1px solid var(--line); border-radius: 18px; padding: 16px; display: flex; flex-direction: column; gap: 6px; cursor: pointer; overflow: hidden; position: relative; transition: transform .12s, box-shadow .12s; }
+  .t:hover { transform: translateY(-2px); box-shadow: 0 10px 24px rgba(20,23,15,.08); }
+  .t.dir { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .t.dir.w2 { grid-column: span 2; }
+  .t.dir.h2 { grid-row: span 2; }
+  .t.dir .big { font: 800 52px/1 'Bricolage Grotesque', sans-serif; letter-spacing: -.03em; color: var(--lime); margin-top: auto; }
+  .t .nm { font-weight: 800; font-size: 19px; letter-spacing: -.01em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .t .ds { color: var(--mute); font-size: 13px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+  .t.dir .ds { color: #cfe0b8; }
+  .t .peek { font: 12px 'DM Mono', monospace; color: #cfe0b8; line-height: 1.6; }
+  .t .lang { font: 500 11px 'DM Mono', monospace; color: var(--mute); display: flex; align-items: center; gap: 6px; }
+  .t .lang i { width: 8px; height: 8px; border-radius: 50%; display: inline-block; }
+  .t .acts { margin-top: auto; display: flex; gap: 6px; }
+  .t .acts button { border: 0; border-radius: 9px; padding: 7px 10px; font: 600 12px 'Bricolage Grotesque', sans-serif; cursor: pointer; background: var(--bg); color: var(--ink); }
+  .t .acts button.p { background: var(--ink); color: #fff; }
+  .t.glob { background: var(--lime); border-color: #b9d43e; grid-column: span 2; }
+  .t.glob .big { font: 800 26px/1.1 'Bricolage Grotesque', sans-serif; margin-top: auto; }
+  .t.wide { grid-column: span 2; }
+  .sec { grid-column: 1 / -1; font: 500 12px 'DM Mono', monospace; color: var(--mute); text-transform: uppercase; letter-spacing: .1em; padding: 8px 2px 0; height: auto; }
+  mark { background: var(--lime); color: inherit; border-radius: 3px; }
+</style>
+</head>
+<body>
+<header>
+  <button class="back" id="back" aria-label="Cartella superiore">←</button>
+  <div class="crumbs" id="crumbs"></div>
+  <div class="search">
+    <label for="q" style="position:absolute;left:-9999px">Cerca</label>
+    <input id="q" placeholder="Cerca…" autocomplete="off">
+    <div class="seg" role="group" aria-label="Ambito"><button id="sh" class="on">Qui</button><button id="sa">Ovunque</button></div>
+  </div>
+</header>
+<div class="grid" id="grid"></div>
+
+<script src="shared/data.js"></script>
+<script>
+const S = { path: ['github', 'jacopofilonzi'], q: '', global: false };
+const $ = (id) => document.getElementById(id);
+
+const projTile = (p, where, wide) => `<div class="t${wide ? ' wide' : ''}" data-name="${PL.esc(p.name)}">
+  <div class="lang"><i style="background:${PL.LANG[p.lang]}"></i>${p.lang}${where ? ' · ' + PL.esc(where) : ''}</div>
+  <div class="nm">${PL.highlight(p.name, S.q)}</div>
+  <div class="ds">${p.desc ? PL.highlight(p.desc, S.q) : 'Nessuna descrizione'}</div>
+  <div class="acts">${PL.LAUNCHERS.map((l, i) => `<button class="${i === 0 ? 'p' : ''}" data-launch="${l.id}">${l.short}</button>`).join('')}</div>
+</div>`;
+
+function render() {
+  $('back').disabled = !S.path.length;
+  const here = S.path.at(-1) || 'Development';
+  $('crumbs').innerHTML = ['Development', ...S.path].slice(0, -1).map((s, i) => `<a data-up="${i}">${PL.esc(s)}</a> / `).join('') + `<strong>${PL.esc(here)}</strong>`;
+  $('sh').classList.toggle('on', !S.global); $('sa').classList.toggle('on', S.global);
+  $('q').placeholder = S.global ? 'Cerca in tutto Development…' : `Cerca in ${here}…`;
+  let html = '';
+  if (!S.q && !S.global) {
+    const node = PL.get(S.path);
+    const kids = PL.sorted(node);
+    for (const c of kids) {
+      if (c.type === 'dir') {
+        const n = PL.count(c);
+        const size = n >= 8 ? ' w2 h2' : n >= 3 ? ' w2' : '';
+        const peek = PL.sorted(c).slice(0, n >= 8 ? 7 : 3).map((k) => PL.esc(k.name) + (k.type === 'dir' ? '/' : '')).join('<br>');
+        html += `<div class="t dir${size}" data-dir="${PL.esc(c.name)}"><div class="nm">${PL.esc(c.name)}/</div><div class="peek">${peek}</div><div class="big">${n}</div></div>`;
+      } else html += projTile(c, '', !!c.desc && c.desc.length > 70);
+    }
+  } else {
+    const r = PL.search(S.q, S.global ? [] : S.path);
+    html += `<div class="sec">${S.global ? 'Ovunque' : 'In ' + PL.esc(here)} · ${r.here.length}</div>`;
+    html += r.here.map((e) => projTile(e.project, (S.global ? e.path : e.path.slice(S.path.length)).join('/'), false)).join('');
+    if (!S.global && S.path.length) html += `<div class="t glob" data-global><div class="lang">fuori da ${PL.esc(here)} · Ctrl ↵</div><div class="big">Cerca ovunque →<br>${r.elsewhere.length} altri risultati</div></div>`;
+  }
+  $('grid').innerHTML = html;
+}
+
+document.addEventListener('click', (e) => {
+  const l = e.target.closest('[data-launch]');
+  if (l) return PL.launch(l.dataset.launch, { name: l.closest('[data-name]').dataset.name });
+  const up = e.target.closest('[data-up]');
+  if (up) { S.path = S.path.slice(0, +up.dataset.up); S.q = ''; $('q').value = ''; S.global = false; return render(); }
+  const d = e.target.closest('[data-dir]');
+  if (d) { S.path.push(d.dataset.dir); return render(); }
+  if (e.target.closest('[data-global]')) { S.global = true; render(); }
+});
+$('back').onclick = () => { S.path.pop(); S.q = ''; $('q').value = ''; S.global = false; render(); };
+$('sh').onclick = () => { S.global = false; render(); };
+$('sa').onclick = () => { S.global = true; render(); };
+$('q').addEventListener('input', (e) => { S.q = e.target.value; render(); });
+$('q').addEventListener('keydown', (e) => {
+  if (e.key === 'Backspace' && !e.target.value) { if (S.global) S.global = false; else S.path.pop(); render(); }
+  if (e.key === 'Enter' && e.ctrlKey) { S.global = true; render(); }
+  if (e.key === 'Escape') { e.target.value = ''; S.q = ''; S.global = false; render(); }
+});
+render();
+</script>
+</body>
+</html>

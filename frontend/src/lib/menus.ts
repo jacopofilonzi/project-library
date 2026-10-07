@@ -11,7 +11,7 @@ function overrideItems(node: Node): CtxItem[] {
 }
 
 export function nodeMenu(node: Node): CtxItem[] {
-  const def = store.defaultLauncher
+  const def = store.launcherFor(node).launcher
   const items: CtxItem[] = []
   if (def) items.push({ label: t('ctx.open', { name: def.name }), key: node.kind === 'project' ? '↵' : undefined, run: () => store.open(node) })
   items.push(

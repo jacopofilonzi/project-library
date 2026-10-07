@@ -53,6 +53,39 @@ class Store {
     return ls.find((l) => l.id === this.cfg.defaultLauncher) ?? ls[0]
   }
 
+  /**
+   * Launcher con cui aprire node, in ordine:
+   * 1. scelto per quel progetto (projectLaunchers), se abilitato
+   * 2. prima regola che corrisponde ai file del progetto, con launcher abilitato
+   * 3. launcher predefinito
+   */
+  launcherFor(node: Node): { launcher: Launcher | undefined; reason: 'project' | 'rule' | 'default' } {
+    const forced = this.enabledLaunchers.find((l) => l.id === this.cfg.projectLaunchers[node.path])
+    if (forced) return { launcher: forced, reason: 'project' }
+    return this.autoLauncherFor(node)
+  }
+
+  /** scelta automatica (regole, poi predefinito), ignorando quella fatta a mano */
+  autoLauncherFor(node: Node): { launcher: Launcher | undefined; reason: 'rule' | 'default' } {
+    const ls = this.enabledLaunchers
+    for (const id of node.ruleLaunchers ?? []) {
+      const l = ls.find((x) => x.id === id)
+      if (l) return { launcher: l, reason: 'rule' }
+    }
+    return { launcher: this.defaultLauncher, reason: 'default' }
+  }
+
+  /** sceglie (id) o toglie ('') il launcher fisso di un progetto */
+  async setProjectLauncher(node: Node, id: string) {
+    const ok = await this.save((c) => {
+      if (id) c.projectLaunchers[node.path] = id
+      else delete c.projectLaunchers[node.path]
+    })
+    if (!ok) return
+    const l = this.cfg.launchers.find((x) => x.id === id)
+    this.toast(l ? t('open.alwaysSaved', { name: node.name, launcher: l.name }) : t('open.autoSaved', { name: node.name }))
+  }
+
   /** etichetta della radice: il nome della cartella o "Radici" con più radici */
   get rootLabel(): string {
     if (!this.tree) return ''
@@ -170,7 +203,7 @@ class Store {
 
   // ---------- azioni ----------
   async open(node: Node, launcherId?: string) {
-    const l = launcherId ? this.cfg.launchers.find((x) => x.id === launcherId) : this.defaultLauncher
+    const l = launcherId ? this.cfg.launchers.find((x) => x.id === launcherId) : this.launcherFor(node).launcher
     if (!l) {
       this.openSettings('launchers')
       return

@@ -30,15 +30,18 @@ const (
 )
 
 type Node struct {
-	Name     string  `json:"name"`
-	Path     string  `json:"path"`
-	Kind     Kind    `json:"kind"`
-	Lang     string  `json:"lang,omitempty"`
-	Desc     string  `json:"desc,omitempty"`
-	HasGit   bool    `json:"hasGit,omitempty"`
-	Missing  bool    `json:"missing,omitempty"` // radice che non esiste su disco
-	Count    int     `json:"count"`             // progetti nel sottoalbero
-	Children []*Node `json:"children,omitempty"`
+	Name    string `json:"name"`
+	Path    string `json:"path"`
+	Kind    Kind   `json:"kind"`
+	Lang    string `json:"lang,omitempty"`
+	Desc    string `json:"desc,omitempty"`
+	HasGit  bool   `json:"hasGit,omitempty"`
+	Missing bool   `json:"missing,omitempty"` // radice che non esiste su disco
+	// RuleLaunchers: launcher delle regole che corrispondono al progetto, in ordine di priorità.
+	// Il frontend usa il primo abilitato.
+	RuleLaunchers []string `json:"ruleLaunchers,omitempty"`
+	Count         int      `json:"count"` // progetti nel sottoalbero
+	Children      []*Node  `json:"children,omitempty"`
 }
 
 type Options struct {
@@ -51,6 +54,13 @@ type Options struct {
 	// Overrides: percorso assoluto → "project" | "dir".
 	Overrides       map[string]string
 	CaseInsensitive bool
+	// Rules sceglie il launcher di un progetto in base ai nomi che contiene.
+	Rules []Rule
+}
+
+type Rule struct {
+	Patterns []string
+	Launcher string
 }
 
 // junk sono file di sistema che non rendono una cartella un progetto.
@@ -254,7 +264,31 @@ func (s *scan) makeProject(n *Node, entries []fs.DirEntry) {
 		}
 	}
 	n.Lang = DetectLang(names)
+	n.RuleLaunchers = MatchRules(s.opt.Rules, names)
 	n.Desc = readme.Description(n.Path)
+}
+
+// MatchRules restituisce, senza duplicati e nell'ordine delle regole, i launcher
+// delle regole che hanno almeno un pattern corrispondente a uno dei nomi.
+func MatchRules(rules []Rule, names []string) []string {
+	var out []string
+	seen := map[string]bool{}
+	for _, r := range rules {
+		if r.Launcher == "" || seen[r.Launcher] {
+			continue
+		}
+	match:
+		for _, p := range r.Patterns {
+			for _, n := range names {
+				if match(p, n) {
+					out = append(out, r.Launcher)
+					seen[r.Launcher] = true
+					break match
+				}
+			}
+		}
+	}
+	return out
 }
 
 // langRules: il primo marker trovato decide il linguaggio mostrato.

@@ -308,3 +308,13 @@ img.lico { border-radius: 0; }
 .toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; z-index: 90; pointer-events: none; }
 .toast { background: #17171a; color: #fff; font-size: 13px; padding: 10px 16px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 560px; }
 .toast.err { background: #8f1d14; }
+
+/* regole dei launcher */
+.sub2 { color: var(--mute); margin: 4px 0 10px; font-size: 13px; }
+.rule { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--line); border-radius: 10px; background: var(--card); margin-bottom: 8px; }
+.rule .ord { display: flex; flex-direction: column; }
+.rule .ord button { border: 0; background: none; color: var(--mute); cursor: pointer; padding: 0 4px; font-size: 10px; line-height: 1.2; }
+.rule .ord button:disabled { opacity: .3; cursor: default; }
+.rule .rb { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 6px; }
+.rule .lbl { font-size: 12px; color: var(--mute); white-space: nowrap; }
+.rule .chips input { width: 130px; }

@@ -8,6 +8,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"reflect"
 	"runtime"
 	"strings"
 	"sync"
@@ -127,7 +128,8 @@ func scanChanged(a, b config.Config) bool {
 	eq := func(x, y []string) bool { return strings.Join(x, "\x00") == strings.Join(y, "\x00") }
 	if !eq(a.Roots, b.Roots) || !eq(a.Markers, b.Markers) || !eq(a.Ignore, b.Ignore) ||
 		a.FilesAsProject != b.FilesAsProject || a.ShowEmpty != b.ShowEmpty || a.MaxDepth != b.MaxDepth ||
-		a.FollowLinks != b.FollowLinks || len(a.Overrides) != len(b.Overrides) {
+		a.FollowLinks != b.FollowLinks || len(a.Overrides) != len(b.Overrides) ||
+		!reflect.DeepEqual(a.LauncherRules, b.LauncherRules) {
 		return true
 	}
 	for k, v := range a.Overrides {
@@ -136,6 +138,14 @@ func scanChanged(a, b config.Config) bool {
 		}
 	}
 	return false
+}
+
+func scanRules(rules []config.LauncherRule) []scanner.Rule {
+	out := make([]scanner.Rule, len(rules))
+	for i, r := range rules {
+		out[i] = scanner.Rule{Patterns: r.Patterns, Launcher: r.Launcher}
+	}
+	return out
 }
 
 // applySystem allinea scorciatoia globale, avvio automatico e fetch periodico alla config.
@@ -204,6 +214,7 @@ func (l *Library) rescan(emit bool) {
 	tree := scanner.Scan(cfg.Roots, scanner.Options{
 		Markers: cfg.Markers, Ignore: cfg.Ignore, FilesAsProject: cfg.FilesAsProject, ShowEmpty: cfg.ShowEmpty,
 		FollowLinks: cfg.FollowLinks, MaxDepth: cfg.MaxDepth, Overrides: cfg.Overrides, CaseInsensitive: platform.CaseInsensitive(),
+		Rules: scanRules(cfg.LauncherRules),
 	})
 	l.mu.Lock()
 	l.tree = tree

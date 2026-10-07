@@ -116,7 +116,7 @@
   {:else if missingDirs && sug?.ok}
     <div class="hint">{t('dlg.willCreateDirs')}</div>
   {/if}
-  {#if def}<label class="chk"><input type="checkbox" bind:checked={openAfter} disabled={running} /> {t('dlg.openAfter', { name: def.name })}</label>{/if}
+  {#if def}<label class="chk"><input type="checkbox" bind:checked={openAfter} disabled={running} /> {t('dlg.openAfter')}</label>{/if}
   {#if progress}
     <div class="prog"><i style="width:{progress.percent}%"></i></div>
     <div class="hint">{progress.phase ? `${phaseLabel(progress.phase)}: ${progress.percent}%` : t('dlg.cloning')}</div>

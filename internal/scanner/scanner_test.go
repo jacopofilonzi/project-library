@@ -140,6 +140,32 @@ func TestOptions(t *testing.T) {
 	}
 }
 
+func TestLauncherRules(t *testing.T) {
+	root := build(t, "a/javaproj/build.gradle.kts", "a/web/package.json", "a/mixed/pom.xml", "a/mixed/package.json")
+	o := opts()
+	o.Rules = []Rule{
+		{Patterns: []string{"pom.xml", "build.gradle*"}, Launcher: "intellij"},
+		{Patterns: []string{"package.json"}, Launcher: "webstorm"},
+		{Patterns: []string{"*.json"}, Launcher: "intellij"}, // duplicato: ignorato
+	}
+	tree := Scan([]string{root}, o)
+	check := func(name string, want []string) {
+		t.Helper()
+		got := find(tree, "a", name).RuleLaunchers
+		if len(got) != len(want) {
+			t.Fatalf("%s: got %v want %v", name, got, want)
+		}
+		for i := range want {
+			if got[i] != want[i] {
+				t.Fatalf("%s: got %v want %v", name, got, want)
+			}
+		}
+	}
+	check("javaproj", []string{"intellij"})
+	check("web", []string{"webstorm", "intellij"})
+	check("mixed", []string{"intellij", "webstorm"})
+}
+
 func TestMultipleRoots(t *testing.T) {
 	r1 := build(t, "p/go.mod")
 	r2 := build(t, "q/go.mod")

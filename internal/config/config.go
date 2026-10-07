@@ -22,6 +22,20 @@ type Launcher struct {
 	Builtin string `json:"builtin,omitempty"`
 }
 
+// LauncherRule sceglie il launcher di un progetto in base ai file che contiene:
+// se un nome nella cartella del progetto corrisponde a uno dei pattern, vale Launcher.
+type LauncherRule struct {
+	Patterns []string `json:"patterns"`
+	Launcher string   `json:"launcher"`
+}
+
+// DefaultLauncherRules: i progetti Java/Gradle/Maven si aprono con IntelliJ.
+func DefaultLauncherRules() []LauncherRule {
+	return []LauncherRule{
+		{Patterns: []string{"pom.xml", "build.gradle*", "settings.gradle*", "gradlew", "*.iml"}, Launcher: "intellij"},
+	}
+}
+
 // Recent è un'apertura con "Apri con".
 type Recent struct {
 	Path     string `json:"path"`
@@ -43,6 +57,10 @@ type Config struct {
 	Roots           []string   `json:"roots"`
 	Launchers       []Launcher `json:"launchers"`
 	DefaultLauncher string     `json:"defaultLauncher"`
+	// LauncherRules: la prima regola che corrisponde (con launcher abilitato) sceglie l'editor.
+	LauncherRules []LauncherRule `json:"launcherRules"`
+	// ProjectLaunchers: launcher scelto a mano per un progetto (percorso → id). Ha la precedenza sulle regole.
+	ProjectLaunchers map[string]string `json:"projectLaunchers"`
 
 	Markers        []string          `json:"markers"`
 	Ignore         []string          `json:"ignore"`
@@ -93,17 +111,19 @@ func Default(home string) Config {
 			{ID: "vscode", Name: "VS Code", Args: `"{path}"`, Enabled: true, Builtin: "vscode"},
 			{ID: "intellij", Name: "IntelliJ IDEA", Args: `"{path}"`, Enabled: true, Builtin: "intellij"},
 		},
-		DefaultLauncher: "vscode",
-		Markers:         append([]string(nil), DefaultMarkers...),
-		Ignore:          append([]string(nil), DefaultIgnore...),
-		FilesAsProject:  true,
-		ShowEmpty:       true,
-		MaxDepth:        20,
-		Overrides:       map[string]string{},
-		GitInfo:         true,
-		GitFetchMinutes: 15,
-		CloseToTray:     false,
-		Hotkey:          "CmdOrCtrl+Alt+Space",
+		DefaultLauncher:  "vscode",
+		LauncherRules:    DefaultLauncherRules(),
+		ProjectLaunchers: map[string]string{},
+		Markers:          append([]string(nil), DefaultMarkers...),
+		Ignore:           append([]string(nil), DefaultIgnore...),
+		FilesAsProject:   true,
+		ShowEmpty:        true,
+		MaxDepth:         20,
+		Overrides:        map[string]string{},
+		GitInfo:          true,
+		GitFetchMinutes:  15,
+		CloseToTray:      false,
+		Hotkey:           "CmdOrCtrl+Alt+Space",
 	}
 }
 
@@ -133,6 +153,13 @@ func (c *Config) normalize(home string) {
 	}
 	if c.Launchers == nil {
 		c.Launchers = def.Launchers
+	}
+	// nil = config scritta prima che esistessero le regole; una lista vuota invece è una scelta dell'utente
+	if c.LauncherRules == nil {
+		c.LauncherRules = def.LauncherRules
+	}
+	if c.ProjectLaunchers == nil {
+		c.ProjectLaunchers = map[string]string{}
 	}
 	if len(c.Recent) > MaxRecent {
 		c.Recent = c.Recent[:MaxRecent]
@@ -228,6 +255,16 @@ func (c Config) clone() Config {
 	for k, v := range c.Overrides {
 		out.Overrides[k] = v
 	}
+	out.ProjectLaunchers = make(map[string]string, len(c.ProjectLaunchers))
+	for k, v := range c.ProjectLaunchers {
+		out.ProjectLaunchers[k] = v
+	}
+	if c.LauncherRules != nil {
+		out.LauncherRules = make([]LauncherRule, len(c.LauncherRules))
+		for i, r := range c.LauncherRules {
+			out.LauncherRules[i] = LauncherRule{Patterns: append([]string(nil), r.Patterns...), Launcher: r.Launcher}
+		}
+	}
 	return out
 }
 
@@ -245,8 +282,8 @@ func (c *Config) AddRecent(path, launcher string, at int64) {
 	c.Recent = out
 }
 
-// RenamePath aggiorna override e cronologia dopo il rename (o l'eliminazione, con newPath vuoto)
-// di oldPath e di tutto ciò che contiene.
+// RenamePath aggiorna override, launcher per progetto e cronologia dopo il rename
+// (o l'eliminazione, con newPath vuoto) di oldPath e di tutto ciò che contiene.
 func (c *Config) RenamePath(oldPath, newPath string) {
 	move := func(p string) (string, bool) {
 		if p == oldPath {
@@ -260,17 +297,21 @@ func (c *Config) RenamePath(oldPath, newPath string) {
 		}
 		return p, false
 	}
-	ov := map[string]string{}
-	for k, v := range c.Overrides {
-		if np, changed := move(k); changed {
-			if np != "" {
-				ov[np] = v
+	moveKeys := func(m map[string]string) map[string]string {
+		out := map[string]string{}
+		for k, v := range m {
+			if np, changed := move(k); changed {
+				if np != "" {
+					out[np] = v
+				}
+			} else {
+				out[k] = v
 			}
-		} else {
-			ov[k] = v
 		}
+		return out
 	}
-	c.Overrides = ov
+	c.Overrides = moveKeys(c.Overrides)
+	c.ProjectLaunchers = moveKeys(c.ProjectLaunchers)
 	var rec []Recent
 	for _, r := range c.Recent {
 		if np, changed := move(r.Path); changed {

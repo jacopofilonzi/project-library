@@ -62,6 +62,36 @@
       draft = { name: t('settings.launchers.newName'), command: '', args: '"{path}"' }
     })
   }
+  // elimina un launcher custom insieme alle regole e alle scelte per progetto che lo usano
+  function deleteLauncher(i: number) {
+    editing = null
+    store.save((c) => {
+      const [gone] = c.launchers.splice(i, 1)
+      c.launcherRules = c.launcherRules.filter((r) => r.launcher !== gone.id)
+      for (const [p, id] of Object.entries(c.projectLaunchers)) if (id === gone.id) delete c.projectLaunchers[p]
+    })
+  }
+
+  // ---------- regole ----------
+  function addRule() {
+    const id = store.cfg.launchers.find((l) => l.builtin === 'intellij')?.id ?? store.cfg.launchers[0]?.id ?? ''
+    store.save((c) => c.launcherRules.push({ patterns: [], launcher: id }))
+  }
+  function moveRule(i: number, d: number) {
+    store.save((c) => {
+      const [r] = c.launcherRules.splice(i, 1)
+      c.launcherRules.splice(i + d, 0, r)
+    })
+  }
+  function addPattern(e: KeyboardEvent, i: number) {
+    const el = e.currentTarget as HTMLInputElement
+    if (e.key !== 'Enter' || !el.value.trim()) return
+    const v = el.value.trim()
+    el.value = ''
+    if (!store.cfg.launcherRules[i].patterns.includes(v)) store.save((c) => c.launcherRules[i].patterns.push(v))
+  }
+  let forcedProjects = $derived(Object.entries(store.cfg.projectLaunchers).sort(([a], [b]) => a.localeCompare(b)))
+
   async function detect() {
     const found: string[] = []
     for (const l of store.cfg.launchers.filter((x) => x.builtin)) if (await lib.DetectEditor(l.builtin!)) found.push(l.name)
@@ -169,7 +199,7 @@
                   <label for="le-a">{t('settings.launchers.args')}</label><input id="le-a" type="text" bind:value={draft.args} />
                   <div class="ph2">{@html t('settings.launchers.placeholders', { list: '<code>{path}</code> <code>{name}</code> <code>{source}</code> <code>{group}</code>' })}</div>
                   <div class="acts2">
-                    {#if !l.builtin}<button class="btn d" onclick={() => { editing = null; store.save((c) => c.launchers.splice(i, 1)) }}>{t('settings.launchers.delete')}</button>{/if}
+                    {#if !l.builtin}<button class="btn d" onclick={() => deleteLauncher(i)}>{t('settings.launchers.delete')}</button>{/if}
                     <button class="btn" onclick={() => test(l)}>{t('settings.launchers.test')}</button>
                     <button class="btn p" onclick={() => saveLauncher(l.id)}>{t('settings.launchers.save')}</button>
                   </div>
@@ -179,6 +209,45 @@
           {/each}
           <div style="display:flex;gap:8px;margin-top:4px"><button class="btn" onclick={addLauncher}>{t('settings.launchers.add')}</button><button class="btn" onclick={detect}>{t('settings.launchers.detect')}</button></div>
           <div class="note">{t('settings.launchers.note', { mod: store.mod })}</div>
+
+          <div class="grp">{t('settings.launchers.rules')}</div>
+          <p class="sub2">{t('settings.launchers.rulesText')}</p>
+          {#each store.cfg.launcherRules as r, i (i)}
+            <div class="rule">
+              <div class="ord">
+                <button aria-label={t('settings.launchers.up')} disabled={i === 0} onclick={() => moveRule(i, -1)}>▲</button>
+                <button aria-label={t('settings.launchers.down')} disabled={i === store.cfg.launcherRules.length - 1} onclick={() => moveRule(i, 1)}>▼</button>
+              </div>
+              <div class="rb">
+                <span class="lbl">{t('settings.launchers.ifContains')}</span>
+                <div class="chips">
+                  {#each r.patterns as p, j (p)}<span>{p}<button aria-label="×" onclick={() => store.save((c) => c.launcherRules[i].patterns.splice(j, 1))}>×</button></span>{/each}
+                  <input type="text" placeholder={t('settings.scan.addChip')} onkeydown={(e) => addPattern(e, i)} />
+                </div>
+              </div>
+              <span class="lbl">{t('settings.launchers.openWith')}</span>
+              <select value={r.launcher} onchange={(e) => store.save((c) => (c.launcherRules[i].launcher = (e.currentTarget as HTMLSelectElement).value))}>
+                {#each store.cfg.launchers as l (l.id)}<option value={l.id}>{l.name}{l.enabled ? '' : ` (${t('settings.launchers.disabled')})`}</option>{/each}
+              </select>
+              <button class="x" aria-label={t('settings.launchers.removeRule')} title={t('settings.launchers.removeRule')} onclick={() => store.save((c) => c.launcherRules.splice(i, 1))}>✕</button>
+            </div>
+          {:else}
+            <div class="note">{t('settings.launchers.noRules')}</div>
+          {/each}
+          <button class="btn" style="margin-top:4px" onclick={addRule}>{t('settings.launchers.addRule')}</button>
+
+          <div class="grp">{t('settings.launchers.forced')}</div>
+          {#if forcedProjects.length}
+            <table class="tbl"><tbody>
+              {#each forcedProjects as [path, id] (path)}
+                {@const l = store.cfg.launchers.find((x) => x.id === id)}
+                <tr><td class="mono">{path}</td><td>{l?.name ?? id}</td>
+                  <td><button class="btn" onclick={() => store.save((c) => delete c.projectLaunchers[path])}>{t('settings.launchers.remove')}</button></td></tr>
+              {/each}
+            </tbody></table>
+          {:else}
+            <div class="note">{t('settings.launchers.forcedNone')}</div>
+          {/if}
 
         {:else if store.settingsSection === 'scan'}
           <div class="grp">{t('settings.scan.detection')}</div>

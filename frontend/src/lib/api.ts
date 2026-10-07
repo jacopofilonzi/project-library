@@ -5,14 +5,18 @@ export type { Launcher, Recent } from '../../bindings/github.com/jacopofilonzi/p
 import type { AppState as RawAppState } from '../../bindings/github.com/jacopofilonzi/project-library/internal/core/models.js'
 import type { Config as RawConfig, Launcher, Recent } from '../../bindings/github.com/jacopofilonzi/project-library/internal/config/models.js'
 
+export type LauncherRule = { patterns: string[]; launcher: string }
+
 /** Config con liste e mappe sempre presenti (in Go possono arrivare come null). */
-export type Config = Omit<RawConfig, 'roots' | 'launchers' | 'markers' | 'ignore' | 'recent' | 'overrides'> & {
+export type Config = Omit<RawConfig, 'roots' | 'launchers' | 'markers' | 'ignore' | 'recent' | 'overrides' | 'launcherRules' | 'projectLaunchers'> & {
   roots: string[]
   launchers: Launcher[]
   markers: string[]
   ignore: string[]
   recent: Recent[]
   overrides: Record<string, string>
+  launcherRules: LauncherRule[]
+  projectLaunchers: Record<string, string>
 }
 export type AppState = Omit<RawAppState, 'config'> & { config: Config }
 
@@ -25,6 +29,8 @@ export function normalizeConfig(c: RawConfig): Config {
     ignore: c.ignore ?? [],
     recent: c.recent ?? [],
     overrides: (c.overrides ?? {}) as Record<string, string>,
+    launcherRules: (c.launcherRules ?? []).map((r) => ({ patterns: r.patterns ?? [], launcher: r.launcher })),
+    projectLaunchers: (c.projectLaunchers ?? {}) as Record<string, string>,
   }
 }
 export function normalizeState(s: RawAppState): AppState {

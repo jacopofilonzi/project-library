@@ -86,7 +86,11 @@
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); store.paletteOpen = false }
   }
 
-  let def = $derived(store.defaultLauncher)
+  // launcher del progetto evidenziato (regole e scelte per progetto comprese)
+  let def = $derived.by(() => {
+    const it = view.items[idx]
+    return it?.kind === 'proj' ? store.launcherFor(it.e.node).launcher : store.defaultLauncher
+  })
 </script>
 
 <!-- svelte-ignore a11y_no_static_element_interactions -->

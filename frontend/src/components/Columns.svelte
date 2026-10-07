@@ -71,6 +71,7 @@
           <button class="row" class:on title={c.desc || c.name}
             onclick={() => clickProject(col.index, c)}
             ondblclick={() => store.open(c)}
+            onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); store.open(c) } }}
             oncontextmenu={(e) => { e.preventDefault(); clickProject(col.index, c); openCtx(e, nodeMenu(c)) }}>
             <span class="dot" style="background:{colorOf(c.lang)}"></span>
             <span class="name">{c.name}</span>

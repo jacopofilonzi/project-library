@@ -252,6 +252,11 @@ class Store {
     this.dirty = ((await lib.Dirty()) ?? {}) as Record<string, number>
     this.refreshLaunchers()
     this.wizardOpen = !this.cfg.setupDone
+    // git non trovato dopo la configurazione iniziale: avviso una sola volta
+    if (this.cfg.setupDone && !this.st?.gitAvailable && !this.cfg.gitWarningShown) {
+      this.toast(t('card.gitUnavailable'), true)
+      this.save((c) => (c.gitWarningShown = true))
+    }
     if (this.tree?.kind !== 'root' && this.tree) this.path = []
 
     Events.On('tree:updated', (ev: { data: Node }) => this.setTree(ev.data))

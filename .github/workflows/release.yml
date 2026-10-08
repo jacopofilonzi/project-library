@@ -103,7 +103,7 @@ jobs:
           {
             echo "## Novità"
             echo
-            git log "$range" --no-merges --pretty='- %s' | grep -vE '^- chore: release' || true
+            git log "$range" --no-merges --pretty='- %s' | grep -vE '^- chore: (release|version)' || true
           } > notes.md
           gh release create "$GITHUB_REF_NAME" bin/project-library-amd64-installer.exe \
             --title "$GITHUB_REF_NAME" --notes-file notes.md

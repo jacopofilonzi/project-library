@@ -127,7 +127,7 @@ let config: any = {
 }
 
 const gitAvailable = () => !options.noGit
-const state = () => ({ config: structuredClone(config), os: 'windows', version: '0.0.0-e2e', gitPath: gitAvailable() ? 'C:/Git/git.exe' : '', gitAvailable: gitAvailable(), configPath: '/cfg/config.json', home: '/home/u' })
+const state = () => ({ config: structuredClone(config), os: 'windows', version: '0.0.0-e2e', gitPath: gitAvailable() ? 'C:/Git/git.exe' : '', gitAvailable: gitAvailable(), configPath: '/cfg/config.json', home: '/home/u', customTitleBar: true })
 const emitTree = () => Events.Emit('tree:updated', Tree_())
 const emitConfig = () => Events.Emit('config:updated', structuredClone(config))
 const fail = (code: string) => Promise.reject(new Error(code))

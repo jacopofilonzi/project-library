@@ -21,6 +21,10 @@ export const Window = {
   SetSize: async (w: number, h: number) => log('Window.SetSize', w, h),
   Hide: async () => log('Window.Hide'),
   Show: async () => log('Window.Show'),
+  Minimise: async () => log('Window.Minimise'),
+  ToggleMaximise: async () => log('Window.ToggleMaximise'),
+  Close: async () => log('Window.Close'),
+  IsMaximised: async () => false,
 }
 
 export const Browser = {

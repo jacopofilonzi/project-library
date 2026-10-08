@@ -540,3 +540,16 @@ test('the interface scale changes with the shortcuts and the slider', async ({ p
   await page.getByRole('button', { name: 'Reset' }).click()
   await expect.poll(lastScale).toBe(1)
 })
+
+test('the custom title bar buttons control the window', async ({ page }) => {
+  await openApp(page)
+  const ctl = page.locator('header .wctl')
+  await ctl.getByRole('button', { name: 'Minimize' }).click()
+  await ctl.getByRole('button', { name: 'Maximize' }).click()
+  await ctl.getByRole('button', { name: 'Close' }).click()
+  const fns = (await calls(page)).map((c) => c.fn)
+  expect(fns).toEqual(expect.arrayContaining(['Window.Minimise', 'Window.ToggleMaximise', 'Window.Close']))
+  // the caption areas are marked for Windows' hit testing
+  const region = await page.evaluate(() => getComputedStyle(document.querySelector('header .drag')!).getPropertyValue('--wails-non-client-region').trim())
+  expect(region).toBe('caption')
+})

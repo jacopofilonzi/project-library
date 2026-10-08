@@ -29,6 +29,9 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 - `internal/core`: unico servizio esposto al frontend (`Library`). Ogni metodo esportato diventa un binding: le funzioni di supporto per `main` sono funzioni di pacchetto, non metodi.
 - `internal/config`: `config.json` (default, normalizzazione dei campi mancanti, scrittura atomica). Un campo nuovo va aggiunto a `Default`, `normalize`, `clone` e, se contiene percorsi, a `RenamePath`.
 - `internal/scanner`: classificazione delle cartelle (override → ignora → marker → file → sottocartelle → vuota) e regole dei launcher.
+- `internal/presets`: catalogo dei preset integrati (come si riconosce un tipo di progetto). I preset integrati sono collegati: le regole li citano per id e si aggiornano con l'app; un preset dell'utente con un id del catalogo viene ignorato (vince il catalogo). Le regole (`config.Rules`, preset → launcher) sono in ordine di priorità.
+- `internal/languages`: composizione dei linguaggi di un progetto (barra della scheda).
+- Editor noti: tabella `platform.Editors` (+ percorsi di ricerca per sistema). Uno nuovo va aggiunto anche a `LauncherIcon.svelte` (logo) e, se serve, ai consigli di `frontend/src/lib/presets.ts`.
 - `internal/platform`: tutto ciò che dipende dal sistema operativo, nei file `_windows.go`, `_darwin.go`, `_linux.go`. Nessun `runtime.GOOS` fuori da qui.
 - `internal/gitinfo`: usa il `git` installato dall'utente, mai una libreria. Niente gestione credenziali.
 - `internal/fsops`: crea, rinomina, sposta nel Cestino. Gli errori hanno un codice (`name.badChars`, `exists`…) che il frontend traduce.

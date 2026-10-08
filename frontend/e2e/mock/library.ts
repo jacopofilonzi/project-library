@@ -215,6 +215,24 @@ export async function Rename(path: string, newName: string) {
   emitTree()
   return join(parentOf(path), newName.trim())
 }
+export async function Move(path: string, dest: string) {
+  log('Move', path, dest)
+  const f = find(path)
+  const d = find(dest)?.node
+  if (!f?.parent || !d) return fail('outsideRoots')
+  if (parentOf(path) === dest) return fail('sameFolder')
+  if (dest === path || dest.startsWith(path + '/')) return fail('moveInside')
+  if (d.children?.some((c) => c.name.toLowerCase() === f.node.name.toLowerCase())) return fail('exists')
+  f.parent.children = f.parent.children!.filter((c) => c !== f.node)
+  if (d.kind === 'empty') { d.kind = 'dir'; d.children = [] }
+  d.children!.push(f.node)
+  const to = join(dest, f.node.name)
+  // like config.RenamePath: per-project choices follow the moved item
+  for (const k of Object.keys(config.projectLaunchers)) if (k === path || k.startsWith(path + '/')) { config.projectLaunchers[to + k.slice(path.length)] = config.projectLaunchers[k]; delete config.projectLaunchers[k] }
+  emitConfig()
+  emitTree()
+  return to
+}
 export const IsEmptyDir = async (path: string) => find(path)?.node.kind === 'empty'
 export async function Trash(path: string) {
   log('Trash', path)

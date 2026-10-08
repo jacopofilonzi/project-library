@@ -454,3 +454,42 @@ test('the update check can be turned off and run by hand', async ({ page }) => {
   await page.getByRole('button', { name: 'Check now' }).click()
   await expect(page.locator('.toast')).toContainText('You have the latest version (0.0.0-e2e)')
 })
+
+test('a project can be moved from the menu, after confirming', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'local').click()
+  await row(page, 'awake').click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Move to…' }).click()
+  const dlg = page.locator('.dlg')
+  await expect(dlg.locator('h3')).toHaveText('Move “awake”')
+  await expect(dlg.getByRole('button', { name: 'Move', exact: true })).toBeDisabled()
+  // the current folder and the project itself are not offered
+  await expect(dlg.getByRole('option', { name: 'Development / local', exact: true })).toHaveCount(0)
+  await dlg.getByPlaceholder('Search folders…').fill('jacopo')
+  await dlg.getByRole('option', { name: 'Development / github / jacopofilonzi' }).click()
+  await expect(dlg.locator('.route')).toContainText('Development / local')
+  await dlg.getByRole('button', { name: 'Move', exact: true }).click()
+  await expect(page.locator('.toast')).toContainText('“awake” moved to Development / github / jacopofilonzi')
+  expect(await calls(page)).toContainEqual({ fn: 'Move', args: [`${ROOT}/local/awake`, `${ROOT}/github/jacopofilonzi`] })
+  // you stay on the moved project
+  await expect(page.locator('.detail .head h1')).toHaveText('awake')
+  await expect(page.locator('.crumbs')).toContainText('jacopofilonzi')
+})
+
+test('dropping a project on a folder asks for confirmation; cancel moves nothing', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'local').click()
+  await row(page, 'dity-bot-rs').dragTo(row(page, 'UNI'))
+  const dlg = page.locator('.dlg')
+  await expect(dlg.locator('h3')).toHaveText('Move “dity-bot-rs”')
+  await expect(dlg.getByRole('option', { name: 'Development / local / UNI', exact: true })).toHaveAttribute('aria-selected', 'true')
+  await dlg.getByRole('button', { name: 'Cancel' }).click()
+  expect((await calls(page)).some((c) => c.fn === 'Move')).toBe(false)
+  await expect(row(page, 'dity-bot-rs')).toBeVisible()
+
+  // dropping on the breadcrumb moves up
+  await row(page, 'dity-bot-rs').dragTo(page.locator('.crumbs button', { hasText: 'Development' }))
+  await dlg.getByRole('button', { name: 'Move', exact: true }).click()
+  expect(await calls(page)).toContainEqual({ fn: 'Move', args: [`${ROOT}/local/dity-bot-rs`, ROOT] })
+  await expect(row(page, 'dity-bot-rs')).toBeVisible()
+})

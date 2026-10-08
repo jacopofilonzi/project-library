@@ -20,8 +20,8 @@ sed -i -E "s/(var Version = \")$q\"/\1$new\"/" internal/core/library.go
 sed -i -E "0,/\"version\": \"$q\"/s//\"version\": \"$new\"/" frontend/package.json
 (cd frontend && npm install --package-lock-only --silent)
 
-# check: the old version must not appear anywhere any more (except the sample comment in project.nsi)
-if left=$(git grep -nIF "$old" -- build internal frontend/package.json frontend/package-lock.json | grep -v 'project.nsi'); then
+# check: the old version (as a whole: 0.1.9 must not match 0.1.91) must not appear anywhere any more, except the sample comment in project.nsi
+if left=$(git grep -nIE "(^|[^0-9.])$q([^0-9]|$)" -- build internal frontend/package.json frontend/package-lock.json | grep -v 'project.nsi'); then
   echo "version $old still present:" >&2
   echo "$left" >&2
   exit 1

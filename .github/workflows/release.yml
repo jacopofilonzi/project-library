@@ -1,0 +1,106 @@
+# Build Windows e release. Non parte a ogni push: solo quando si pubblica un tag v* (crea la release
+# con l'installer allegato) o a mano da Actions → Release → Run workflow (installer come artefatto, niente release).
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  windows:
+    runs-on: windows-latest
+    timeout-minutes: 40
+    defaults:
+      run:
+        shell: bash
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Versione del tag uguale a quella dell'app
+        if: startsWith(github.ref, 'refs/tags/')
+        run: |
+          app=$(grep -E '^\s*version:' build/config.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          if [ "v$app" != "$GITHUB_REF_NAME" ]; then
+            echo "::error::il tag è $GITHUB_REF_NAME ma build/config.yml dice $app"
+            exit 1
+          fi
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: CLI di Wails (stessa versione di go.mod)
+        run: |
+          v=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)
+          go install "github.com/wailsapp/wails/v3/cmd/wails3@$v"
+
+      - name: Dipendenze e binding
+        run: |
+          (cd frontend && npm ci)
+          wails3 generate bindings -clean=true -ts -i
+
+      - name: Test Go
+        run: |
+          go vet ./...
+          GOOS=darwin go vet ./internal/...
+          GOOS=linux go vet ./internal/...
+          go test ./internal/...
+
+      - name: Controllo dei tipi
+        working-directory: frontend
+        run: npm run check -- --fail-on-warnings
+
+      - name: Test e2e
+        working-directory: frontend
+        run: |
+          npx playwright install chromium
+          npm run test:e2e
+
+      - name: NSIS
+        run: |
+          if ! command -v makensis >/dev/null && [ ! -f "/c/Program Files (x86)/NSIS/makensis.exe" ]; then
+            choco install nsis -y --no-progress
+          fi
+          echo "C:/Program Files (x86)/NSIS" >> "$GITHUB_PATH"
+
+      - name: Installer
+        run: wails3 package ARCH=amd64
+
+      - name: Artefatto (avvio manuale)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: project-library-installer
+          path: bin/project-library-amd64-installer.exe
+          retention-days: 7
+
+      - name: Release
+        if: startsWith(github.ref, 'refs/tags/')
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
+          range=${prev:+$prev..}$GITHUB_REF_NAME
+          {
+            echo "## Novità"
+            echo
+            git log "$range" --no-merges --pretty='- %s' | grep -vE '^- chore: release' || true
+          } > notes.md
+          gh release create "$GITHUB_REF_NAME" bin/project-library-amd64-installer.exe \
+            --title "$GITHUB_REF_NAME" --notes-file notes.md

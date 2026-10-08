@@ -99,4 +99,4 @@ La configurazione è in `config.json` nella cartella indicata sopra. Il wizard d
 
 ## Versioni
 
-Le versioni sono `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero. Le release sono su GitHub, con l'installer Windows allegato.
+Le versioni sono `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero. Le release sono su GitHub, con l'installer Windows allegato: le crea `.github/workflows/release.yml` quando si pubblica un tag `v0.1.x` (oppure si avvia a mano da Actions per avere solo l'installer).

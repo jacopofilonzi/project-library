@@ -51,7 +51,8 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 
 - Si resta su `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero (`0.1.0` → `0.1.1` → …). Si passa a `0.2` solo se lo decide l'utente.
 - La versione è scritta in più file, da aggiornare tutti insieme: `build/config.yml` (`info.version`), `build/windows/info.json`, `build/darwin/Info.plist`, `build/darwin/Info.dev.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go` (`Version`) e `frontend/package.json` (+ `npm install --package-lock-only`). Si modificano a mano: `wails3 update build-assets` rigenererebbe anche file personalizzati.
-- Rilascio: commit `chore: release v0.1.x`, tag annotato `v0.1.x`, push di commit e tag, poi una release su GitHub con le novità e l'installer `bin/project-library-amd64-installer.exe` allegato.
+- Rilascio (solo quando lo chiede l'utente): commit `chore: release v0.1.x`, tag annotato `v0.1.x`, push di commit e tag. Il tag avvia `.github/workflows/release.yml` su Windows: test, controlli, e2e, installer e release su GitHub con le note ricavate dai commit dal tag precedente. Il workflow si ferma se il tag non coincide con la versione in `build/config.yml`.
+- La CI non parte ai push normali, per non consumare i minuti di GitHub Actions (repo privato: 2.000 al mese, Windows conta doppio). Per provare la build senza rilasciare: Actions → Release → Run workflow, l'installer resta come artefatto per 7 giorni. I commit di sviluppo si pushano liberamente.
 
 ## Insidie note
 

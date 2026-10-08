@@ -32,6 +32,32 @@ func editorCandidates(id string) []string {
 			"/snap/bin/intellij-idea-ultimate", "/snap/bin/intellij-idea-community",
 			"/opt/idea*/bin/idea.sh", "/opt/intellij*/bin/idea.sh",
 		}
+	case "androidstudio":
+		return []string{
+			filepath.Join(h, ".local/share/JetBrains/Toolbox/scripts/studio"),
+			"android-studio", "/snap/bin/android-studio", "/opt/android-studio/bin/studio.sh",
+			filepath.Join(h, "android-studio/bin/studio.sh"),
+		}
+	case "pycharm":
+		return []string{
+			filepath.Join(h, ".local/share/JetBrains/Toolbox/scripts/pycharm"),
+			"pycharm", "pycharm-professional", "pycharm-community",
+			"/snap/bin/pycharm-professional", "/snap/bin/pycharm-community", "/opt/pycharm*/bin/pycharm.sh",
+		}
+	case "cursor":
+		return []string{"cursor", filepath.Join(h, "Applications/cursor.AppImage")}
+	case "zed":
+		return []string{"zed", "zeditor", filepath.Join(h, ".local/bin/zed")}
+	case "sublime":
+		return []string{"subl", "/opt/sublime_text/sublime_text"}
+	}
+	// gli altri IDE JetBrains: script di Toolbox, PATH, snap, installazione in /opt
+	if jb, ok := jetbrains[id]; ok {
+		script := jb[0]
+		return []string{
+			filepath.Join(h, ".local/share/JetBrains/Toolbox/scripts", script),
+			script, "/snap/bin/" + script, "/opt/" + script + "*/bin/" + script + ".sh",
+		}
 	}
 	return nil
 }

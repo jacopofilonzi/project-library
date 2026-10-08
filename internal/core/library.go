@@ -72,6 +72,7 @@ func New(store *config.Store) *Library {
 
 // ServiceStartup viene chiamata da Wails all'avvio.
 func (l *Library) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
+	l.SyncEditors() // editor noti installati dopo l'ultimo avvio: aggiunti, disattivati
 	cfg := l.store.Get()
 	l.git.Detect(cfg.GitPath)
 	if w, err := watcher.New(400*time.Millisecond, func() { l.rescan(true) }); err == nil {

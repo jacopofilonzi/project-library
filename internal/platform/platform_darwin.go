@@ -20,6 +20,14 @@ func StartDetached(command string, args []string, dir string) error {
 
 func editorCandidates(id string) []string {
 	h := home()
+	app := func(name string) []string {
+		return []string{"/Applications/" + name + ".app", filepath.Join(h, "Applications", name+".app")}
+	}
+	if jb, ok := jetbrains[id]; ok {
+		script, name := jb[0], jb[1]
+		c := []string{filepath.Join(h, "Library/Application Support/JetBrains/Toolbox/scripts", script)}
+		return append(append(c, app(name+"*")...), script)
+	}
 	switch id {
 	case "vscode":
 		return []string{
@@ -27,13 +35,12 @@ func editorCandidates(id string) []string {
 			filepath.Join(h, "Applications/Visual Studio Code.app/Contents/Resources/app/bin/code"),
 			"code",
 		}
-	case "intellij":
-		return []string{
-			filepath.Join(h, "Library/Application Support/JetBrains/Toolbox/scripts/idea"),
-			"/Applications/IntelliJ IDEA*.app",
-			filepath.Join(h, "Applications/IntelliJ IDEA*.app"),
-			"idea",
-		}
+	case "cursor":
+		return append(app("Cursor"), "cursor")
+	case "zed":
+		return append(app("Zed"), "zed")
+	case "sublime":
+		return append(app("Sublime Text"), "subl")
 	}
 	return nil
 }

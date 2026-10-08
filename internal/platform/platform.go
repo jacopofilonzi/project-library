@@ -64,7 +64,45 @@ func NameProblem(name string) string {
 	return nameProblem(name)
 }
 
-// EditorPath cerca l'eseguibile di un editor predefinito ("vscode", "intellij").
+// Editor è un editor noto, rilevato automaticamente su ogni sistema.
+type Editor struct {
+	ID   string `json:"id"`
+	Name string `json:"name"`
+}
+
+// Editors è l'elenco degli editor noti. Quelli trovati vengono aggiunti ai launcher (disattivati).
+var Editors = []Editor{
+	{"vscode", "VS Code"},
+	{"intellij", "IntelliJ IDEA"},
+	{"androidstudio", "Android Studio"},
+	{"webstorm", "WebStorm"},
+	{"pycharm", "PyCharm"},
+	{"goland", "GoLand"},
+	{"rider", "Rider"},
+	{"clion", "CLion"},
+	{"phpstorm", "PhpStorm"},
+	{"rubymine", "RubyMine"},
+	{"rustrover", "RustRover"},
+	{"cursor", "Cursor"},
+	{"zed", "Zed"},
+	{"sublime", "Sublime Text"},
+}
+
+// jetbrains: nome dello script di Toolbox, nome della cartella/app di installazione.
+var jetbrains = map[string][2]string{
+	"intellij":      {"idea", "IntelliJ IDEA"},
+	"webstorm":      {"webstorm", "WebStorm"},
+	"pycharm":       {"pycharm", "PyCharm"},
+	"goland":        {"goland", "GoLand"},
+	"rider":         {"rider", "JetBrains Rider"},
+	"clion":         {"clion", "CLion"},
+	"phpstorm":      {"phpstorm", "PhpStorm"},
+	"rubymine":      {"rubymine", "RubyMine"},
+	"rustrover":     {"rustrover", "RustRover"},
+	"androidstudio": {"studio", "Android Studio"},
+}
+
+// EditorPath cerca l'eseguibile di un editor noto (vedi Editors).
 // Restituisce "" se non lo trova.
 func EditorPath(id string) string {
 	for _, c := range editorCandidates(id) {

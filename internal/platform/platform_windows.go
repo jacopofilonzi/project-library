@@ -31,6 +31,16 @@ func StartDetached(command string, args []string, dir string) error {
 }
 
 func editorCandidates(id string) []string {
+	if jb, ok := jetbrains[id]; ok {
+		script, dir := jb[0], jb[1]
+		c := []string{`%LOCALAPPDATA%\JetBrains\Toolbox\scripts\` + script + `.cmd`}
+		if id == "androidstudio" {
+			c = append(c, `%ProgramFiles%\Android\Android Studio\bin\studio64.exe`, `%LOCALAPPDATA%\Programs\Android Studio\bin\studio64.exe`)
+		} else {
+			c = append(c, `%ProgramFiles%\JetBrains\`+dir+`*\bin\`+script+`64.exe`, `%LOCALAPPDATA%\Programs\`+dir+`*\bin\`+script+`64.exe`)
+		}
+		return append(c, script+"64", script)
+	}
 	switch id {
 	case "vscode":
 		return []string{
@@ -39,13 +49,12 @@ func editorCandidates(id string) []string {
 			`%ProgramFiles(x86)%\Microsoft VS Code\Code.exe`,
 			"code",
 		}
-	case "intellij":
-		return []string{
-			`%LOCALAPPDATA%\JetBrains\Toolbox\scripts\idea.cmd`,
-			`%ProgramFiles%\JetBrains\IntelliJ IDEA*\bin\idea64.exe`,
-			`%LOCALAPPDATA%\Programs\IntelliJ IDEA*\bin\idea64.exe`,
-			"idea64", "idea",
-		}
+	case "cursor":
+		return []string{`%LOCALAPPDATA%\Programs\cursor\Cursor.exe`, `%ProgramFiles%\Cursor\Cursor.exe`, "cursor"}
+	case "zed":
+		return []string{`%LOCALAPPDATA%\Programs\Zed\Zed.exe`, `%ProgramFiles%\Zed\Zed.exe`, "zed"}
+	case "sublime":
+		return []string{`%ProgramFiles%\Sublime Text\sublime_text.exe`, `%ProgramFiles%\Sublime Text 3\sublime_text.exe`, "subl"}
 	}
 	return nil
 }

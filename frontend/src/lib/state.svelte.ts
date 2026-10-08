@@ -351,6 +351,9 @@ class Store {
     }
   }
 
+  /** the "reset settings" confirmation is open (Settings → About, or the palette command) */
+  resetAsk = $state(false)
+
   /** settings element (id) to show when they open */
   settingsAnchor = $state('')
 

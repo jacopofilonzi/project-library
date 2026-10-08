@@ -140,9 +140,9 @@ func (l *Library) ImportConfig(title string) (AppState, error) {
 	return l.SaveConfig(next)
 }
 
-// ResetConfig brings the configuration back to the initial values: the frontend then reopens the wizard.
-// Only the language is kept, so the wizard speaks the user's language. The previous configuration
-// is saved to config.backup.json, next to config.json, and can be imported again.
+// ResetConfig brings every user preference back to the initial values, language included:
+// the frontend then reopens the wizard. The previous configuration is saved to config.backup.json,
+// next to config.json, and can be imported again.
 func (l *Library) ResetConfig() (AppState, error) {
 	prev := l.store.Get()
 	data, err := json.MarshalIndent(prev, "", "  ")
@@ -154,7 +154,6 @@ func (l *Library) ResetConfig() (AppState, error) {
 	}
 	home, _ := os.UserHomeDir()
 	next := config.Default(home)
-	next.Language = prev.Language
 	if _, err := l.SaveConfig(next); err != nil {
 		return l.State(), err
 	}

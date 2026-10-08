@@ -303,7 +303,7 @@ test('the configuration can be exported', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: 'Settings' }).click()
   await page.locator('.set nav').getByRole('button', { name: 'About' }).click()
-  await page.getByRole('button', { name: 'Export…' }).click()
+  await page.getByRole('button', { name: 'Export', exact: true }).click()
   await expect(page.locator('.toast')).toContainText('Configuration exported: /home/u/project-library-config.json')
 })
 
@@ -311,7 +311,7 @@ test('resetting the settings asks for confirmation, then runs the wizard', async
   await openApp(page)
   await page.getByRole('button', { name: 'Settings' }).click()
   await page.locator('.set nav').getByRole('button', { name: 'About' }).click()
-  await page.getByRole('button', { name: 'Reset…' }).click()
+  await page.getByRole('button', { name: 'Reset', exact: true }).click()
   const dlg = page.getByRole('alertdialog', { name: 'Reset all settings?' })
   await expect(dlg).toContainText('/cfg/config.backup.json')
   // Esc closes only the popup, not the settings
@@ -320,7 +320,7 @@ test('resetting the settings asks for confirmation, then runs the wizard', async
   await expect(page.locator('.set')).toBeVisible()
   expect((await calls(page)).some((c) => c.fn === 'ResetConfig')).toBe(false)
 
-  await page.getByRole('button', { name: 'Reset…' }).click()
+  await page.getByRole('button', { name: 'Reset', exact: true }).click()
   await dlg.getByRole('button', { name: 'Reset settings' }).click()
   await expect(page.locator('.set')).toBeHidden()
   await expect(page.locator('.wiz-bg')).toBeVisible()
@@ -552,4 +552,16 @@ test('the custom title bar buttons control the window', async ({ page }) => {
   // the caption areas are marked for Windows' hit testing
   const region = await page.evaluate(() => getComputedStyle(document.querySelector('header .drag')!).getPropertyValue('--wails-non-client-region').trim())
   expect(region).toBe('caption')
+})
+
+test('the palette command asks before resetting the settings', async ({ page }) => {
+  await openApp(page)
+  await page.keyboard.press('Control+k')
+  await page.keyboard.type('>reset')
+  await page.keyboard.press('Enter')
+  const dlg = page.getByRole('alertdialog', { name: 'Reset all settings?' })
+  await expect(dlg).toBeVisible()
+  expect((await calls(page)).some((c) => c.fn === 'ResetConfig')).toBe(false)
+  await dlg.getByRole('button', { name: 'Reset settings' }).click()
+  await expect(page.locator('.wiz-bg')).toBeVisible()
 })

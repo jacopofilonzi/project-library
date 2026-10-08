@@ -63,7 +63,6 @@ type Library struct {
 	fetchStop context.CancelFunc
 	clones    sync.Map // id → context.CancelFunc
 	// global shortcuts currently registered
-	hotkey       string
 	spotlightKey string
 }
 
@@ -182,15 +181,12 @@ func scanRules(cfg config.Config) []scanner.Rule {
 	return out
 }
 
-// applySystem aligns the global shortcut, start with the system and periodic fetch with the config.
+// applySystem aligns the global shortcut of the floating search, start with the system and periodic fetch with the config.
 func (l *Library) applySystem(cfg, prev config.Config) []error {
 	app := application.Get()
 	var errs []error
 	if app == nil {
 		return nil
-	}
-	if err := l.setShortcut(app, &l.hotkey, cfg.Hotkey, ShowMainWindow); err != nil {
-		errs = append(errs, err)
 	}
 	if err := l.setShortcut(app, &l.spotlightKey, cfg.SpotlightHotkey, ShowSpotlight); err != nil {
 		errs = append(errs, err)

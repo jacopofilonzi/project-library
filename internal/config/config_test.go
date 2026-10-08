@@ -34,7 +34,7 @@ func TestMigrationV1(t *testing.T) {
 	}
 	s, _ := Load(path, dir)
 	c := s.Get()
-	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Hotkey != "" || c.Version != currentVersion {
+	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Version != currentVersion {
 		t.Fatalf("migration: %+v", c)
 	}
 	// after the migration an empty (disabled) spotlight shortcut stays empty

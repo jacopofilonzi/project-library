@@ -20,7 +20,7 @@ function canAddHere() {
 
 export function commands(): Command[] {
   const list: Command[] = []
-  if (isSpotlight) list.push({ id: 'show', label: t('cmd.show'), key: store.cfg.hotkey || undefined, run: () => {} , main: true })
+  if (isSpotlight) list.push({ id: 'show', label: t('cmd.show'), run: () => {} , main: true })
   if (!isSpotlight ? canAddHere() : true) {
     list.push({ id: 'newFolder', label: t('cmd.newFolder'), key: store.mod + ' Shift N', main: true, run: () => {
       const cur = store.current
@@ -43,7 +43,7 @@ export function commands(): Command[] {
     list.push({ id: 'reveal', label: t('cmd.reveal'), key: store.mod + ' E', main: true, run: () => store.reveal(p) })
   }
   list.push(
-    { id: 'wizard', label: t('cmd.wizard'), main: true, run: () => { store.settingsOpen = false; store.wizardOpen = true } },
+    { id: 'reset', label: t('cmd.reset'), main: true, run: () => { store.openSettings('about'); store.resetAsk = true } },
     { id: 'quit', label: t('cmd.quit'), run: () => lib.Quit() },
   )
   return list

@@ -117,7 +117,6 @@ let config: any = {
   recent: [{ path: join(ROOT, 'local/awake'), launcher: 'vscode', at: Date.now() - 3600_000 }],
   startMode: 'off',
   closeToTray: false,
-  hotkey: 'CmdOrCtrl+Alt+Space',
   spotlightHotkey: 'Super+Ctrl+K',
   lastPath: options.lastSelected ? parentOf(options.lastSelected) : '',
   lastSelected: options.lastSelected ?? '',
@@ -167,7 +166,7 @@ export const ExportConfig = async (title: string) => { log('ExportConfig', title
 export const ImportConfig = async (title: string) => { log('ImportConfig', title); return state() }
 export async function ResetConfig() {
   log('ResetConfig')
-  config = { ...config, roots: [ROOT], rules: [], presets: [], projectLaunchers: {}, overrides: {}, recent: [], lastPath: '', lastSelected: '', setupDone: false }
+  config = { ...config, language: 'en', uiScale: 1, roots: [ROOT], rules: [], presets: [], projectLaunchers: {}, overrides: {}, recent: [], lastPath: '', lastSelected: '', setupDone: false }
   emitConfig()
   return state()
 }

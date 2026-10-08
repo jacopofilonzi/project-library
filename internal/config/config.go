@@ -101,8 +101,8 @@ type Config struct {
 	// StartMode: start with the system. "off", "window" (opens the window) or "tray" (tray and floating search only).
 	StartMode   string `json:"startMode"`
 	CloseToTray bool   `json:"closeToTray"`
-	// Hotkey shows the main window; SpotlightHotkey opens the floating search. Empty = disabled.
-	Hotkey          string `json:"hotkey"`
+	// SpotlightHotkey opens the floating search. Empty = disabled.
+	// (Configs before 1.6 also had "hotkey", a shortcut for the main window: it is ignored.)
 	SpotlightHotkey string `json:"spotlightHotkey"`
 
 	// CheckUpdates: look for a new release at startup. NotifiedVersion: the last version
@@ -168,7 +168,6 @@ func Default(home string) Config {
 		GitFetchMinutes:  15,
 		StartMode:        StartOff,
 		CloseToTray:      false,
-		Hotkey:           "CmdOrCtrl+Alt+Space",
 		SpotlightHotkey:  "Super+Ctrl+K",
 		CheckUpdates:     true,
 	}

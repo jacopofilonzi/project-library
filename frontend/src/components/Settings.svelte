@@ -23,7 +23,6 @@
     const p = await lib.PickFolder(t('settings.general.addRoot'), store.st?.home ?? '').catch(() => '')
     if (p && !store.cfg.roots.includes(p)) store.save((c) => c.roots.push(p))
   }
-  let hotkey = $state(store.cfg.hotkey)
   let spotKey = $state(store.cfg.spotlightHotkey)
 
   // ---------- launcher ----------
@@ -193,11 +192,10 @@
   }
 
   // ---------- reset ----------
-  let resetAsk = $state(false)
   let resetCancel: HTMLButtonElement | undefined = $state()
-  $effect(() => { if (resetAsk) resetCancel?.focus() })
+  $effect(() => { if (store.resetAsk) resetCancel?.focus() })
   async function resetConfig() {
-    resetAsk = false
+    store.resetAsk = false
     try {
       store.applyState(await lib.ResetConfig())
       store.setTree(await lib.Tree())
@@ -290,7 +288,7 @@
   function onkey(e: KeyboardEvent) {
     if (e.key !== 'Escape') return
     e.stopPropagation()
-    if (resetAsk) resetAsk = false
+    if (store.resetAsk) store.resetAsk = false
     else store.settingsOpen = false
   }
 </script>
@@ -341,9 +339,6 @@
           <div class="f"><div class="l"><b>{t('settings.general.spotlightHotkey')}</b><span>{t('settings.general.spotlightHotkeySub')}</span></div>
             <input type="text" bind:value={spotKey} style="width:190px" onkeydown={(e) => e.key === 'Enter' && store.save((c) => (c.spotlightHotkey = spotKey.trim()))} />
             <button class="btn" disabled={spotKey.trim() === store.cfg.spotlightHotkey} onclick={() => store.save((c) => (c.spotlightHotkey = spotKey.trim()))}>{t('settings.general.apply')}</button></div>
-          <div class="f"><div class="l"><b>{t('settings.general.hotkey')}</b><span>{t('settings.general.hotkeySub')}</span></div>
-            <input type="text" bind:value={hotkey} style="width:190px" onkeydown={(e) => e.key === 'Enter' && store.save((c) => (c.hotkey = hotkey.trim()))} />
-            <button class="btn" disabled={hotkey.trim() === store.cfg.hotkey} onclick={() => store.save((c) => (c.hotkey = hotkey.trim()))}>{t('settings.general.apply')}</button></div>
           <div class="note">{t('settings.general.hotkeyFormat')}</div>
 
         {:else if store.settingsSection === 'launchers'}
@@ -559,7 +554,6 @@
           <div class="grp">{t('settings.shortcuts.globalGrp')}</div>
           <table class="tbl"><tbody>
             <tr><td>{t('settings.shortcuts.spotlight')}</td><td>{#if store.cfg.spotlightHotkey}<kbd>{store.cfg.spotlightHotkey}</kbd>{:else}{t('settings.shortcuts.off')}{/if}</td></tr>
-            <tr><td>{t('settings.shortcuts.showMain')}</td><td>{#if store.cfg.hotkey}<kbd>{store.cfg.hotkey}</kbd>{:else}{t('settings.shortcuts.off')}{/if}</td></tr>
           </tbody></table>
           <div class="note">{t('settings.shortcuts.globalNote')}</div>
 
@@ -575,10 +569,10 @@
           {#if importAsk}
             <div class="note warn">{t('settings.about.importConfirm')} <button class="btn d" onclick={importConfig}>{t('settings.about.importGo')}</button> <button class="btn" onclick={() => (importAsk = false)}>{t('settings.about.cancel')}</button></div>
           {/if}
-          <div class="f"><div class="l"><b>{t('settings.about.reset')}</b><span>{t('settings.about.resetSub')}</span></div><button class="btn danger" onclick={() => (resetAsk = true)}>{t('settings.about.resetBtn')}</button></div>
-          {#if resetAsk}
+          <div class="f"><div class="l"><b>{t('settings.about.reset')}</b><span>{t('settings.about.resetSub')}</span></div><button class="btn danger" onclick={() => (store.resetAsk = true)}>{t('settings.about.resetBtn')}</button></div>
+          {#if store.resetAsk}
             <!-- svelte-ignore a11y_no_static_element_interactions -->
-            <div class="backdrop over" onmousedown={(e) => e.target === e.currentTarget && (resetAsk = false)}>
+            <div class="backdrop over" onmousedown={(e) => e.target === e.currentTarget && (store.resetAsk = false)}>
               <div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="reset-title">
                 <h3 id="reset-title">{t('settings.about.resetTitle')}</h3>
                 <div class="bd">
@@ -587,7 +581,7 @@
                   <div class="final selectable">{backupPath}</div>
                 </div>
                 <div class="ft">
-                  <button bind:this={resetCancel} onclick={() => (resetAsk = false)}>{t('settings.about.cancel')}</button>
+                  <button bind:this={resetCancel} onclick={() => (store.resetAsk = false)}>{t('settings.about.cancel')}</button>
                   <button class="d" onclick={resetConfig}>{t('settings.about.resetGo')}</button>
                 </div>
               </div>

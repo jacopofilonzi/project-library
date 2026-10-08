@@ -10,7 +10,7 @@
   <Identity 
     Name="com.example.projectlibrary"
     Publisher="CN=Jacopo Filonzi"
-    Version="0.1.91.0" 
+    Version="1.0.0.0" 
     ProcessorArchitecture="x64" />
   
   <Properties>

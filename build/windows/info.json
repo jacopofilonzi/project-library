@@ -1,10 +1,10 @@
 {
 	"fixed": {
-		"file_version": "0.1.91"
+		"file_version": "1.0.0"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "0.1.91",
+			"ProductVersion": "1.0.0",
 			"CompanyName": "Jacopo Filonzi",
 			"FileDescription": "Browse and open the projects in your Development folder",
 			"LegalCopyright": "(c) 2026, Jacopo Filonzi",

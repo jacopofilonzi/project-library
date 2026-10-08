@@ -1,7 +1,7 @@
 import type { Dict } from './en'
 
 const it: Dict = {
-  app: { search: 'Cerca', clone: 'Clona', theme: { toLight: 'Passa al tema chiaro', toDark: 'Passa al tema scuro' }, settings: 'Impostazioni' },
+  app: { search: 'Cerca', clone: 'Clona', settings: 'Impostazioni' },
   roots: 'Radici',
   col: {
     add: 'Nuova cartella o clona qui',
@@ -62,6 +62,7 @@ const it: Dict = {
     autoSaved: '{name}: ripristinata la scelta automatica',
     reason: { project: 'Scelto per questo progetto', rule: 'Scelto da una regola', default: 'Launcher predefinito' },
   },
+  window: { minimize: 'Riduci a icona', maximize: 'Ingrandisci', restore: 'Ripristina', close: 'Chiudi' },
   ctx: {
     move: 'Sposta in…',
     open: 'Apri con {name}',

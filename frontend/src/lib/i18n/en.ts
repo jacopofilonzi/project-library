@@ -1,6 +1,6 @@
 // English texts (default language). it.ts must have exactly the same keys.
 const en = {
-  app: { search: 'Search', clone: 'Clone', theme: { toLight: 'Switch to light theme', toDark: 'Switch to dark theme' }, settings: 'Settings' },
+  app: { search: 'Search', clone: 'Clone', settings: 'Settings' },
   roots: 'Roots',
   col: {
     add: 'New folder or clone here',
@@ -61,6 +61,7 @@ const en = {
     autoSaved: '{name}: automatic choice restored',
     reason: { project: 'Chosen for this project', rule: 'Chosen by a rule', default: 'Default launcher' },
   },
+  window: { minimize: 'Minimize', maximize: 'Maximize', restore: 'Restore', close: 'Close' },
   ctx: {
     move: 'Move to…',
     open: 'Open with {name}',

@@ -107,6 +107,12 @@
           {/if}
         </div>
       {/if}
+      {#if col.index === start}
+        <div class="colfoot">
+          <button class="ibtn" onclick={() => store.openSettings()} title="{t('app.settings')} ({store.mod} P)" aria-label={t('app.settings')}>{@html icons.gear()}</button>
+          <button class="tbtn" onclick={() => (store.dialog = { kind: 'clone', parent: null })} disabled={!store.cfg.roots.length}>{@html icons.clone()}{t('app.clone')}</button>
+        </div>
+      {/if}
     </div>
   {/each}
 </div>

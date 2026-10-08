@@ -323,11 +323,10 @@ const it: Dict = {
     roots: {
       title: 'Quali cartelle devo osservare?',
       sub: 'L’app mostra i progetti dentro queste cartelle, organizzati come sul disco (es. Development/github/owner/repo).',
-      missing: 'Questa cartella non esiste.',
-      create: 'Creala',
       add: '+ Aggiungi un’altra cartella…',
       remove: 'Rimuovi',
-      needOne: 'Aggiungi almeno una cartella.',
+      noneFound: 'Non ho trovato {path}. Scegli la cartella che contiene i tuoi progetti.',
+      choose: 'Scegli cartella…',
     },
     editors: {
       title: 'Editor',

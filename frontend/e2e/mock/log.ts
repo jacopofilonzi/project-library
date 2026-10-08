@@ -16,6 +16,10 @@ export type MockOptions = {
   /** ultima posizione salvata (percorso assoluto di un progetto o di una cartella) */
   lastSelected?: string
   language?: 'en' | 'it'
+  /** la cartella radice di default (~/Development) non esiste */
+  missingRoot?: boolean
+  /** percorso restituito dal selettore di cartelle di sistema */
+  pickFolder?: string
 }
 
 window.__mock = window.__mock ?? { calls: [] }

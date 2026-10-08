@@ -172,6 +172,19 @@ test('first run shows the setup wizard', async ({ page }) => {
   await expect(row(page, 'github')).toBeVisible()
 })
 
+test('the wizard proposes ~/Development only if it exists, otherwise asks to choose', async ({ page }) => {
+  await openApp(page, { firstRun: true, missingRoot: true, pickFolder: '/home/u/Projects' })
+  const wiz = page.locator('.wiz')
+  await wiz.getByRole('button', { name: 'Next' }).click()
+  await expect(wiz.locator('.note')).toHaveText(`I could not find ${ROOT}. Choose the folder that contains your projects.`)
+  await expect(wiz.locator('.ed')).toHaveCount(0)
+  await expect(wiz.getByRole('button', { name: 'Next' })).toBeDisabled()
+
+  await wiz.getByRole('button', { name: 'Choose folder…' }).click()
+  await expect(wiz.locator('.ed b')).toHaveText(['/home/u/Projects'])
+  await expect(wiz.getByRole('button', { name: 'Next' })).toBeEnabled()
+})
+
 test('the wizard offers to install git when it is missing', async ({ page }) => {
   await openApp(page, { firstRun: true, noGit: true })
   const wiz = page.locator('.wiz')

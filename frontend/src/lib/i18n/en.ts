@@ -322,11 +322,10 @@ const en = {
     roots: {
       title: 'Which folders should I watch?',
       sub: 'The app shows the projects inside these folders, organised like on disk (e.g. Development/github/owner/repo).',
-      missing: 'This folder does not exist.',
-      create: 'Create it',
       add: '+ Add another folder…',
       remove: 'Remove',
-      needOne: 'Add at least one folder.',
+      noneFound: 'I could not find {path}. Choose the folder that contains your projects.',
+      choose: 'Choose folder…',
     },
     editors: {
       title: 'Editors',

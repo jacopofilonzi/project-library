@@ -190,7 +190,7 @@ export async function SetOverride(path: string, kind: string) {
   return state()
 }
 export const CreateRoot = async (path: string) => { log('CreateRoot', path) }
-export const Exists = async (path: string) => !!find(path)
+export const Exists = async (path: string) => !(options.missingRoot && path === ROOT) && !!find(path)
 export async function ParseRepoURL(url: string) {
   const m = url.trim().match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/)
   return m ? { ok: true, host: 'github.com', owner: m[1], repo: m[2] } : { ok: false, host: '', owner: '', repo: '' }
@@ -213,7 +213,7 @@ export const CancelClone = async (id: string) => { log('CancelClone', id) }
 export const DetectGit = async (path: string) => (gitAvailable() || path ? 'C:/Git/git.exe' : '')
 export const GitInstallInfo = async () => ({ command: 'winget install --id Git.Git -e --source winget', canRun: true, url: 'https://git-scm.com/download/win' })
 export const RunGitInstall = async () => { log('RunGitInstall') }
-export const PickFolder = async () => ''
+export const PickFolder = async () => options.pickFolder ?? ''
 export const PickFile = async () => ''
 export async function InitProject(path: string, git: boolean, readme: boolean) {
   log('InitProject', path, git, readme)

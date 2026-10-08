@@ -6,8 +6,11 @@
 
   // ---------- bozza della configurazione ----------
   let lang = $state(store.cfg.language)
-  let roots = $state<string[]>([...store.cfg.roots])
-  let exists = $state<Record<string, boolean>>({})
+  // cartelle da osservare: si propongono solo quelle che esistono già (di default <home>/Development);
+  // se non ce n'è nessuna l'elenco resta vuoto e l'utente sceglie dal selettore di sistema
+  let roots = $state<string[]>([])
+  let rootsChecked = $state(false)
+  const proposed = [...store.cfg.roots]
   type EdDraft = { launcher: Launcher; enabled: boolean; command: string; detected: string }
   let editors = $state<EdDraft[]>(
     store.cfg.launchers.map((l) => ({ launcher: $state.snapshot(l) as Launcher, enabled: l.enabled, command: l.command, detected: '' })),
@@ -31,7 +34,10 @@
     if (needGit) lib.GitInstallInfo().then((i) => (install = i))
   })
   $effect(() => {
-    for (const r of roots) lib.Exists(r).then((ok) => (exists[r] = ok))
+    Promise.all(proposed.map((r) => lib.Exists(r).then((ok) => (ok ? r : '')).catch(() => ''))).then((found) => {
+      roots = found.filter(Boolean)
+      rootsChecked = true
+    })
   })
 
   function chooseLang(l: string) {
@@ -42,14 +48,6 @@
   async function addRoot() {
     const p = await lib.PickFolder(t('wizard.roots.add'), store.st?.home ?? '').catch(() => '')
     if (p && !roots.includes(p)) roots.push(p)
-  }
-  async function createRoot(r: string) {
-    try {
-      await lib.CreateRoot(r)
-      exists[r] = true
-    } catch (e) {
-      store.toast(errMessage(e), true)
-    }
   }
   async function browse(ed: EdDraft) {
     const p = await lib.PickFile(ed.launcher.name).catch(() => '')
@@ -120,13 +118,16 @@
         <p class="sub">{t('wizard.roots.sub')}</p>
         {#each roots as r, i (r)}
           <div class="ed">
-            <div class="m"><b class="selectable">{r}</b>{#if exists[r] === false}<code>{t('wizard.roots.missing')}</code>{/if}</div>
-            {#if exists[r] === false}<button class="btn" onclick={() => createRoot(r)}>{t('wizard.roots.create')}</button>{/if}
+            <div class="m"><b class="selectable">{r}</b></div>
             <button class="btn d" onclick={() => roots.splice(i, 1)}>{t('wizard.roots.remove')}</button>
           </div>
         {/each}
-        {#if !roots.length}<div class="note warn">{t('wizard.roots.needOne')}</div>{/if}
-        <button class="btn" style="align-self:flex-start" onclick={addRoot}>{t('wizard.roots.add')}</button>
+        {#if rootsChecked && !roots.length}
+          <div class="note">{t('wizard.roots.noneFound', { path: proposed[0] ?? '' })}</div>
+          <button class="btn p" style="align-self:flex-start" onclick={addRoot}>{t('wizard.roots.choose')}</button>
+        {:else if rootsChecked}
+          <button class="btn" style="align-self:flex-start" onclick={addRoot}>{t('wizard.roots.add')}</button>
+        {/if}
 
       {:else if steps[step] === 'editors'}
         <h2>{t('wizard.editors.title')}</h2>

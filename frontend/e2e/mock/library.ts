@@ -28,6 +28,7 @@ const fs: FNode = dir('Development', [
     dir('UNI', [dir('Ingegneria del Software', [proj('BuildPatternDemo', 'Java', ['build.gradle.kts', 'gradlew'])])]),
     proj('awake', 'Node', ['package.json', 'README.md', '.git'], { hasGit: true, desc: 'Self-hosted Wake-on-LAN over the internet.' }),
     proj('dity-bot-rs', 'Rust', ['Cargo.toml', '.git'], { hasGit: true }),
+    proj('pocket-app', 'Kotlin', ['app/src/main/AndroidManifest.xml', 'build.gradle.kts', 'gradlew']),
   ]),
 ])
 
@@ -49,9 +50,11 @@ const globRe = (g: string) => new RegExp('^' + g.replace(/[.+^${}()|[\]\\]/g, '\
 
 function toTree(n: FNode, path: string): any {
   if (n.kind === 'project') {
+    // come scanner.MatchRules: launcher delle regole che corrispondono, in ordine e senza doppioni
     const ruleLaunchers: string[] = []
-    for (const r of config.launcherRules ?? []) {
-      if (!ruleLaunchers.includes(r.launcher) && r.patterns.some((p) => (n.files ?? []).some((f) => globRe(p).test(f)))) ruleLaunchers.push(r.launcher)
+    for (const r of config.rules ?? []) {
+      const p = findPreset(r.preset)
+      if (p && !ruleLaunchers.includes(r.launcher) && p.patterns.some((g: string) => (n.files ?? []).some((f) => globRe(g).test(f)))) ruleLaunchers.push(r.launcher)
     }
     return { name: n.name, path, kind: 'project', lang: n.lang, desc: n.desc, hasGit: n.hasGit, count: 1, ruleLaunchers }
   }
@@ -61,6 +64,20 @@ function toTree(n: FNode, path: string): any {
   const kind = n.kind === 'empty' || !children.length ? (n === fs ? 'dir' : 'empty') : 'dir'
   return { name: n.name, path, kind, count: children.reduce((s: number, c: any) => s + c.count, 0), children }
 }
+
+// ---------- preset (parte del catalogo di internal/presets) ----------
+const catalog = [
+  { id: 'android', name: 'Android', patterns: ['app/src/main/AndroidManifest.xml', 'src/main/AndroidManifest.xml', 'AndroidManifest.xml'] },
+  { id: 'gradle', name: 'Java / Kotlin (Gradle)', patterns: ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'gradlew'] },
+  { id: 'maven', name: 'Java (Maven)', patterns: ['pom.xml', 'mvnw'] },
+  { id: 'node', name: 'Node.js', patterns: ['package.json'] },
+  { id: 'rust', name: 'Rust', patterns: ['Cargo.toml'] },
+]
+const findPreset = (id: string) => catalog.find((p) => p.id === id) ?? (config.presets ?? []).find((p: any) => p.id === id)
+
+// editor noti "installati" sulla macchina finta, oltre a VS Code e IntelliJ
+const installed: Record<string, string> = { vscode: 'C:/VSCode/Code.exe', intellij: 'C:/JetBrains/idea64.exe', androidstudio: 'C:/Android/studio64.exe' }
+const knownNames: Record<string, string> = { androidstudio: 'Android Studio' }
 
 // ---------- git finto ----------
 const gitData: Record<string, any> = {
@@ -72,7 +89,7 @@ const gitOf = (p: string) => gitData[p] ?? { isRepo: true, branch: 'main', remot
 
 // ---------- config ----------
 let config: any = {
-  version: 2,
+  version: 3,
   language: options.language ?? 'en',
   theme: 'light',
   roots: [ROOT],
@@ -81,7 +98,8 @@ let config: any = {
     { id: 'intellij', name: 'IntelliJ IDEA', command: '', args: '"{path}"', enabled: true, builtin: 'intellij' },
   ],
   defaultLauncher: 'vscode',
-  launcherRules: [{ patterns: ['pom.xml', 'build.gradle*', 'settings.gradle*', 'gradlew', '*.iml'], launcher: 'intellij' }],
+  presets: [],
+  rules: [{ preset: 'gradle', launcher: 'intellij' }],
   projectLaunchers: {},
   markers: ['.git', 'package.json', 'README*'],
   ignore: ['node_modules'],
@@ -126,7 +144,24 @@ export const Tree = async () => Tree_()
 export const Rescan = async () => { log('Rescan'); return Tree_() }
 export const Dirty = async () => ({ [join(ROOT, 'github/jacopofilonzi/NtfyJS')]: 7 })
 export const RefreshDirty = async () => {}
-export const LauncherStatus = async () => ({ vscode: 'C:/VSCode/Code.exe', intellij: 'C:/JetBrains/idea64.exe' })
+export const LauncherStatus = async () => Object.fromEntries(config.launchers.map((l: any) => [l.id, l.command || installed[l.builtin] || '']))
+export const Presets = async () => catalog.map((p) => ({ ...p, builtin: true }))
+export async function SyncEditors() {
+  const have = new Set(config.launchers.map((l: any) => l.builtin))
+  const add = Object.keys(knownNames).filter((id) => !have.has(id) && installed[id])
+  if (!add.length) return []
+  for (const id of add) config.launchers.push({ id, name: knownNames[id], command: '', args: '"{path}"', enabled: false, builtin: id })
+  emitConfig()
+  return add.map((id) => knownNames[id])
+}
+export const Languages = async (path: string) => ({
+  stats: find(path)?.node.lang === 'Rust'
+    ? [{ name: 'Rust', color: '#dea584', bytes: 9000, percent: 100 }]
+    : [{ name: 'TypeScript', color: '#3178c6', bytes: 7000, percent: 70 }, { name: 'Svelte', color: '#ff3e00', bytes: 2950, percent: 29.5 }, { name: 'Other', color: '#9a9aa0', bytes: 50, percent: 0.5 }],
+  partial: false,
+})
+export const ExportConfig = async (title: string) => { log('ExportConfig', title); return '/home/u/project-library-config.json' }
+export const ImportConfig = async (title: string) => { log('ImportConfig', title); return state() }
 
 export async function Readme(path: string) {
   const f = find(path)?.node
@@ -144,7 +179,7 @@ export async function Open(path: string, launcher: string) {
   emitConfig()
 }
 export const TestLauncher = async (l: any, path: string) => { log('TestLauncher', l.id, path) }
-export const DetectEditor = async (id: string) => (id === 'vscode' ? 'C:/VSCode/Code.exe' : 'C:/JetBrains/idea64.exe')
+export const DetectEditor = async (id: string) => installed[id] ?? ''
 export const ResolveCommand = async (cmd: string) => cmd
 export const Reveal = async (path: string) => { log('Reveal', path) }
 export const OpenURL = async (url: string) => { log('OpenURL', url) }

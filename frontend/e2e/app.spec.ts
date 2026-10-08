@@ -167,6 +167,8 @@ test('first run shows the setup wizard', async ({ page }) => {
   await wiz.getByRole('button', { name: 'Avanti' }).click()
   await expect(wiz.locator('.ed')).toHaveCount(2)
   await expect(wiz.locator('.ed .ok')).toHaveCount(2)
+  await wiz.getByRole('button', { name: 'Avanti' }).click()
+  await expect(wiz.locator('h2')).toHaveText('Usi più di un IDE?')
   await wiz.getByRole('button', { name: 'Inizia' }).click()
   await expect(wiz).toBeHidden()
   await expect(row(page, 'github')).toBeVisible()
@@ -188,12 +190,13 @@ test('the wizard proposes ~/Development only if it exists, otherwise asks to cho
 test('the wizard offers to install git when it is missing', async ({ page }) => {
   await openApp(page, { firstRun: true, noGit: true })
   const wiz = page.locator('.wiz')
-  await expect(wiz.locator('.steps i')).toHaveCount(4)
+  await expect(wiz.locator('.steps i')).toHaveCount(5)
   for (let i = 0; i < 3; i++) await wiz.getByRole('button', { name: 'Next' }).click()
   await expect(wiz.locator('h2')).toHaveText('git not found')
   await expect(wiz.locator('code.cmd')).toContainText('winget install')
-  await expect(wiz.getByRole('button', { name: 'Start' })).toBeDisabled()
+  await expect(wiz.getByRole('button', { name: 'Next' })).toBeDisabled()
   await wiz.getByRole('button', { name: 'Skip' }).click()
+  await wiz.getByRole('button', { name: 'Start' }).click()
   await expect(wiz).toBeHidden()
 })
 
@@ -221,4 +224,85 @@ test('floating search opens projects and runs commands', async ({ page }) => {
   await input.fill('>settings')
   await page.keyboard.press('Enter')
   await expect.poll(() => calls(page)).toContainEqual({ fn: 'RunInMain', args: ['settings'] })
+})
+
+test('the wizard takes users of several IDEs to the preset library', async ({ page }) => {
+  await openApp(page, { firstRun: true })
+  const wiz = page.locator('.wiz')
+  for (let i = 0; i < 3; i++) await wiz.getByRole('button', { name: 'Next' }).click()
+  await wiz.getByRole('button', { name: /Different IDEs depending on the project/ }).click()
+  await wiz.getByRole('button', { name: 'Start' }).click()
+  await expect(wiz).toBeHidden()
+  await expect(page.locator('.set .ph h3')).toHaveText('Launchers')
+  // ci sono già regole (gradle → IntelliJ): la libreria si apre col pulsante
+  await page.getByRole('button', { name: '+ Add rule' }).click()
+  await expect(page.locator('.pick .pk', { hasText: 'Java / Kotlin (Gradle)' })).toBeDisabled()
+  await expect(page.locator('.pick .pk', { hasText: 'Rust' })).toContainText('VS Code')
+})
+
+test('preset rules are ordered by priority', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'local').click()
+  await row(page, 'pocket-app').click()
+  // solo la regola Gradle → IntelliJ
+  await expect(page.locator('.open .main')).toContainText('Open with IntelliJ IDEA')
+  await expect(row(page, 'pocket-app').locator('img.lico')).toHaveAttribute('title', 'IntelliJ IDEA')
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'Launchers' }).click()
+  // Android Studio è installato ma non ancora tra i launcher
+  await page.getByRole('button', { name: 'Detect installed editors' }).click()
+  await expect(page.locator('.toast')).toContainText('Added (disabled): Android Studio')
+  await expect(page.getByRole('checkbox', { name: 'Android Studio' })).not.toBeChecked()
+
+  // la libreria propone Android Studio (installato) e aggiungendo la regola lo abilita
+  await page.getByRole('button', { name: '+ Add rule' }).click()
+  await expect(page.locator('.pick .pk', { hasText: 'Android' }).first()).toContainText('Android Studio')
+  await page.locator('.pick .pk', { hasText: 'Android' }).first().click()
+  await expect(page.getByRole('checkbox', { name: 'Android Studio' })).toBeChecked()
+  const rules = page.locator('.rule:not(.preset) .rb b')
+  await expect(rules).toHaveText(['Java / Kotlin (Gradle)', 'Android'])
+  // la regola Gradle è sopra: vince ancora IntelliJ
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.open .main')).toContainText('Open with IntelliJ IDEA')
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.rule:not(.preset)').nth(1).getByRole('button', { name: 'Move up' }).click()
+  await expect(rules).toHaveText(['Android', 'Java / Kotlin (Gradle)'])
+  await page.keyboard.press('Escape')
+  await expect(page.locator('.open .main')).toContainText('Open with Android Studio')
+  await expect(row(page, 'pocket-app').locator('img.lico')).toHaveAttribute('title', 'Android Studio')
+})
+
+test('built-in presets can be customized into an editable copy', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'Launchers' }).click()
+  await page.locator('.rule:not(.preset)').getByRole('button', { name: 'Customize' }).click()
+  await expect(page.locator('.rule:not(.preset) .rb b')).toHaveText(['Java / Kotlin (Gradle) (custom)'])
+  const copy = page.locator('.rule.preset')
+  await expect(copy.locator('.pname')).toHaveValue('Java / Kotlin (Gradle) (custom)')
+  await copy.getByPlaceholder('+ add, ↵').fill('pom.xml')
+  await page.keyboard.press('Enter')
+  await expect(copy.locator('.chips span')).toHaveCount(6)
+
+  // eliminare il preset toglie anche la sua regola
+  await copy.getByRole('button', { name: 'Delete preset (and its rules)' }).click()
+  await expect(page.locator('.rule')).toHaveCount(0)
+})
+
+test('the project card shows the language overview', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'local').click()
+  await row(page, 'awake').click()
+  await expect(page.locator('.langs .lbar span')).toHaveCount(3)
+  await expect(page.locator('.langs li')).toHaveText(['TypeScript 70%', 'Svelte 30%', 'Other 0.5%'])
+})
+
+test('the configuration can be exported', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'About' }).click()
+  await page.getByRole('button', { name: 'Export…' }).click()
+  await expect(page.locator('.toast')).toContainText('Configuration exported: /home/u/project-library-config.json')
 })

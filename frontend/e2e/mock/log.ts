@@ -22,6 +22,8 @@ export type MockOptions = {
   pickFolder?: string
   /** GitHub CLI: missing (default), installed without login, or logged in on github.com */
   forges?: 'none' | 'notLoggedIn' | 'loggedIn'
+  /** a newer release is published (the startup check finds it) */
+  update?: boolean
 }
 
 window.__mock = window.__mock ?? { calls: [] }

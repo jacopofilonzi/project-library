@@ -121,6 +121,8 @@ let config: any = {
   lastPath: options.lastSelected ? parentOf(options.lastSelected) : '',
   lastSelected: options.lastSelected ?? '',
   setupDone: !options.firstRun,
+  checkUpdates: true,
+  notifiedVersion: '',
 }
 
 const gitAvailable = () => !options.noGit
@@ -255,6 +257,13 @@ export const DetectGit = async (path: string) => (gitAvailable() || path ? 'C:/G
 export const GitInstallInfo = async () => ({ command: 'winget install --id Git.Git -e --source winget', canRun: true, url: 'https://git-scm.com/download/win' })
 export const RunGitInstall = async () => { log('RunGitInstall') }
 export const PickFolder = async () => options.pickFolder ?? ''
+
+// ---------- fake update check ----------
+const updateInfo = () => options.update
+  ? { available: true, current: '0.0.0-e2e', latest: '1.1.0', notesUrl: 'https://github.com/jacopofilonzi/project-library/releases/tag/v1.1.0', downloadUrl: 'https://github.com/jacopofilonzi/project-library/releases/download/v1.1.0/project-library-amd64-installer.exe' }
+  : { available: false, current: '0.0.0-e2e', latest: '0.0.0-e2e', notesUrl: '', downloadUrl: '' }
+export const UpdateStatus = async () => (config.checkUpdates ? updateInfo() : null)
+export const CheckUpdate = async () => { log('CheckUpdate'); return updateInfo() }
 
 // ---------- fake GitHub and GitLab: gh installed (depending on options.forges), glab never ----------
 const ghAccount = { host: 'github.com', user: 'jacopofilonzi', protocol: 'ssh' }

@@ -420,3 +420,37 @@ test('a local project without remote can be published on GitHub', async ({ page 
   expect(pub?.args[0]).toMatchObject({ path: `${ROOT}/local/awake`, kind: 'github', host: 'github.com', name: 'awake', private: false, owner: { name: 'dity-dev' } })
   await expect(page.locator('.git')).toContainText('github.com/dity-dev/awake')
 })
+
+test('a new release shows the banner with the direct installer link', async ({ page }) => {
+  await openApp(page, { update: true })
+  const banner = page.locator('.upd')
+  await expect(banner).toContainText('Project Library 1.1.0 is available')
+  await expect(banner).toContainText('you have 0.0.0-e2e')
+  await banner.getByRole('button', { name: 'Download' }).click()
+  expect((await calls(page)).some((c) => c.fn === 'OpenURL' && c.args[0] === 'https://github.com/jacopofilonzi/project-library/releases/download/v1.1.0/project-library-amd64-installer.exe')).toBe(true)
+  await banner.getByRole('button', { name: 'What’s new' }).click()
+  expect((await calls(page)).some((c) => c.fn === 'OpenURL' && String(c.args[0]).endsWith('/releases/tag/v1.1.0'))).toBe(true)
+  // ✕ hides it until the next start
+  await banner.getByRole('button', { name: 'Hide until the next start' }).click()
+  await expect(banner).toHaveCount(0)
+  await page.reload()
+  await expect(page.locator('.upd')).toBeVisible()
+})
+
+test('no banner when the app is up to date', async ({ page }) => {
+  await openApp(page)
+  await expect(page.locator('.row').first()).toBeVisible()
+  await expect(page.locator('.upd')).toHaveCount(0)
+})
+
+test('the update check can be turned off and run by hand', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'About' }).click()
+  const sw = page.getByRole('checkbox', { name: 'Check for updates at startup' })
+  await expect(sw).toBeChecked()
+  await sw.uncheck()
+  expect((await calls(page)).filter((c) => c.fn === 'SaveConfig').at(-1)?.args[0]).toMatchObject({ checkUpdates: false })
+  await page.getByRole('button', { name: 'Check now' }).click()
+  await expect(page.locator('.toast')).toContainText('You have the latest version (0.0.0-e2e)')
+})

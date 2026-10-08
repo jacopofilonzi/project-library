@@ -29,7 +29,7 @@ jobs:
       - name: Versione del tag uguale a quella dell'app
         if: startsWith(github.ref, 'refs/tags/')
         run: |
-          app=$(grep -E '^\s*version:' build/config.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
+          app=$(grep -E '^\s+version:\s*"' build/config.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           if [ "v$app" != "$GITHUB_REF_NAME" ]; then
             echo "::error::il tag è $GITHUB_REF_NAME ma build/config.yml dice $app"
             exit 1

@@ -1,7 +1,8 @@
 <script lang="ts">
   import { store } from '../lib/state.svelte'
   import { t, tn } from '../lib/i18n/index.svelte'
-  import { icons, colorOf } from '../lib/icons'
+  import { icons } from '../lib/icons'
+  import LauncherIcon from './LauncherIcon.svelte'
   import { nodeMenu, addMenu, openCtx } from '../lib/menus'
   import { lib, errMessage, type Node } from '../lib/api'
 
@@ -68,12 +69,13 @@
       {#each kids as c (c.path)}
         {#if c.kind === 'project'}
           {@const on = col.index === store.path.length && store.sel === c.name}
+          {@const ln = store.launcherFor(c).launcher}
           <button class="row" class:on title={c.desc || c.name}
             onclick={() => clickProject(col.index, c)}
             ondblclick={() => store.open(c)}
             onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); store.open(c) } }}
             oncontextmenu={(e) => { e.preventDefault(); clickProject(col.index, c); openCtx(e, nodeMenu(c)) }}>
-            <span class="dot" style="background:{colorOf(c.lang)}"></span>
+            {#if ln}<LauncherIcon launcher={ln} />{:else}<span class="lico none"></span>{/if}
             <span class="name">{c.name}</span>
             {#if store.dirty[c.path]}<span class="gd" title={tn('card.modified', store.dirty[c.path])}></span>{/if}
             <span class="more" role="button" tabindex="-1" aria-label={t('col.actions')} onclick={(e) => moreClick(e, c)} onkeydown={() => {}}>⋯</span>

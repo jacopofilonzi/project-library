@@ -52,6 +52,7 @@ export type { ForgeStatus, RepoList, PublishRequest, PublishResult } from '../..
 export type { Account as ForgeAccount, Repo, Info as ForgeInfo, PR, CI, Owner } from '../../bindings/github.com/jacopofilonzi/project-library/internal/forge/models.js'
 /** service of a CLI (the bindings' Kind is a TypeScript enum: here it is compared as a string) */
 export type ForgeKind = 'github' | 'gitlab'
+export type { Info as UpdateInfo } from '../../bindings/github.com/jacopofilonzi/project-library/internal/update/models.js'
 export const serviceName = (k: unknown) => (k === 'gitlab' ? 'GitLab' : 'GitHub')
 
 import { t } from './i18n/index.svelte'

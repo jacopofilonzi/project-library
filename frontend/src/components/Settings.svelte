@@ -177,6 +177,21 @@
       store.toast(errMessage(e), true)
     }
   }
+  // ---------- updates ----------
+  let checkingUpdate = $state(false)
+  async function checkUpdate() {
+    checkingUpdate = true
+    try {
+      const u = await lib.CheckUpdate()
+      store.update = u
+      store.updateDismissed = false
+      store.toast(u.available ? t('settings.about.newVersion', { version: u.latest }) : t('settings.about.upToDate', { version: u.current }))
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+    checkingUpdate = false
+  }
+
   // ---------- reset ----------
   let resetAsk = $state(false)
   let resetCancel: HTMLButtonElement | undefined = $state()
@@ -546,6 +561,9 @@
         {:else if store.settingsSection === 'about'}
           <div class="grp">Project Library</div>
           <div class="f"><div class="l"><b>{t('settings.about.version')}</b><span>{store.st?.version} · {store.os}</span></div></div>
+          <div class="f"><div class="l"><b>{t('settings.about.updates')}</b><span>{t('settings.about.updatesSub')}</span></div>
+            <button class="btn" disabled={checkingUpdate} onclick={checkUpdate}>{checkingUpdate ? t('settings.about.checking') : t('settings.about.checkNow')}</button>
+            <input type="checkbox" class="sw" aria-label={t('settings.about.updates')} checked={store.cfg.checkUpdates} onchange={(e) => store.save((c) => (c.checkUpdates = (e.currentTarget as HTMLInputElement).checked))} /></div>
           <div class="f"><div class="l"><b>{t('settings.about.config')}</b><span class="selectable">{store.st?.configPath}</span></div><button class="btn" onclick={() => store.reveal(configDir)}>{t('settings.about.openFolder')}</button></div>
           <div class="f"><div class="l"><b>{t('settings.about.export')}</b><span>{t('settings.about.exportSub')}</span></div><button class="btn" onclick={exportConfig}>{t('settings.about.exportBtn')}</button></div>
           <div class="f"><div class="l"><b>{t('settings.about.import')}</b><span>{t('settings.about.importSub')}</span></div><button class="btn" onclick={() => (importAsk = !importAsk)}>{t('settings.about.importBtn')}</button></div>

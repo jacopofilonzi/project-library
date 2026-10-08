@@ -137,6 +137,7 @@ const en = {
     exists: 'An item with this name already exists.',
   },
   errors: {
+    update: 'Could not check for updates',
     forge: 'GitHub/GitLab error',
     forgeNoAccount: 'No account logged in on this host',
     forgeCreate: 'Could not create the repository',
@@ -382,6 +383,10 @@ const en = {
       globalOff: 'Global shortcut disabled, you can set one in General.',
     },
     about: {
+      updates: 'Check for updates at startup', updatesSub: 'Looks for a new release on GitHub when the app starts, and tells you with a notification',
+      checkNow: 'Check now', checking: 'Checking…',
+      upToDate: 'You have the latest version ({version})',
+      newVersion: 'Version {version} is available',
       version: 'Version',
       config: 'Configuration file',
       openFolder: 'Open folder',
@@ -399,6 +404,13 @@ const en = {
       importGo: 'Choose file…', cancel: 'Cancel',
       imported: 'Configuration imported',
     },
+  },
+  update: {
+    available: 'is available',
+    current: 'you have {version}',
+    notes: 'What’s new',
+    download: 'Download',
+    dismiss: 'Hide until the next start',
   },
   wizard: {
     next: 'Next', back: 'Back', finish: 'Start', skip: 'Skip',

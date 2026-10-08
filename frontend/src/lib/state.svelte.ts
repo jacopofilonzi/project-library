@@ -1,6 +1,6 @@
 // Global app state (Svelte 5 runes).
 import { Events } from '@wailsio/runtime'
-import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset, type ForgeStatus, type ForgeAccount, type ForgeKind } from './api'
+import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset, type ForgeStatus, type ForgeAccount, type ForgeKind, type UpdateInfo } from './api'
 import { setLang, t } from './i18n/index.svelte'
 
 export type Dialog =
@@ -28,6 +28,9 @@ class Store {
   catalog = $state<Preset[]>([])
   /** state of gh and glab (path and accounts), loaded in the background */
   forges = $state<ForgeStatus[]>([])
+  /** result of the last update check; the banner hides when dismissed, until the next start */
+  update = $state<UpdateInfo | null>(null)
+  updateDismissed = $state(false)
   /** grows when an action changes the git state of the open project (the card reloads it) */
   gitChanged = $state(0)
 
@@ -347,6 +350,9 @@ class Store {
       if (launchersChanged) this.refreshLaunchers()
     })
     if (!isSpotlight) {
+      // update check: the backend runs it at startup, the result may already be there
+      lib.UpdateStatus().then((u) => { if (u) this.update = u }).catch(() => {})
+      Events.On('update:available', (ev: { data: UpdateInfo }) => (this.update = ev.data))
       // from the floating search: "show in the app"
       Events.On('main:goto', (ev: { data: string }) => {
         this.paletteOpen = false

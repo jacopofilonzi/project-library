@@ -138,6 +138,7 @@ const it: Dict = {
     exists: 'Esiste già un elemento con questo nome.',
   },
   errors: {
+    update: 'Impossibile controllare gli aggiornamenti',
     forge: 'Errore di GitHub/GitLab',
     forgeNoAccount: 'Nessun account collegato su questo host',
     forgeCreate: 'Impossibile creare il repository',
@@ -383,6 +384,10 @@ const it: Dict = {
       globalOff: 'Scorciatoia globale disattivata, puoi impostarla in Generale.',
     },
     about: {
+      updates: 'Controlla gli aggiornamenti all’avvio', updatesSub: 'Cerca una nuova versione su GitHub quando l’app si avvia e te lo segnala con una notifica',
+      checkNow: 'Controlla ora', checking: 'Controllo…',
+      upToDate: 'Hai l’ultima versione ({version})',
+      newVersion: 'È disponibile la versione {version}',
       version: 'Versione',
       config: 'File di configurazione',
       openFolder: 'Apri cartella',
@@ -400,6 +405,13 @@ const it: Dict = {
       importGo: 'Scegli file…', cancel: 'Annulla',
       imported: 'Configurazione importata',
     },
+  },
+  update: {
+    available: 'è disponibile',
+    current: 'hai la {version}',
+    notes: 'Novità',
+    download: 'Scarica',
+    dismiss: 'Nascondi fino al prossimo avvio',
   },
   wizard: {
     next: 'Avanti', back: 'Indietro', finish: 'Inizia', skip: 'Salta',

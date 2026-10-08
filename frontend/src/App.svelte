@@ -13,6 +13,7 @@
   import Dialogs from './components/dialogs/Dialogs.svelte'
   import ContextMenu from './components/ContextMenu.svelte'
   import Toasts from './components/Toasts.svelte'
+  import UpdateBanner from './components/UpdateBanner.svelte'
   import type { Node } from './lib/api'
   import { runCommandById } from './lib/commands'
 
@@ -149,5 +150,6 @@
   <Dialogs />
   <ContextMenu />
   {#if store.wizardOpen}<Wizard />{/if}
+  {#if !store.wizardOpen}<UpdateBanner />{/if}
 {/if}
 <Toasts />

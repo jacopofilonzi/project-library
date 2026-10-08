@@ -34,7 +34,7 @@ func TestMigrationV1(t *testing.T) {
 	}
 	s, _ := Load(path, dir)
 	c := s.Get()
-	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Hotkey != "" || c.Version != 2 {
+	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Hotkey != "" || c.Version != currentVersion {
 		t.Fatalf("migration: %+v", c)
 	}
 	// dopo la migrazione una scorciatoia spotlight vuota (disattivata) resta vuota
@@ -45,26 +45,35 @@ func TestMigrationV1(t *testing.T) {
 	}
 }
 
-func TestLoadAddsDefaultRulesToOldConfig(t *testing.T) {
+func TestMigrationV2Rules(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")
-	// config scritta prima delle regole: il campo manca
-	if err := os.WriteFile(path, []byte(`{"version":1,"language":"it","roots":["x"]}`), 0o644); err != nil {
+	v2 := `{"version":2,"launcherRules":[
+		{"patterns":["pom.xml","build.gradle*","settings.gradle*","gradlew","*.iml"],"launcher":"intellij"},
+		{"patterns":["*.ino"],"launcher":"arduino"}]}`
+	if err := os.WriteFile(path, []byte(v2), 0o644); err != nil {
 		t.Fatal(err)
 	}
-	s, err := Load(path, dir)
-	if err != nil {
-		t.Fatal(err)
+	s, _ := Load(path, dir)
+	c := s.Get()
+	// la vecchia regola di default diventa i preset integrati equivalenti, le altre preset dell'utente
+	want := []Rule{{"gradle", "intellij"}, {"maven", "intellij"}, {"intellij", "intellij"}, {"custom-2", "arduino"}}
+	if len(c.Rules) != len(want) {
+		t.Fatalf("rules: %+v", c.Rules)
 	}
-	if got := s.Get().LauncherRules; len(got) != 1 || got[0].Launcher != "intellij" {
-		t.Fatalf("default rules not added: %+v", got)
+	for i := range want {
+		if c.Rules[i] != want[i] {
+			t.Fatalf("rule %d: %+v want %+v", i, c.Rules[i], want[i])
+		}
 	}
-	// una lista vuota salvata dall'utente resta vuota
-	if _, err := s.Update(func(c *Config) { c.LauncherRules = []LauncherRule{} }); err != nil {
-		t.Fatal(err)
+	if len(c.Presets) != 1 || c.Presets[0].ID != "custom-2" || c.Presets[0].Patterns[0] != "*.ino" || c.LauncherRules != nil {
+		t.Fatalf("presets: %+v", c.Presets)
 	}
-	s2, _ := Load(path, dir)
-	if got := s2.Get().LauncherRules; got == nil || len(got) != 0 {
-		t.Fatalf("empty rules must stay empty: %+v", got)
+}
+
+func TestNewConfigHasNoRules(t *testing.T) {
+	c := Default(t.TempDir())
+	if len(c.Rules) != 0 || len(c.Presets) != 0 {
+		t.Fatal("presets must not be pre-applied")
 	}
 }

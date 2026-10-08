@@ -4,9 +4,13 @@ package config
 import (
 	"encoding/json"
 	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+
+	"github.com/jacopofilonzi/project-library/internal/presets"
 )
 
 // Launcher è un programma con cui aprire un progetto (editor, terminale…).
@@ -18,22 +22,21 @@ type Launcher struct {
 	Command string `json:"command"`
 	Args    string `json:"args"`
 	Enabled bool   `json:"enabled"`
-	// Builtin è "vscode" o "intellij" per i launcher predefiniti, vuoto per quelli custom.
+	// Builtin è l'id di un editor noto ("vscode", "intellij", "androidstudio"…), vuoto per i launcher custom.
 	Builtin string `json:"builtin,omitempty"`
 }
 
-// LauncherRule sceglie il launcher di un progetto in base ai file che contiene:
-// se un nome nella cartella del progetto corrisponde a uno dei pattern, vale Launcher.
+// Rule associa un preset (del catalogo o dell'utente) a un launcher.
+// Le regole sono ordinate: vince la prima che corrisponde e il cui launcher è abilitato.
+type Rule struct {
+	Preset   string `json:"preset"`
+	Launcher string `json:"launcher"`
+}
+
+// LauncherRule è il formato delle regole fino alla config v2 (pattern diretti): letto solo per la migrazione.
 type LauncherRule struct {
 	Patterns []string `json:"patterns"`
 	Launcher string   `json:"launcher"`
-}
-
-// DefaultLauncherRules: i progetti Java/Gradle/Maven si aprono con IntelliJ.
-func DefaultLauncherRules() []LauncherRule {
-	return []LauncherRule{
-		{Patterns: []string{"pom.xml", "build.gradle*", "settings.gradle*", "gradlew", "*.iml"}, Launcher: "intellij"},
-	}
 }
 
 // Recent è un'apertura con "Apri con".
@@ -57,8 +60,12 @@ type Config struct {
 	Roots           []string   `json:"roots"`
 	Launchers       []Launcher `json:"launchers"`
 	DefaultLauncher string     `json:"defaultLauncher"`
-	// LauncherRules: la prima regola che corrisponde (con launcher abilitato) sceglie l'editor.
-	LauncherRules []LauncherRule `json:"launcherRules"`
+	// Presets: preset creati dall'utente (quelli integrati sono nel catalogo, vedi internal/presets).
+	Presets []presets.Preset `json:"presets"`
+	// Rules: associazioni preset → launcher, in ordine di priorità.
+	Rules []Rule `json:"rules"`
+	// LauncherRules: formato v2, convertito in Presets + Rules dalla migrazione.
+	LauncherRules []LauncherRule `json:"launcherRules,omitempty"`
 	// ProjectLaunchers: launcher scelto a mano per un progetto (percorso → id). Ha la precedenza sulle regole.
 	ProjectLaunchers map[string]string `json:"projectLaunchers"`
 
@@ -95,7 +102,7 @@ type Config struct {
 }
 
 const (
-	currentVersion = 2
+	currentVersion = 3
 	MaxRecent      = 20
 )
 
@@ -128,7 +135,8 @@ func Default(home string) Config {
 			{ID: "intellij", Name: "IntelliJ IDEA", Args: `"{path}"`, Enabled: true, Builtin: "intellij"},
 		},
 		DefaultLauncher:  "vscode",
-		LauncherRules:    DefaultLauncherRules(),
+		Presets:          []presets.Preset{},
+		Rules:            []Rule{},
 		ProjectLaunchers: map[string]string{},
 		Markers:          append([]string(nil), DefaultMarkers...),
 		Ignore:           append([]string(nil), DefaultIgnore...),
@@ -172,9 +180,16 @@ func (c *Config) normalize(home string) {
 	if c.Launchers == nil {
 		c.Launchers = def.Launchers
 	}
-	// nil = config scritta prima che esistessero le regole; una lista vuota invece è una scelta dell'utente
-	if c.LauncherRules == nil {
-		c.LauncherRules = def.LauncherRules
+	// migrazione v2 → v3: le regole a pattern diventano preset + regole
+	if c.Version < 3 {
+		c.migrateLauncherRules()
+	}
+	c.LauncherRules = nil
+	if c.Presets == nil {
+		c.Presets = []presets.Preset{}
+	}
+	if c.Rules == nil {
+		c.Rules = []Rule{}
 	}
 	if c.ProjectLaunchers == nil {
 		c.ProjectLaunchers = map[string]string{}
@@ -194,6 +209,25 @@ func (c *Config) normalize(home string) {
 		c.StartMode = StartOff
 	}
 	c.Version = currentVersion
+}
+
+// oldDefaultRule è la regola che la config v2 preapplicava (Java → IntelliJ).
+var oldDefaultRule = []string{"pom.xml", "build.gradle*", "settings.gradle*", "gradlew", "*.iml"}
+
+// migrateLauncherRules converte le regole v2. La vecchia regola di default diventa i preset
+// integrati equivalenti; le altre diventano preset dell'utente.
+func (c *Config) migrateLauncherRules() {
+	for i, r := range c.LauncherRules {
+		if strings.Join(r.Patterns, "\x00") == strings.Join(oldDefaultRule, "\x00") {
+			for _, id := range []string{"gradle", "maven", "intellij"} {
+				c.Rules = append(c.Rules, Rule{Preset: id, Launcher: r.Launcher})
+			}
+			continue
+		}
+		id := fmt.Sprintf("custom-%d", i+1)
+		c.Presets = append(c.Presets, presets.Preset{ID: id, Name: fmt.Sprintf("Custom rule %d", i+1), Patterns: r.Patterns})
+		c.Rules = append(c.Rules, Rule{Preset: id, Launcher: r.Launcher})
+	}
 }
 
 // Store tiene la configurazione in memoria e la salva su disco a ogni modifica.
@@ -288,12 +322,14 @@ func (c Config) clone() Config {
 	for k, v := range c.ProjectLaunchers {
 		out.ProjectLaunchers[k] = v
 	}
-	if c.LauncherRules != nil {
-		out.LauncherRules = make([]LauncherRule, len(c.LauncherRules))
-		for i, r := range c.LauncherRules {
-			out.LauncherRules[i] = LauncherRule{Patterns: append([]string(nil), r.Patterns...), Launcher: r.Launcher}
-		}
+	// le liste vuote restano non-nil: in JSON "[]" e non "null"
+	out.Rules = append([]Rule{}, c.Rules...)
+	out.Presets = make([]presets.Preset, len(c.Presets))
+	for i, p := range c.Presets {
+		p.Patterns = append([]string(nil), p.Patterns...)
+		out.Presets[i] = p
 	}
+	out.LauncherRules = nil
 	return out
 }
 

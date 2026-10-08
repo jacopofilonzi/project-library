@@ -16,6 +16,7 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/jacopofilonzi/project-library/internal/presets"
 	"github.com/jacopofilonzi/project-library/internal/readme"
 )
 
@@ -264,28 +265,22 @@ func (s *scan) makeProject(n *Node, entries []fs.DirEntry) {
 		}
 	}
 	n.Lang = DetectLang(names)
-	n.RuleLaunchers = MatchRules(s.opt.Rules, names)
+	n.RuleLaunchers = MatchRules(s.opt.Rules, n.Path, names)
 	n.Desc = readme.Description(n.Path)
 }
 
-// MatchRules restituisce, senza duplicati e nell'ordine delle regole, i launcher
-// delle regole che hanno almeno un pattern corrispondente a uno dei nomi.
-func MatchRules(rules []Rule, names []string) []string {
+// MatchRules restituisce, senza duplicati e nell'ordine delle regole, i launcher delle regole
+// il cui preset corrisponde al progetto in dir (names: i nomi nella sua cartella principale).
+func MatchRules(rules []Rule, dir string, names []string) []string {
 	var out []string
 	seen := map[string]bool{}
 	for _, r := range rules {
 		if r.Launcher == "" || seen[r.Launcher] {
 			continue
 		}
-	match:
-		for _, p := range r.Patterns {
-			for _, n := range names {
-				if match(p, n) {
-					out = append(out, r.Launcher)
-					seen[r.Launcher] = true
-					break match
-				}
-			}
+		if presets.Matches(dir, names, r.Patterns) {
+			out = append(out, r.Launcher)
+			seen[r.Launcher] = true
 		}
 	}
 	return out

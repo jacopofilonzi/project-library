@@ -21,6 +21,7 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/gitinfo"
 	"github.com/jacopofilonzi/project-library/internal/launcher"
 	"github.com/jacopofilonzi/project-library/internal/platform"
+	"github.com/jacopofilonzi/project-library/internal/presets"
 	"github.com/jacopofilonzi/project-library/internal/readme"
 	"github.com/jacopofilonzi/project-library/internal/scanner"
 	"github.com/jacopofilonzi/project-library/internal/watcher"
@@ -142,7 +143,7 @@ func scanChanged(a, b config.Config) bool {
 	if !eq(a.Roots, b.Roots) || !eq(a.Markers, b.Markers) || !eq(a.Ignore, b.Ignore) ||
 		a.FilesAsProject != b.FilesAsProject || a.ShowEmpty != b.ShowEmpty || a.MaxDepth != b.MaxDepth ||
 		a.FollowLinks != b.FollowLinks || len(a.Overrides) != len(b.Overrides) ||
-		!reflect.DeepEqual(a.LauncherRules, b.LauncherRules) {
+		!reflect.DeepEqual(a.Rules, b.Rules) || !reflect.DeepEqual(a.Presets, b.Presets) {
 		return true
 	}
 	for k, v := range a.Overrides {
@@ -153,10 +154,14 @@ func scanChanged(a, b config.Config) bool {
 	return false
 }
 
-func scanRules(rules []config.LauncherRule) []scanner.Rule {
-	out := make([]scanner.Rule, len(rules))
-	for i, r := range rules {
-		out[i] = scanner.Rule{Patterns: r.Patterns, Launcher: r.Launcher}
+// scanRules risolve ogni regola nei pattern del suo preset (catalogo o utente).
+// Le regole con un preset che non esiste più vengono ignorate.
+func scanRules(cfg config.Config) []scanner.Rule {
+	var out []scanner.Rule
+	for _, r := range cfg.Rules {
+		if p, ok := presets.Find(r.Preset, cfg.Presets); ok {
+			out = append(out, scanner.Rule{Patterns: p.Patterns, Launcher: r.Launcher})
+		}
 	}
 	return out
 }
@@ -267,7 +272,7 @@ func (l *Library) rescan(emit bool) {
 	tree := scanner.Scan(cfg.Roots, scanner.Options{
 		Markers: cfg.Markers, Ignore: cfg.Ignore, FilesAsProject: cfg.FilesAsProject, ShowEmpty: cfg.ShowEmpty,
 		FollowLinks: cfg.FollowLinks, MaxDepth: cfg.MaxDepth, Overrides: cfg.Overrides, CaseInsensitive: platform.CaseInsensitive(),
-		Rules: scanRules(cfg.LauncherRules),
+		Rules: scanRules(cfg),
 	})
 	l.mu.Lock()
 	l.tree = tree

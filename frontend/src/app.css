@@ -191,6 +191,7 @@ img.lico { border-radius: 0; }
 .dlg .pre input { border: 0 !important; flex: 1; min-width: 0; border-radius: 0 !important; font-family: var(--mono) !important; font-size: 13px !important; }
 .dlg .hint { font-size: 12px; font-weight: 400; color: var(--mute); }
 .dlg .hint.err { color: var(--danger); }
+.dlg .hint.ok { color: var(--ok); }
 .dlg .hint.sug { color: var(--accent); }
 .dlg .hint.sug button { background: none; border: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
 .dlg .chk { flex-direction: row; align-items: center; font-weight: 500; color: var(--ink); font-size: 13px; }

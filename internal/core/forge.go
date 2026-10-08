@@ -187,6 +187,20 @@ func (l *Library) ForgeOwners(kind, host string) ([]forge.Owner, error) {
 	return owners, nil
 }
 
+// ForgeNameTaken dice se owner/name esiste già sull'host (controllo prima di creare il repository).
+func (l *Library) ForgeNameTaken(kind, host, owner, name string) (bool, error) {
+	c := l.forge.cli(kind)
+	acc, ok := c.Account(host)
+	if !ok {
+		return false, &fsops.Error{Code: "forgeNoAccount", Detail: host}
+	}
+	taken, err := c.Exists(acc, owner, strings.TrimSpace(name))
+	if err != nil {
+		return false, &fsops.Error{Code: "forge", Detail: err.Error()}
+	}
+	return taken, nil
+}
+
 // PublishRequest descrive il repository da creare per un progetto locale senza remote.
 type PublishRequest struct {
 	Path        string      `json:"path"`

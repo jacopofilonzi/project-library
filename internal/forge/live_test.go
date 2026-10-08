@@ -29,6 +29,12 @@ func TestLive(t *testing.T) {
 	t.Logf("%d repository, il primo: %+v", len(repos), repos[0])
 	owners, err := c.Owners(accs[0])
 	t.Logf("owners: %+v err=%v", owners, err)
+	if taken, err := c.Exists(accs[0], accs[0].User, repos[0].FullName[len(accs[0].User)+1:]); err != nil || !taken {
+		t.Errorf("Exists(%s) = %v, %v: dovrebbe esistere", repos[0].FullName, taken, err)
+	}
+	if taken, err := c.Exists(accs[0], accs[0].User, "project-library-nome-che-non-esiste-7f3a"); err != nil || taken {
+		t.Errorf("Exists(inesistente) = %v, %v", taken, err)
+	}
 	if repo := os.Getenv("PL_FORGE_REPO"); repo != "" {
 		info, err := c.Info(accs[0].Host, repo, os.Getenv("PL_FORGE_BRANCH"))
 		if err != nil {

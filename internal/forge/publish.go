@@ -1,6 +1,7 @@
 package forge
 
 import (
+	"regexp"
 	"strconv"
 	"time"
 )
@@ -42,6 +43,28 @@ func (c *CLI) Owners(acc Account) ([]Owner, error) {
 		out = append(out, Owner{Name: g.FullPath, ID: g.ID})
 	}
 	return out, nil
+}
+
+// reNotFound riconosce la risposta 404 nel messaggio di errore di gh ("Not Found (HTTP 404)") e di glab.
+var reNotFound = regexp.MustCompile(`(?i)not found|\b404\b`)
+
+// Exists dice se owner/name esiste già sull'host. GitHub e GitLab non distinguono maiuscole
+// e minuscole, come quando si crea il repository.
+func (c *CLI) Exists(acc Account, owner, name string) (bool, error) {
+	ctx, cancel := timeout(20 * time.Second)
+	defer cancel()
+	path := "repos/" + owner + "/" + name
+	if c.Kind == GitLab {
+		path = "projects/" + glPath(owner+"/"+name)
+	}
+	err := c.api(ctx, acc.Host, nil, path)
+	if err == nil {
+		return true, nil
+	}
+	if reNotFound.MatchString(err.Error()) {
+		return false, nil
+	}
+	return false, err
 }
 
 // Created è il repository appena creato.

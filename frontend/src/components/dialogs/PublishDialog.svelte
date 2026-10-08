@@ -35,7 +35,32 @@
   })
 
   let nameOk = $derived(/^[A-Za-z0-9._-]+$/.test(name) && name !== '.' && name !== '..')
-  let ok = $derived(!!acc && nameOk && !busy)
+
+  // disponibilità di proprietario/nome, controllata mentre si scrive (come fa GitHub)
+  let taken = $state<boolean | null>(null) // null = controllo in corso
+  let checkErr = $state('')
+  let checkTimer: ReturnType<typeof setTimeout> | undefined
+  let fullName = $derived(`${owners[ownerIdx]?.name ?? ''}/${name}`)
+  $effect(() => {
+    const a = acc
+    const o = owners[ownerIdx]
+    const nm = name
+    taken = null
+    checkErr = ''
+    clearTimeout(checkTimer)
+    if (!a || !o || !nameOk) return
+    checkTimer = setTimeout(async () => {
+      try {
+        const r = await lib.ForgeNameTaken(a.kind, a.host, o.name, nm)
+        if (a === acc && o === owners[ownerIdx] && nm === name) taken = r
+      } catch (e) {
+        // il controllo non è riuscito: si può comunque provare, l'errore vero arriverà dalla creazione
+        if (nm === name) checkErr = errMessage(e)
+      }
+    }, 400)
+  })
+
+  let ok = $derived(!!acc && nameOk && !busy && (taken === false || !!checkErr))
 
   async function run() {
     if (!ok) return
@@ -77,7 +102,15 @@
       <input type="text" bind:this={nameInput} bind:value={name} autocomplete="off" spellcheck="false" disabled={busy} onkeydown={(e) => e.key === 'Enter' && run()} />
     </label>
   </div>
-  {#if !nameOk}<div class="hint err">{t('pub.nameHint')}</div>{/if}
+  {#if !nameOk}
+    <div class="hint err">{t('pub.nameHint')}</div>
+  {:else if taken}
+    <div class="hint err">{t('pub.taken', { name: fullName })}</div>
+  {:else if taken === false}
+    <div class="hint ok">✓ {t('pub.available', { name: fullName })}</div>
+  {:else if !checkErr}
+    <div class="hint">{t('pub.checking')}</div>
+  {/if}
   <label>{t('pub.desc')}<input type="text" bind:value={description} autocomplete="off" disabled={busy} /></label>
   <div class="vis" role="radiogroup">
     <label class="chk"><input type="radio" name="vis" checked={priv} onchange={() => (priv = true)} disabled={busy} /> {t('pub.private')}</label>

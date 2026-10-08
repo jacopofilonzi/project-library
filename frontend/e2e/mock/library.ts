@@ -285,6 +285,10 @@ export async function ForgeInfo(remote: string, branch: string) {
   }
 }
 export const ForgeOwners = async (kind: string, host: string) => { log('ForgeOwners', kind, host); return [{ name: 'jacopofilonzi', personal: true, id: 0 }, { name: 'dity-dev', personal: false, id: 0 }] }
+export async function ForgeNameTaken(kind: string, host: string, owner: string, name: string) {
+  log('ForgeNameTaken', kind, host, owner, name)
+  return ['jacopofilonzi/shellyplot', 'jacopofilonzi/ntfyjs', 'dity-dev/discord-bot-java'].includes(`${owner}/${name}`.toLowerCase())
+}
 export async function Publish(req: any) {
   log('Publish', req)
   const full = `${req.owner.name}/${req.name}`

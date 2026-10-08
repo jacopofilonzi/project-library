@@ -37,7 +37,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 - `internal/gitinfo`: uses the `git` installed by the user, never a library. No credential handling.
 - `internal/forge`: GitHub and GitLab through the `gh` and `glab` CLIs installed by the user (`gh api`/`glab api`), with their login. Never tokens or libraries. The features that depend on them stay hidden if the CLI is missing or has no account on the host; the exceptions are the hint in the clone dialog and the section in Settings → Git.
 - `internal/update`: new release check through the public GitHub releases API (no login). It runs at startup if `CheckUpdates` is on; the desktop notification is sent by `main.go` (`core.OnUpdate`), once per version (`NotifiedVersion`). The installer is found by the end of its name (`platform.UpdateAsset`).
-- `internal/fsops`: create, rename, move to the trash. Errors have a code (`name.badChars`, `exists`…) that the frontend translates.
+- `internal/fsops`: create, rename, move, move to the trash. Every operation that changes a path must update the config with `RenamePath` (per-project launchers, overrides, history). Errors have a code (`name.badChars`, `exists`…) that the frontend translates.
 - `frontend/src/lib/state.svelte.ts`: global state (runes). `frontend/src/lib/i18n/{en,it}.ts`: UI texts; `it.ts` must have the same keys as `en.ts` (the type check verifies it).
 
 ## Conventions

@@ -19,7 +19,7 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 - **Presets and rules**: a preset recognizes a project type (Android, Gradle, Node…), a rule links it to an editor. Rules are in priority order.
 - **Search**: `Ctrl/⌘ K` palette in the window and global floating search (`Win+Ctrl+K`), with `>` commands.
 - **GitHub and GitLab** (with `gh` or `glab` installed and logged in): clone by picking from your repositories, pull/merge requests, issues and CI in the card, publish a local project that has no remote.
-- **Files**: clone, new folder, rename, move to the trash, "Initialize project" on empty folders; the view updates by itself when files change.
+- **Files**: clone, new folder, rename, move (drag a row onto a folder, or "Move to…" in the menu, always with a confirmation), move to the trash, "Initialize project" on empty folders; the view updates by itself when files change.
 - **System**: tray, start with the system (off / window / tray only), resume from the last location, first-run wizard, configuration export and import.
 - **Updates**: at startup the app checks GitHub for a new release; if there is one you get a desktop notification and a small banner with the direct link to the installer. It can be turned off in Settings → About, where you can also check by hand.
 
@@ -35,7 +35,7 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 - `git` fetch, pull and clone, when you ask for them or turn on the background fetch;
 - `gh` and `glab`, only if you installed them, with the login you already did.
 
-**What it changes on your disk and accounts.** Browsing is read-only. The app writes only when you ask: new folders, renames, clones, "Initialize project". Deleting always moves to the trash, never deletes permanently. "Publish" is the one action that reaches outside your computer: it creates a real repository on your GitHub or GitLab account and pushes your commits to it.
+**What it changes on your disk and accounts.** Browsing is read-only. The app writes only when you ask: new folders, renames, moves, clones, "Initialize project". Deleting always moves to the trash, never deletes permanently. "Publish" is the one action that reaches outside your computer: it creates a real repository on your GitHub or GitLab account and pushes your commits to it.
 
 ## How it works
 
@@ -49,6 +49,8 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 6. Empty: empty folder, with New folder, Clone, Initialize project and Mark as project.
 
 **Which editor opens a project**: first the one chosen by hand for that project, then the first matching preset → editor rule, finally the default editor.
+
+**Moving** keeps the item's name and works within the watched folders, on the same disk. The editor chosen for a project, its exceptions and its history follow it.
 
 **Deleting** always moves to the trash. An empty folder goes right away; anything else asks for confirmation; a project with uncommitted changes, unpushed commits or no remote asks you to type its name.
 
@@ -109,7 +111,7 @@ internal/
   update/             new release check on GitHub
   forge/              GitHub and GitLab through gh and glab: accounts, repositories, PRs, CI, creation
   launcher/           placeholders and editor launch
-  fsops/              create, rename, move to the trash
+  fsops/              create, rename, move, move to the trash
   watcher/            fsnotify on the grouping folders
   platform/           everything that depends on the operating system
 frontend/

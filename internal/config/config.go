@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"sort"
@@ -57,6 +58,8 @@ type Config struct {
 	Version  int    `json:"version"`
 	Language string `json:"language"` // "en" | "it"
 	Theme    string `json:"theme"`    // "system" | "light" | "dark"
+	// UIScale is the zoom of the main window (1 = 100%), between MinUIScale and MaxUIScale.
+	UIScale float64 `json:"uiScale"`
 
 	Roots           []string   `json:"roots"`
 	Launchers       []Launcher `json:"launchers"`
@@ -115,6 +118,8 @@ type Config struct {
 
 const (
 	currentVersion = 4
+	MinUIScale     = 0.8
+	MaxUIScale     = 1.5
 	MaxRecent      = 20
 )
 
@@ -141,6 +146,7 @@ func Default(home string) Config {
 		Version:  currentVersion,
 		Language: "en",
 		Theme:    "system",
+		UIScale:  1,
 		Roots:    []string{filepath.Join(home, "Development")},
 		Launchers: []Launcher{
 			{ID: "vscode", Name: "VS Code", Args: `"{path}"`, Enabled: true, Builtin: "vscode"},
@@ -176,6 +182,10 @@ func (c *Config) normalize(home string) {
 	if c.Theme != "light" && c.Theme != "dark" {
 		c.Theme = "system"
 	}
+	if c.UIScale == 0 {
+		c.UIScale = 1 // configs from before the setting
+	}
+	c.UIScale = math.Round(math.Min(math.Max(c.UIScale, MinUIScale), MaxUIScale)*100) / 100
 	if c.Markers == nil {
 		c.Markers = def.Markers
 	}

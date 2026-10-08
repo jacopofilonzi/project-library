@@ -145,3 +145,17 @@ func TestRelinkFollowsFoldersMovedOutside(t *testing.T) {
 		t.Fatal("settings of a missing folder dropped")
 	}
 }
+
+func TestUIScaleNormalized(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	for in, want := range map[string]float64{`{"version":4}`: 1, `{"version":4,"uiScale":3}`: MaxUIScale, `{"version":4,"uiScale":0.1}`: MinUIScale, `{"version":4,"uiScale":1.234}`: 1.23} {
+		if err := os.WriteFile(path, []byte(in), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		s, _ := Load(path, dir)
+		if got := s.Get().UIScale; got != want {
+			t.Errorf("%s → %v, want %v", in, got, want)
+		}
+	}
+}

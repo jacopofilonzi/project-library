@@ -77,6 +77,7 @@ func main() {
 		Width: 1280, Height: 800,
 		// 2 columns of 220px + a 480px project card
 		MinWidth: 920, MinHeight: 600,
+		Zoom:             store.Get().UIScale,
 		Hidden:           hidden,
 		BackgroundColour: bg,
 		URL:              "/",

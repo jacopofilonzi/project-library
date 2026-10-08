@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guida per gli agenti (e le persone) che lavorano su questo repo. Funzionalità, regole di comportamento e differenze tra sistemi sono descritte in [README.md](README.md); il riferimento visivo approvato è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html) (congelato: non modificarlo).
+Guida per gli agenti (e le persone) che lavorano su questo repo. Funzionalità, regole di comportamento e differenze tra sistemi sono descritte in [README.md](README.md). Lo stile dell'interfaccia è in `frontend/src/app.css`.
 
 ## Cos'è
 

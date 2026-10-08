@@ -1,4 +1,4 @@
-/* Stile ricavato da mockups/09-colonne-v2.html (riferimento approvato). */
+/* Stile dell'interfaccia: colori come token in :root, tema scuro in [data-theme=dark]. */
 :root {
   color-scheme: light;
   --bg: #f4f4f1; --panel: #fff; --card: #fff; --line: #e4e4de; --ink: #17171a; --mute: #6b6b70;

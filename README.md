@@ -5,7 +5,6 @@
 App desktop per sfogliare i progetti in `~/Development/{source}/…`, vederne README e stato git e aprirli con l'editor giusto.
 
 Go + [Wails v3](https://v3.wails.io) (beta) per il backend e la finestra, Svelte 5 + Vite per l'interfaccia. Pensata per Windows, macOS e Linux (finora provata solo su Windows). Interfaccia in inglese e italiano, tema chiaro e scuro.
-Il riferimento visivo è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html) (congelato).
 
 ## Funzionalità
 

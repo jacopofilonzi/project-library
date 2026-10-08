@@ -26,6 +26,23 @@ func TestRepoName(t *testing.T) {
 	}
 }
 
+func TestParseChanges(t *testing.T) {
+	out := " M main.go\x00?? new file.txt\x00R  new.go\x00old.go\x00D  gone.md\x00"
+	got := parseChanges(out, 10)
+	want := []Change{{"M", "main.go"}, {"??", "new file.txt"}, {"R", "new.go"}, {"D", "gone.md"}}
+	if len(got) != len(want) {
+		t.Fatalf("got %+v", got)
+	}
+	for i := range want {
+		if got[i] != want[i] {
+			t.Fatalf("got %+v want %+v", got[i], want[i])
+		}
+	}
+	if len(parseChanges(out, 2)) != 2 {
+		t.Fatal("limit not applied")
+	}
+}
+
 func TestParseStatus(t *testing.T) {
 	out := "# branch.oid 5428c14aaaa\n# branch.head main\n# branch.upstream origin/main\n# branch.ab +1 -2\n1 .M N... 100644 100644 100644 a b file.go\n? new.txt\n"
 	var info Info

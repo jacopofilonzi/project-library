@@ -6,6 +6,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+	"slices"
 	"strings"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -64,12 +65,15 @@ func main() {
 	if t := store.Get().Theme; t == "dark" || (t == "system" && app.Env.IsDarkMode()) {
 		bg = application.NewRGB(0x12, 0x12, 0x14)
 	}
+	// avvio automatico "solo tray": la finestra principale parte nascosta
+	hidden := slices.Contains(os.Args[1:], core.HiddenFlag)
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  "main",
 		Title: "Project Library",
 		Width: 1280, Height: 800,
 		// 2 colonne da 220px + scheda progetto da 480px
 		MinWidth: 920, MinHeight: 600,
+		Hidden:           hidden,
 		BackgroundColour: bg,
 		URL:              "/",
 		// Ctrl/⌘ P non arriva alla pagina (WebView2 la riserva alla stampa): la gestisce la finestra.
@@ -80,9 +84,35 @@ func main() {
 	})
 	core.MainWindow = win
 
+	// Ricerca flottante: finestra senza bordi, sopra le altre, fuori dalla barra delle applicazioni.
+	// Si nasconde quando perde il focus; la sua altezza la regola il frontend in base ai risultati.
+	spot := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:            "spotlight",
+		Title:           "Project Library Search",
+		Width:           720,
+		Height:          120,
+		Hidden:          true,
+		Frameless:       true,
+		AlwaysOnTop:     true,
+		DisableResize:   true,
+		HideOnFocusLost: true,
+		InitialPosition: application.WindowCentered,
+		BackgroundType:  application.BackgroundTypeTransparent,
+		URL:             "/?view=spotlight",
+		Windows: application.WindowsWindow{
+			HiddenOnTaskbar:                   true,
+			DisableFramelessWindowDecorations: true,
+		},
+		Mac: application.MacWindow{
+			Backdrop:    application.MacBackdropTransparent,
+			WindowLevel: application.MacWindowLevelFloating,
+		},
+	})
+	core.SpotlightWindow = spot
+
 	// Chiudendo la finestra: con "resta nella tray" si nasconde, altrimenti l'app termina.
 	win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
-		if !quitting && store.Get().CloseToTray {
+		if !quitting && !core.Quitting && store.Get().CloseToTray {
 			e.Cancel()
 			win.Hide()
 			return
@@ -92,6 +122,8 @@ func main() {
 
 	lang := func() string { return store.Get().Language }
 	menu := application.NewMenu()
+	search := menu.Add(trayLabel(lang(), "search"))
+	search.OnClick(func(*application.Context) { core.ShowSpotlight() })
 	show := menu.Add(trayLabel(lang(), "show"))
 	show.OnClick(func(*application.Context) { core.ShowMainWindow() })
 	menu.AddSeparator()
@@ -108,6 +140,7 @@ func main() {
 
 	// aggiorna le voci della tray quando cambia la lingua
 	app.Event.On(core.EventConfig, func(*application.CustomEvent) {
+		search.SetLabel(trayLabel(lang(), "search"))
 		show.SetLabel(trayLabel(lang(), "show"))
 		quit.SetLabel(trayLabel(lang(), "quit"))
 		menu.Update()
@@ -120,8 +153,8 @@ func main() {
 
 func trayLabel(lang, key string) string {
 	labels := map[string]map[string]string{
-		"en": {"show": "Show Project Library", "quit": "Quit"},
-		"it": {"show": "Mostra Project Library", "quit": "Esci"},
+		"en": {"search": "Search projects…", "show": "Show Project Library", "quit": "Quit"},
+		"it": {"search": "Cerca progetti…", "show": "Mostra Project Library", "quit": "Esci"},
 	}
 	if l, ok := labels[lang]; ok {
 		return l[key]

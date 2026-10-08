@@ -215,6 +215,79 @@ func (g *Git) Fetch(dir string) error {
 	return cmd.Run()
 }
 
+// runOut esegue git e restituisce l'output; in caso di errore il messaggio è l'output di git.
+func (g *Git) runOut(dir string, timeout time.Duration, args ...string) (string, error) {
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+	cmd, err := g.command(ctx, dir, args...)
+	if err != nil {
+		return "", err
+	}
+	out, err := cmd.CombinedOutput()
+	text := strings.TrimSpace(string(out))
+	if err != nil {
+		if text == "" {
+			text = err.Error()
+		}
+		return "", errors.New(text)
+	}
+	return text, nil
+}
+
+// Pull aggiorna il branch corrente solo se può farlo con un fast-forward (nessun merge implicito).
+func (g *Git) Pull(dir string) (string, error) {
+	return g.runOut(dir, 2*time.Minute, "pull", "--ff-only")
+}
+
+// FetchNow come Fetch, ma restituisce il messaggio di git in caso di errore.
+func (g *Git) FetchNow(dir string) error {
+	_, err := g.runOut(dir, 2*time.Minute, "fetch", "--no-tags")
+	return err
+}
+
+// Init crea una repository vuota in dir.
+func (g *Git) Init(dir string) error {
+	_, err := g.runOut(dir, 30*time.Second, "init")
+	return err
+}
+
+// Change è un file modificato, aggiunto, eliminato o non tracciato.
+type Change struct {
+	Status string `json:"status"` // codice di git status a due lettere, es. "M", "??", "A", "D", "R"
+	Path   string `json:"path"`
+}
+
+// Changes elenca i file modificati (al massimo limit).
+func (g *Git) Changes(dir string, limit int) ([]Change, error) {
+	out, err := g.run(dir, "status", "--porcelain=v1", "-z")
+	if err != nil {
+		return nil, err
+	}
+	return parseChanges(out, limit), nil
+}
+
+// parseChanges legge l'output di `git status --porcelain=v1 -z`.
+// Con -z i rename hanno il percorso di origine come voce separata, da saltare.
+func parseChanges(out string, limit int) []Change {
+	var res []Change
+	parts := strings.Split(out, "\x00")
+	for i := 0; i < len(parts); i++ {
+		e := parts[i]
+		if len(e) < 4 {
+			continue
+		}
+		code := strings.TrimSpace(e[:2])
+		res = append(res, Change{Status: code, Path: e[3:]})
+		if e[0] == 'R' || e[0] == 'C' {
+			i++ // percorso di origine del rename
+		}
+		if len(res) >= limit {
+			break
+		}
+	}
+	return res
+}
+
 // Progress è un aggiornamento di git clone.
 type Progress struct {
 	Phase   string `json:"phase"`

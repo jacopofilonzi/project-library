@@ -26,6 +26,25 @@ func TestRenamePathMovesProjectLaunchers(t *testing.T) {
 	}
 }
 
+func TestMigrationV1(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(path, []byte(`{"version":1,"autostart":true,"hotkey":""}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := Load(path, dir)
+	c := s.Get()
+	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Hotkey != "" || c.Version != 2 {
+		t.Fatalf("migration: %+v", c)
+	}
+	// dopo la migrazione una scorciatoia spotlight vuota (disattivata) resta vuota
+	s.Update(func(c *Config) { c.SpotlightHotkey = "" })
+	s2, _ := Load(path, dir)
+	if s2.Get().SpotlightHotkey != "" {
+		t.Fatal("disabled spotlight hotkey must stay disabled")
+	}
+}
+
 func TestLoadAddsDefaultRulesToOldConfig(t *testing.T) {
 	dir := t.TempDir()
 	path := filepath.Join(dir, "config.json")

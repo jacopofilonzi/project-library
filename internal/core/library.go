@@ -35,10 +35,19 @@ const (
 	EventDirty         = "git:dirty"
 	EventCloneProgress = "clone:progress"
 	EventConfig        = "config:updated"
+	// EventSpotlightOpen: la ricerca flottante sta per comparire (il frontend la riporta allo stato iniziale).
+	EventSpotlightOpen = "spotlight:open"
+	// EventMainGoto: la finestra principale deve andare a un percorso (payload: percorso assoluto).
+	EventMainGoto = "main:goto"
+	// EventMainCommand: la finestra principale deve eseguire un comando della palette (payload: id).
+	EventMainCommand = "main:command"
 )
 
-// MainWindow è la finestra principale, impostata da main prima di Run.
-var MainWindow application.Window
+// MainWindow è la finestra principale e SpotlightWindow la ricerca flottante, impostate da main prima di Run.
+var (
+	MainWindow      application.Window
+	SpotlightWindow application.Window
+)
 
 type Library struct {
 	store *config.Store
@@ -51,7 +60,9 @@ type Library struct {
 	watch     *watcher.Watcher
 	fetchStop context.CancelFunc
 	clones    sync.Map // id → context.CancelFunc
-	hotkey    string
+	// scorciatoie globali registrate al momento
+	hotkey       string
+	spotlightKey string
 }
 
 func New(store *config.Store) *Library {
@@ -121,6 +132,8 @@ func (l *Library) SaveConfig(next config.Config) (AppState, error) {
 		go l.rescan(true)
 	}
 	errs := l.applySystem(cfg, prev)
+	// le altre finestre (ricerca flottante) e la tray si aggiornano da questo evento
+	emitEvent(EventConfig, l.store.Get())
 	return l.State(), errors.Join(errs...)
 }
 
@@ -155,27 +168,27 @@ func (l *Library) applySystem(cfg, prev config.Config) []error {
 	if app == nil {
 		return nil
 	}
-	if cfg.Hotkey != l.hotkey {
-		if l.hotkey != "" {
-			_ = app.GlobalShortcut.Unregister(l.hotkey)
-		}
-		l.hotkey = ""
-		if cfg.Hotkey != "" {
-			if err := app.GlobalShortcut.Register(cfg.Hotkey, ShowMainWindow); err != nil {
-				errs = append(errs, &fsops.Error{Code: "hotkey", Detail: err.Error()})
-			} else {
-				l.hotkey = cfg.Hotkey
+	if err := l.setShortcut(app, &l.hotkey, cfg.Hotkey, ShowMainWindow); err != nil {
+		errs = append(errs, err)
+	}
+	if err := l.setShortcut(app, &l.spotlightKey, cfg.SpotlightHotkey, ShowSpotlight); err != nil {
+		errs = append(errs, err)
+	}
+	// all'avvio (prev vuota) la registrazione viene sempre riallineata, così segue anche un exe spostato
+	startup := prev.Version == 0
+	if cfg.StartMode != prev.StartMode || startup {
+		var err error
+		switch cfg.StartMode {
+		case config.StartWindow:
+			err = app.Autostart.EnableWithOptions(application.AutostartOptions{})
+		case config.StartTray:
+			err = app.Autostart.EnableWithOptions(application.AutostartOptions{Arguments: []string{HiddenFlag}})
+		default:
+			if enabled, _ := app.Autostart.IsEnabled(); enabled {
+				err = app.Autostart.Disable()
 			}
 		}
-	}
-	if cfg.Autostart != prev.Autostart {
-		var err error
-		if cfg.Autostart {
-			err = app.Autostart.Enable()
-		} else {
-			err = app.Autostart.Disable()
-		}
-		if err != nil {
+		if err != nil && !startup {
 			errs = append(errs, &fsops.Error{Code: "autostart", Detail: err.Error()})
 		}
 	}
@@ -185,14 +198,54 @@ func (l *Library) applySystem(cfg, prev config.Config) []error {
 	return errs
 }
 
+// setShortcut sostituisce la scorciatoia globale registrata in *current con accel ("" = nessuna).
+func (l *Library) setShortcut(app *application.App, current *string, accel string, fn func()) error {
+	if accel == *current {
+		return nil
+	}
+	if *current != "" {
+		_ = app.GlobalShortcut.Unregister(*current)
+	}
+	*current = ""
+	if accel == "" {
+		return nil
+	}
+	if err := app.GlobalShortcut.Register(accel, fn); err != nil {
+		return &fsops.Error{Code: "hotkey", Detail: accel + ": " + err.Error()}
+	}
+	*current = accel
+	return nil
+}
+
+// HiddenFlag: argomento con cui l'avvio automatico "solo tray" lancia l'app senza mostrare la finestra.
+const HiddenFlag = "--hidden"
+
 // ShowMainWindow mostra e porta in primo piano la finestra (tray, scorciatoia, seconda istanza).
 func ShowMainWindow() {
 	if MainWindow == nil {
 		return
 	}
+	if SpotlightWindow != nil {
+		SpotlightWindow.Hide()
+	}
 	MainWindow.Show()
 	MainWindow.UnMinimise()
 	MainWindow.Focus()
+}
+
+// ShowSpotlight apre la ricerca flottante, indipendente dalla finestra principale.
+func ShowSpotlight() {
+	if SpotlightWindow == nil {
+		return
+	}
+	if SpotlightWindow.IsVisible() {
+		SpotlightWindow.Hide()
+		return
+	}
+	emitEvent(EventSpotlightOpen, nil)
+	SpotlightWindow.Center()
+	SpotlightWindow.Show()
+	SpotlightWindow.Focus()
 }
 
 // ---------- albero ----------

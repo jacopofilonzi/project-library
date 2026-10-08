@@ -78,16 +78,32 @@ type Config struct {
 
 	Recent []Recent `json:"recent"`
 
-	Autostart   bool   `json:"autostart"`
+	// Autostart è il vecchio interruttore (config v1): letto solo per la migrazione a StartMode.
+	Autostart bool `json:"autostart,omitempty"`
+	// StartMode: avvio con il sistema. "off", "window" (apre la finestra) o "tray" (solo tray e ricerca flottante).
+	StartMode   string `json:"startMode"`
 	CloseToTray bool   `json:"closeToTray"`
-	Hotkey      string `json:"hotkey"`
+	// Hotkey mostra la finestra principale; SpotlightHotkey apre la ricerca flottante. Vuote = disattivate.
+	Hotkey          string `json:"hotkey"`
+	SpotlightHotkey string `json:"spotlightHotkey"`
+
+	// LastPath e LastSelected: dove eri alla chiusura (cartella corrente e progetto selezionato).
+	LastPath     string `json:"lastPath"`
+	LastSelected string `json:"lastSelected"`
 
 	SetupDone bool `json:"setupDone"`
 }
 
 const (
-	currentVersion = 1
+	currentVersion = 2
 	MaxRecent      = 20
+)
+
+// Modalità di avvio con il sistema.
+const (
+	StartOff    = "off"
+	StartWindow = "window"
+	StartTray   = "tray"
 )
 
 var DefaultMarkers = []string{
@@ -122,8 +138,10 @@ func Default(home string) Config {
 		Overrides:        map[string]string{},
 		GitInfo:          true,
 		GitFetchMinutes:  15,
+		StartMode:        StartOff,
 		CloseToTray:      false,
 		Hotkey:           "CmdOrCtrl+Alt+Space",
+		SpotlightHotkey:  "Super+Ctrl+K",
 	}
 }
 
@@ -163,6 +181,17 @@ func (c *Config) normalize(home string) {
 	}
 	if len(c.Recent) > MaxRecent {
 		c.Recent = c.Recent[:MaxRecent]
+	}
+	// migrazione v1 → v2: l'interruttore autostart diventa StartMode, arriva la scorciatoia spotlight
+	if c.Version < 2 {
+		if c.Autostart {
+			c.StartMode = StartWindow
+		}
+		c.SpotlightHotkey = def.SpotlightHotkey
+	}
+	c.Autostart = false
+	if c.StartMode != StartWindow && c.StartMode != StartTray {
+		c.StartMode = StartOff
 	}
 	c.Version = currentVersion
 }
@@ -312,6 +341,12 @@ func (c *Config) RenamePath(oldPath, newPath string) {
 	}
 	c.Overrides = moveKeys(c.Overrides)
 	c.ProjectLaunchers = moveKeys(c.ProjectLaunchers)
+	if np, changed := move(c.LastPath); changed {
+		c.LastPath = np
+	}
+	if np, changed := move(c.LastSelected); changed {
+		c.LastSelected = np
+	}
 	var rec []Recent
 	for _, r := range c.Recent {
 		if np, changed := move(r.Path); changed {

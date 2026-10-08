@@ -50,10 +50,12 @@ jobs:
           v=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)
           go install "github.com/wailsapp/wails/v3/cmd/wails3@$v"
 
-      - name: Dipendenze e binding
+      - name: Dipendenze, binding e frontend
         run: |
           (cd frontend && npm ci)
           GOOS=windows wails3 generate bindings -clean=true -ts -i
+          # main.go incorpora frontend/dist: senza la build go vet non compila
+          (cd frontend && npm run build)
 
       - name: Test Go
         run: |

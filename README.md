@@ -125,7 +125,7 @@ frontend/
 
 ## Data
 
-The configuration is in `config.json` in the folder listed above. Settings → About exports, imports or resets it: "Reset settings" saves a copy to `config.backup.json`, brings everything back to the initial values (only the language is kept) and reopens the wizard. Updating the app with a new installer keeps the configuration.
+The configuration is in `config.json` in the folder listed above. Settings → About exports, imports or resets it: "Reset settings" saves a copy to `config.backup.json`, brings every preference back to the initial values, language included, and reopens the wizard (also from the palette: `> Reset settings`). Updating the app with a new installer keeps the configuration.
 
 ## Versions
 

@@ -11,23 +11,23 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/gitinfo"
 )
 
-// ---------- ricorda dove eri ----------
+// ---------- remember where you were ----------
 
-// SetLastLocation salva la cartella corrente e il progetto selezionato, per riaprire l'app lì.
-// Non passa da SaveConfig: non deve scatenare nuove scansioni né riapplicare le impostazioni di sistema.
+// SetLastLocation saves the current folder and the selected project, to reopen the app there.
+// It does not go through SaveConfig: it must not trigger new scans or re-apply the system settings.
 func (l *Library) SetLastLocation(dir, selected string) error {
 	_, err := l.store.Update(func(c *config.Config) {
 		c.LastPath = dir
 		c.LastSelected = selected
 	})
-	// le altre finestre devono avere la config aggiornata, o un loro salvataggio la riporterebbe indietro
+	// the other windows need the updated config, or one of their saves would roll it back
 	emitEvent(EventConfig, l.store.Get())
 	return err
 }
 
-// ---------- inizializza come progetto ----------
+// ---------- initialize as a project ----------
 
-// InitProject trasforma una cartella (di solito vuota) in un progetto: git init e/o un README.md minimo.
+// InitProject turns a folder (usually empty) into a project: git init and/or a minimal README.md.
 func (l *Library) InitProject(path string, gitInit, readme bool) error {
 	if !fsops.Within(path, l.store.Get().Roots) {
 		return &fsops.Error{Code: "outsideRoots"}
@@ -52,7 +52,7 @@ func (l *Library) InitProject(path string, gitInit, readme bool) error {
 	return nil
 }
 
-// ---------- azioni git rapide ----------
+// ---------- quick git actions ----------
 
 func (l *Library) GitFetch(path string) error {
 	if err := l.git.FetchNow(path); err != nil {
@@ -62,7 +62,7 @@ func (l *Library) GitFetch(path string) error {
 	return nil
 }
 
-// GitPull fa un pull solo fast-forward e restituisce il messaggio di git.
+// GitPull runs a fast-forward-only pull and returns git's message.
 func (l *Library) GitPull(path string) (string, error) {
 	out, err := l.git.Pull(path)
 	if err != nil {
@@ -72,20 +72,20 @@ func (l *Library) GitPull(path string) (string, error) {
 	return out, nil
 }
 
-// GitChanges elenca i file modificati (massimo 200).
+// GitChanges lists the changed files (at most 200).
 func (l *Library) GitChanges(path string) ([]gitinfo.Change, error) {
 	return l.git.Changes(path, 200)
 }
 
-// ---------- finestre ----------
+// ---------- windows ----------
 
-// ShowInMain porta la finestra principale sul percorso indicato (dalla ricerca flottante).
+// ShowInMain takes the main window to the given path (from the floating search).
 func (l *Library) ShowInMain(path string) {
 	emitEvent(EventMainGoto, path)
 	ShowMainWindow()
 }
 
-// RunInMain esegue nella finestra principale un comando della palette che ne ha bisogno.
+// RunInMain runs in the main window a palette command that needs it.
 func (l *Library) RunInMain(command string) {
 	emitEvent(EventMainCommand, command)
 	ShowMainWindow()
@@ -99,11 +99,11 @@ func (l *Library) HideSpotlight() {
 	}
 }
 
-// Quit chiude l'app (anche se "resta nella tray" è attivo).
+// Quit closes the app (even when "keep in the tray" is on).
 func (l *Library) Quit() {
 	Quitting = true
 	application.Get().Quit()
 }
 
-// Quitting: l'uscita è stata chiesta esplicitamente, la chiusura della finestra non deve finire nella tray.
+// Quitting: exit was requested explicitly, closing the window must not send the app to the tray.
 var Quitting bool

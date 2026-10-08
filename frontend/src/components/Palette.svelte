@@ -8,11 +8,11 @@
   import { lib } from '../lib/api'
   import LauncherIcon from './LauncherIcon.svelte'
 
-  // spotlight: ricerca flottante, sempre su tutto Development; ↵ apre il progetto, Ctrl/⌘ ↵ lo mostra nell'app
+  // spotlight: floating search, always over all of Development; ↵ opens the project, Ctrl/⌘ ↵ shows it in the app
   let { spotlight = false }: { spotlight?: boolean } = $props()
 
   let q = $state('')
-  // valore iniziale: la ricerca flottante parte sempre da "ovunque", la palette da "ovunque" solo alla radice
+  // initial value: the floating search always starts from "everywhere", the palette only at the root
   let global = $state(untrack(() => spotlight || !store.path.length))
   let idx = $state(0)
   let input: HTMLInputElement | undefined = $state()
@@ -22,7 +22,7 @@
     input?.focus()
   })
 
-  // la ricerca flottante riparte da zero ogni volta che compare
+  // the floating search starts from scratch every time it appears
   onMount(() => {
     if (!spotlight) return
     return Events.On('spotlight:open', () => {
@@ -64,7 +64,7 @@
         .map((c) => ({ kind: 'cmd', c }))
       return { section: t('palette.commands'), items, recent: false, total: items.length }
     }
-    // "ovunque" senza testo: ultimi 5 aperti con "Apri con"
+    // "everywhere" with no text: last 5 opened with "Open with"
     if (global && !q) {
       const items: Item[] = (store.cfg.recent ?? [])
         .map((r) => ({ r, e: store.index.get(r.path) }))
@@ -93,7 +93,7 @@
     tick().then(() => list?.querySelector('.it.on')?.scrollIntoView({ block: 'nearest' }))
   })
 
-  // alt: Ctrl/⌘ ↵. Nella finestra principale apre con l'editor, nella ricerca flottante mostra nell'app.
+  // alt: Ctrl/⌘ ↵. In the main window it opens with the editor, in the floating search it shows in the app.
   function go(i: number, alt: boolean) {
     const it = view.items[i]
     if (!it) return
@@ -128,7 +128,7 @@
     else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
   }
 
-  // launcher del progetto evidenziato (regole e scelte per progetto comprese)
+  // launcher of the highlighted project (rules and per-project choices included)
   let def = $derived.by(() => {
     const it = view.items[idx]
     return it?.kind === 'proj' ? store.launcherFor(it.e.node).launcher : store.defaultLauncher

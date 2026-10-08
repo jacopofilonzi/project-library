@@ -9,7 +9,7 @@
 
   let html = $derived(readme?.found && readme.format === 'markdown' ? renderMarkdown(readme.content, dir) : '')
 
-  // i link si aprono nel browser; i relativi e le ancore no
+  // links open in the browser; relative links and anchors do not
   function onclick(e: MouseEvent) {
     const a = (e.target as Element).closest('a')
     if (!a) return

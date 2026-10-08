@@ -1,65 +1,66 @@
 # AGENTS.md
 
-Guida per gli agenti (e le persone) che lavorano su questo repo. Funzionalità, regole di comportamento e differenze tra sistemi sono descritte in [README.md](README.md). Lo stile dell'interfaccia è in `frontend/src/app.css`.
+Guide for the agents (and people) working on this repository. Features, behavior rules and differences between systems are described in [README.md](README.md). The UI styles are in `frontend/src/app.css`.
 
-## Cos'è
+## What it is
 
-App desktop (Go + Wails v3 beta, Svelte 5 + Vite) per sfogliare i progetti in `~/Development/{source}/…`, vederne README e stato git e aprirli con l'editor scelto. Target: Windows, macOS, Linux. Interfaccia in inglese (default) e italiano.
+Desktop app (Go + Wails v3 beta, Svelte 5 + Vite) to browse the projects in `~/Development/{source}/…`, see their README and git status, and open them with the chosen editor. Targets: Windows, macOS, Linux. UI in English (default) and Italian.
 
-## Comandi
+## Commands
 
 ```sh
-wails3 build ARCH=amd64        # build in bin/ (ARCH=amd64 serve se `go env GOARCH` è 386)
-wails3 dev                     # sviluppo con hot reload
-wails3 package ARCH=amd64      # installer NSIS per utente in bin/ (richiede makensis nel PATH, di solito in C:/Program Files (x86)/NSIS)
-wails3 generate bindings -clean=true -ts -i   # rigenera frontend/bindings dopo aver cambiato i metodi esposti
+wails3 build ARCH=amd64        # build in bin/ (ARCH=amd64 is needed if `go env GOARCH` is 386)
+wails3 dev                     # development with hot reload
+wails3 package ARCH=amd64      # per-user NSIS installer in bin/ (needs makensis in the PATH, usually in C:/Program Files (x86)/NSIS)
+wails3 generate bindings -clean=true -ts -i   # regenerates frontend/bindings after changing the exposed methods
 go test ./internal/...
-PL_FORGE_LIVE=gh PL_FORGE_REPO=owner/nome go test ./internal/forge -run TestLive -v   # prova dal vivo con la gh (o glab) installata, solo letture
-go vet ./...                   # con GOARCH=amd64 su Windows
+PL_FORGE_LIVE=gh PL_FORGE_REPO=owner/name go test ./internal/forge -run TestLive -v   # live test against the installed gh (or glab), read-only
+go vet ./...                   # with GOARCH=amd64 on Windows
 cd frontend && npx svelte-check --tsconfig ./tsconfig.json
-cd frontend && npm run test:e2e   # Playwright: interfaccia in Chromium con backend finto (e2e/mock), niente Wails né disco
+cd frontend && npm run test:e2e   # Playwright: UI in Chromium with a fake backend (e2e/mock), no Wails, no disk
 ```
 
-Il pacchetto `internal/platform` va controllato anche per gli altri sistemi: `GOOS=darwin go vet $(go list ./internal/... | grep -v /internal/core)` e lo stesso con `GOOS=linux` (`internal/core` e l'app intera importano Wails, che fuori da Windows richiede cgo e non si cross-compila; per Windows invece si compila da qualunque sistema).
+The `internal/platform` package must be checked for the other systems too: `GOOS=darwin go vet $(go list ./internal/... | grep -v /internal/core)` and the same with `GOOS=linux` (`internal/core` and the whole app import Wails, which needs cgo outside Windows and does not cross-compile; Windows instead compiles from any system).
 
-La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è a 32 bit.
+The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit.
 
-## Struttura
+## Layout
 
-- `main.go`: finestre (principale e spotlight), tray, key binding di finestra, middleware che serve le immagini dei README.
-- `internal/core`: unico servizio esposto al frontend (`Library`). Ogni metodo esportato diventa un binding: le funzioni di supporto per `main` sono funzioni di pacchetto, non metodi.
-- `internal/config`: `config.json` (default, normalizzazione dei campi mancanti, scrittura atomica). Un campo nuovo va aggiunto a `Default`, `normalize`, `clone` e, se contiene percorsi, a `RenamePath`.
-- `internal/scanner`: classificazione delle cartelle (override → ignora → marker → file → sottocartelle → vuota) e regole dei launcher.
-- `internal/presets`: catalogo dei preset integrati (come si riconosce un tipo di progetto). I preset integrati sono collegati: le regole li citano per id e si aggiornano con l'app; un preset dell'utente con un id del catalogo viene ignorato (vince il catalogo). Le regole (`config.Rules`, preset → launcher) sono in ordine di priorità.
-- `internal/languages`: composizione dei linguaggi di un progetto (barra della scheda).
-- Editor noti: tabella `platform.Editors` (+ percorsi di ricerca per sistema). Uno nuovo va aggiunto anche a `LauncherIcon.svelte` (logo) e, se serve, ai consigli di `frontend/src/lib/presets.ts`.
-- `internal/platform`: tutto ciò che dipende dal sistema operativo, nei file `_windows.go`, `_darwin.go`, `_linux.go`. Nessun `runtime.GOOS` fuori da qui.
-- `internal/gitinfo`: usa il `git` installato dall'utente, mai una libreria. Niente gestione credenziali.
-- `internal/forge`: GitHub e GitLab tramite le CLI `gh` e `glab` installate dall'utente (`gh api`/`glab api`), con il loro login. Mai token o librerie. Le funzioni che ne dipendono restano nascoste se la CLI manca o non ha un account sull'host; fanno eccezione il suggerimento nel dialog di clone e la sezione in Impostazioni → Git.
-- `internal/fsops`: crea, rinomina, sposta nel Cestino. Gli errori hanno un codice (`name.badChars`, `exists`…) che il frontend traduce.
-- `frontend/src/lib/state.svelte.ts`: stato globale (runes). `frontend/src/lib/i18n/{en,it}.ts`: testi; `it.ts` deve avere le stesse chiavi di `en.ts` (lo verifica il type-check).
+- `main.go`: windows (main and spotlight), tray, window key bindings, middleware that serves the README images.
+- `internal/core`: the only service exposed to the frontend (`Library`). Every exported method becomes a binding: helpers for `main` are package functions, not methods.
+- `internal/config`: `config.json` (defaults, normalization of missing fields, atomic write). A new field must be added to `Default`, `normalize`, `clone` and, if it holds paths, to `RenamePath`.
+- `internal/scanner`: folder classification (override → ignore → marker → files → subfolders → empty) and launcher rules.
+- `internal/presets`: catalog of the built-in presets (how a project type is recognized). Built-in presets are linked: rules reference them by id and they update with the app; a user preset with a catalog id is ignored (the catalog wins). Rules (`config.Rules`, preset → launcher) are in priority order.
+- `internal/languages`: language breakdown of a project (the bar in the card).
+- Known editors: the `platform.Editors` table (+ per-system search paths). A new one must also be added to `LauncherIcon.svelte` (logo) and, if needed, to the suggestions in `frontend/src/lib/presets.ts`.
+- `internal/platform`: everything that depends on the operating system, in the `_windows.go`, `_darwin.go`, `_linux.go` files. No `runtime.GOOS` outside of it.
+- `internal/gitinfo`: uses the `git` installed by the user, never a library. No credential handling.
+- `internal/forge`: GitHub and GitLab through the `gh` and `glab` CLIs installed by the user (`gh api`/`glab api`), with their login. Never tokens or libraries. The features that depend on them stay hidden if the CLI is missing or has no account on the host; the exceptions are the hint in the clone dialog and the section in Settings → Git.
+- `internal/fsops`: create, rename, move to the trash. Errors have a code (`name.badChars`, `exists`…) that the frontend translates.
+- `frontend/src/lib/state.svelte.ts`: global state (runes). `frontend/src/lib/i18n/{en,it}.ts`: UI texts; `it.ts` must have the same keys as `en.ts` (the type check verifies it).
 
-## Convenzioni
+## Conventions
 
-- Commenti e documentazione in italiano; nomi di codice in inglese.
-- Ogni testo dell'interfaccia passa da `t()`; aggiungere sempre sia la chiave inglese sia quella italiana.
-- Eliminare significa spostare nel Cestino, mai cancellare definitivamente.
-- Commit piccoli e per passo (`feat:`, `fix:`, `chore:`, `docs:`), mai un unico commit alla fine.
-- Dopo una modifica: `go test`, `go vet`, `svelte-check` (0 errori e 0 avvisi), `npm run test:e2e` e una build devono passare.
-- Un metodo nuovo in `internal/core` va aggiunto anche al backend finto `frontend/e2e/mock/library.ts`, altrimenti i test e2e non lo trovano.
-- La documentazione si aggiorna insieme al codice, nello stesso commit o subito dopo: una funzione nuova, una regola che cambia, un comando o un pacchetto nuovo vanno riportati in README.md (e qui, se riguardano chi sviluppa). Non si accumula a fine lavoro.
+- Everything is written in English: code, comments, documentation, commit messages, test names and messages. The only Italian in the repository is the UI translation in `frontend/src/lib/i18n/it.ts` (and the Italian tray labels in `main.go`).
+- Every UI text goes through `t()`; always add both the English and the Italian key.
+- Deleting means moving to the trash, never deleting permanently.
+- Small, step-by-step commits (`feat:`, `fix:`, `chore:`, `docs:`), never a single commit at the end.
+- After a change: `go test`, `go vet`, `svelte-check` (0 errors and 0 warnings), `npm run test:e2e` and a build must pass.
+- A new method in `internal/core` must also be added to the fake backend `frontend/e2e/mock/library.ts`, otherwise the e2e tests cannot find it.
+- Documentation is updated together with the code, in the same commit or right after: a new feature, a rule that changes, a new command or package go into README.md (and here, if they concern developers). It is not piled up for the end.
+- UI mockups and design alternatives are never committed: they only serve to choose, the chosen style lives in the code.
 
-## Versioni e release
+## Versions and releases
 
-- Si resta su `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero (`0.1.0` → `0.1.1` → …). Si passa a `0.2` solo se lo decide l'utente.
-- La versione è scritta in 11 file (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): si cambia solo con `scripts/set-version.sh 0.1.x`, che li aggiorna tutti e controlla che la versione precedente non resti da nessuna parte. Non usare `wails3 update build-assets`: rigenererebbe anche file personalizzati.
-- Ogni funzione o correzione completata si chiude con `scripts/set-version.sh` e un commit `chore: version 0.1.x`. Tag e release si fanno solo quando lo chiede l'utente e comprendono le versioni intermedie.
-- Rilascio (solo quando lo chiede l'utente): tag annotato `v0.1.x` sulla versione corrente, push di commit e tag. Il tag avvia `.github/workflows/release.yml` (gira su Linux e compila per Windows senza cgo): test, controlli, e2e, installer e release su GitHub con le note ricavate dai commit dal tag precedente. Il workflow si ferma se il tag non coincide con la versione in `build/config.yml`.
-- La CI non parte ai push normali, per non consumare i minuti di GitHub Actions (repo privato: 2.000 al mese; per questo si usa Linux, che conta la metà di Windows). Per provare la build senza rilasciare: Actions → Release → Run workflow, l'installer resta come artefatto per 7 giorni. I commit di sviluppo si pushano liberamente.
+- We stay on `0.1.x`: every released feature or fix bumps the last number (`0.1.0` → `0.1.1` → …). Moving to `0.2` is the user's decision.
+- The version is written in 11 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh 0.1.x`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
+- Every completed feature or fix ends with `scripts/set-version.sh` and a `chore: version 0.1.x` commit. Tags and releases are made only when the user asks and include the intermediate versions.
+- Release (only when the user asks): annotated `v0.1.x` tag on the current version, push of commits and tag. The tag starts `.github/workflows/release.yml` (runs on Linux and compiles for Windows without cgo): tests, checks, e2e, installer and a GitHub release with notes built from the commits since the previous tag. The workflow stops if the tag does not match the version in `build/config.yml`.
+- CI does not run on normal pushes, to save GitHub Actions minutes (private repository: 2,000 a month; that is why Linux is used, which counts half of Windows). To try the build without releasing: Actions → Release → Run workflow, the installer stays as an artifact for 7 days. Development commits can be pushed freely.
 
-## Insidie note
+## Known pitfalls
 
-- WebView2 non passa `Ctrl/⌘ P` alla pagina: le scorciatoie che servono anche quando la pagina non le riceve si registrano come `KeyBindings` della finestra in `main.go`.
-- `autofocus` non funziona sugli elementi montati dopo il caricamento: dare il focus con `bind:this` + `$effect`.
-- Le slice e le mappe Go arrivano al frontend come `null`: passano da `normalizeConfig` in `frontend/src/lib/api.ts`.
-- `Win+Ctrl` da soli non sono una scorciatoia registrabile: serve sempre un tasto (default spotlight: `Super+Ctrl+K`).
+- WebView2 does not pass `Ctrl/⌘ P` to the page: shortcuts that are needed even when the page does not receive them are registered as window `KeyBindings` in `main.go`.
+- `autofocus` does not work on elements mounted after load: give the focus with `bind:this` + `$effect`.
+- Go slices and maps reach the frontend as `null`: they go through `normalizeConfig` in `frontend/src/lib/api.ts`.
+- `Win+Ctrl` alone is not a registrable shortcut: a key is always needed (spotlight default: `Super+Ctrl+K`).

@@ -8,7 +8,7 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/config"
 )
 
-// build crea un albero di prova: i percorsi che finiscono con "/" sono cartelle.
+// build creates a test tree: paths ending with "/" are folders.
 func build(t *testing.T, paths ...string) string {
 	t.Helper()
 	root := t.TempDir()
@@ -59,7 +59,7 @@ func TestClassification(t *testing.T) {
 		"local/onlyfiles/notes.txt",
 		"local/empty/",
 		"local/onlyjunk/desktop.ini",
-		"local/UNI/Ingegneria/Demo/build.gradle.kts",
+		"local/UNI/Engineering/Demo/build.gradle.kts",
 		"local/.hidden/project/go.mod",
 		"local/node_modules/pkg/package.json",
 	)
@@ -90,15 +90,15 @@ func TestClassification(t *testing.T) {
 	check(KindProject, "local", "onlyfiles")
 	check(KindEmpty, "local", "empty")
 	check(KindEmpty, "local", "onlyjunk")
-	check(KindDir, "local", "UNI", "Ingegneria")
-	check(KindProject, "local", "UNI", "Ingegneria", "Demo")
+	check(KindDir, "local", "UNI", "Engineering")
+	check(KindProject, "local", "UNI", "Engineering", "Demo")
 	if find(tree, "local", ".hidden") != nil || find(tree, "local", "node_modules") != nil {
 		t.Error("hidden and ignored folders must be skipped")
 	}
 	if tree.Count != 5 {
 		t.Errorf("count %d, want 5", tree.Count)
 	}
-	// ordine: cartelle prima dei progetti
+	// order: folders before projects
 	local := find(tree, "local")
 	if local.Children[0].Kind == KindProject {
 		t.Error("dirs must come before projects")
@@ -146,7 +146,7 @@ func TestLauncherRules(t *testing.T) {
 	o.Rules = []Rule{
 		{Patterns: []string{"pom.xml", "build.gradle*"}, Launcher: "intellij"},
 		{Patterns: []string{"package.json"}, Launcher: "webstorm"},
-		{Patterns: []string{"*.json"}, Launcher: "intellij"}, // duplicato: ignorato
+		{Patterns: []string{"*.json"}, Launcher: "intellij"}, // duplicate: ignored
 	}
 	tree := Scan([]string{root}, o)
 	check := func(name string, want []string) {

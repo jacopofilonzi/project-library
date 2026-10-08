@@ -17,11 +17,11 @@ func code(err error) string {
 
 func TestMkdirRename(t *testing.T) {
 	root := t.TempDir()
-	p, err := Mkdir(root, "Ingegneria del Software")
+	p, err := Mkdir(root, "Software Engineering")
 	if err != nil {
 		t.Fatal(err)
 	}
-	if _, err := Mkdir(root, "ingegneria del software"); code(err) != "exists" && code(err) != "" {
+	if _, err := Mkdir(root, "software engineering"); code(err) != "exists" && code(err) != "" {
 		t.Fatalf("duplicate: %v", err)
 	}
 	if _, err := Mkdir(root, ""); code(err) != "name.empty" {

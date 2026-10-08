@@ -49,7 +49,7 @@
     if (showChanges) loadChanges()
   }
 
-  // pubblicazione su GitHub/GitLab: servono un account collegato e un repository senza remote
+  // publish on GitHub/GitLab: needs a logged-in account and a repository without a remote
   let publishLabel = $derived.by(() => {
     const kinds = new Set(store.forgeAccounts.map((a) => a.kind))
     return t('forge.publishOn', { service: kinds.size === 1 ? serviceName([...kinds][0]) : 'GitHub / GitLab' })
@@ -59,7 +59,7 @@
     if (node) store.dialog = { kind: 'publish', node }
   }
 
-  // legenda dei codici di git status
+  // legend of the git status codes
   const statusLabel = (s: string) => t('git.status.' + (s === '??' ? 'untracked' : s[0] ?? 'M'))
 </script>
 

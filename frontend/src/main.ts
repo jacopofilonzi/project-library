@@ -10,5 +10,5 @@ import App from './App.svelte'
 import Spotlight from './components/Spotlight.svelte'
 import { isSpotlight } from './lib/state.svelte'
 
-// la stessa build serve due finestre: la principale e la ricerca flottante (?view=spotlight)
+// the same build serves two windows: the main one and the floating search (?view=spotlight)
 mount(isSpotlight ? Spotlight : App, { target: document.getElementById('app')! })

@@ -1,6 +1,6 @@
 <script lang="ts">
-  // Finestra della ricerca flottante: solo la palette, su sfondo trasparente.
-  // L'altezza della finestra segue quella del pannello.
+  // Floating search window: just the palette, on a transparent background.
+  // The window height follows the panel's.
   import { onMount } from 'svelte'
   import { Window } from '@wailsio/runtime'
   import { store } from '../lib/state.svelte'
@@ -17,7 +17,7 @@
     if (!wrap) return
     let last = 0
     const ro = new ResizeObserver(() => {
-      const h = Math.ceil(wrap!.getBoundingClientRect().height) + 24 // margine per l'ombra
+      const h = Math.ceil(wrap!.getBoundingClientRect().height) + 24 // room for the shadow
       if (h !== last) {
         last = h
         Window.SetSize(720, h)

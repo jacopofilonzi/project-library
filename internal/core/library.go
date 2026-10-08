@@ -1,5 +1,5 @@
-// Package core è il servizio esposto al frontend (binding Wails): tiene la
-// configurazione, l'albero dei progetti e coordina git, launcher e file system.
+// Package core is the service exposed to the frontend (Wails bindings): it holds the
+// configuration and the project tree and coordinates git, launchers and the file system.
 package core
 
 import (
@@ -27,24 +27,24 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/watcher"
 )
 
-// Version è impostata in fase di build (-ldflags "-X …core.Version=…").
+// Version is set at build time (-ldflags "-X …core.Version=…").
 var Version = "0.1.8"
 
-// Eventi emessi verso il frontend.
+// Events emitted to the frontend.
 const (
 	EventTree          = "tree:updated"
 	EventDirty         = "git:dirty"
 	EventCloneProgress = "clone:progress"
 	EventConfig        = "config:updated"
-	// EventSpotlightOpen: la ricerca flottante sta per comparire (il frontend la riporta allo stato iniziale).
+	// EventSpotlightOpen: the floating search is about to appear (the frontend resets it).
 	EventSpotlightOpen = "spotlight:open"
-	// EventMainGoto: la finestra principale deve andare a un percorso (payload: percorso assoluto).
+	// EventMainGoto: the main window must go to a path (payload: absolute path).
 	EventMainGoto = "main:goto"
-	// EventMainCommand: la finestra principale deve eseguire un comando della palette (payload: id).
+	// EventMainCommand: the main window must run a palette command (payload: id).
 	EventMainCommand = "main:command"
 )
 
-// MainWindow è la finestra principale e SpotlightWindow la ricerca flottante, impostate da main prima di Run.
+// MainWindow is the main window and SpotlightWindow the floating search, set by main before Run.
 var (
 	MainWindow      application.Window
 	SpotlightWindow application.Window
@@ -62,7 +62,7 @@ type Library struct {
 	watch     *watcher.Watcher
 	fetchStop context.CancelFunc
 	clones    sync.Map // id → context.CancelFunc
-	// scorciatoie globali registrate al momento
+	// global shortcuts currently registered
 	hotkey       string
 	spotlightKey string
 }
@@ -73,9 +73,9 @@ func New(store *config.Store) *Library {
 	return l
 }
 
-// ServiceStartup viene chiamata da Wails all'avvio.
+// ServiceStartup is called by Wails at startup.
 func (l *Library) ServiceStartup(ctx context.Context, _ application.ServiceOptions) error {
-	l.SyncEditors() // editor noti installati dopo l'ultimo avvio: aggiunti, disattivati
+	l.SyncEditors() // known editors installed since the last run: added, disabled
 	cfg := l.store.Get()
 	l.git.Detect(cfg.GitPath)
 	go l.forge.detect(cfg)
@@ -99,7 +99,7 @@ func (l *Library) ServiceShutdown() error {
 	return nil
 }
 
-// AppState è tutto ciò che il frontend deve sapere all'avvio.
+// AppState is everything the frontend needs to know at startup.
 type AppState struct {
 	Config       config.Config `json:"config"`
 	OS           string        `json:"os"`
@@ -123,8 +123,8 @@ func (l *Library) State() AppState {
 	}
 }
 
-// SaveConfig salva la configurazione e applica gli effetti delle modifiche
-// (nuova scansione, git, scorciatoia globale, avvio automatico, fetch).
+// SaveConfig saves the configuration and applies the effects of the changes
+// (new scan, git, global shortcut, start with the system, fetch).
 func (l *Library) SaveConfig(next config.Config) (AppState, error) {
 	prev := l.store.Get()
 	if _, err := l.store.Update(func(c *config.Config) { *c = next }); err != nil {
@@ -141,7 +141,7 @@ func (l *Library) SaveConfig(next config.Config) (AppState, error) {
 		go l.rescan(true)
 	}
 	errs := l.applySystem(cfg, prev)
-	// le altre finestre (ricerca flottante) e la tray si aggiornano da questo evento
+	// the other windows (floating search) and the tray update from this event
 	emitEvent(EventConfig, l.store.Get())
 	return l.State(), errors.Join(errs...)
 }
@@ -162,8 +162,8 @@ func scanChanged(a, b config.Config) bool {
 	return false
 }
 
-// scanRules risolve ogni regola nei pattern del suo preset (catalogo o utente).
-// Le regole con un preset che non esiste più vengono ignorate.
+// scanRules resolves each rule into the patterns of its preset (catalog or user).
+// Rules whose preset no longer exists are ignored.
 func scanRules(cfg config.Config) []scanner.Rule {
 	var out []scanner.Rule
 	for _, r := range cfg.Rules {
@@ -174,7 +174,7 @@ func scanRules(cfg config.Config) []scanner.Rule {
 	return out
 }
 
-// applySystem allinea scorciatoia globale, avvio automatico e fetch periodico alla config.
+// applySystem aligns the global shortcut, start with the system and periodic fetch with the config.
 func (l *Library) applySystem(cfg, prev config.Config) []error {
 	app := application.Get()
 	var errs []error
@@ -187,7 +187,7 @@ func (l *Library) applySystem(cfg, prev config.Config) []error {
 	if err := l.setShortcut(app, &l.spotlightKey, cfg.SpotlightHotkey, ShowSpotlight); err != nil {
 		errs = append(errs, err)
 	}
-	// all'avvio (prev vuota) la registrazione viene sempre riallineata, così segue anche un exe spostato
+	// at startup (empty prev) the registration is always re-aligned, so it follows a moved exe too
 	startup := prev.Version == 0
 	if cfg.StartMode != prev.StartMode || startup {
 		var err error
@@ -211,7 +211,7 @@ func (l *Library) applySystem(cfg, prev config.Config) []error {
 	return errs
 }
 
-// setShortcut sostituisce la scorciatoia globale registrata in *current con accel ("" = nessuna).
+// setShortcut replaces the global shortcut registered in *current with accel ("" = none).
 func (l *Library) setShortcut(app *application.App, current *string, accel string, fn func()) error {
 	if accel == *current {
 		return nil
@@ -230,10 +230,10 @@ func (l *Library) setShortcut(app *application.App, current *string, accel strin
 	return nil
 }
 
-// HiddenFlag: argomento con cui l'avvio automatico "solo tray" lancia l'app senza mostrare la finestra.
+// HiddenFlag: argument with which the "tray only" autostart launches the app without showing the window.
 const HiddenFlag = "--hidden"
 
-// ShowMainWindow mostra e porta in primo piano la finestra (tray, scorciatoia, seconda istanza).
+// ShowMainWindow shows the window and brings it to the front (tray, shortcut, second instance).
 func ShowMainWindow() {
 	if MainWindow == nil {
 		return
@@ -246,7 +246,7 @@ func ShowMainWindow() {
 	MainWindow.Focus()
 }
 
-// ShowSpotlight apre la ricerca flottante, indipendente dalla finestra principale.
+// ShowSpotlight opens the floating search, independent from the main window.
 func ShowSpotlight() {
 	if SpotlightWindow == nil {
 		return
@@ -261,7 +261,7 @@ func ShowSpotlight() {
 	SpotlightWindow.Focus()
 }
 
-// ---------- albero ----------
+// ---------- tree ----------
 
 func (l *Library) Tree() *scanner.Node {
 	l.mu.RLock()
@@ -269,7 +269,7 @@ func (l *Library) Tree() *scanner.Node {
 	return l.tree
 }
 
-// Rescan rianalizza le radici e restituisce il nuovo albero.
+// Rescan scans the roots again and returns the new tree.
 func (l *Library) Rescan() *scanner.Node {
 	l.rescan(false)
 	return l.Tree()
@@ -307,7 +307,7 @@ func emitEvent(name string, data any) {
 	}
 }
 
-// Dirty restituisce i file modificati per progetto (calcolati in background dopo ogni scansione).
+// Dirty returns the changed files per project (computed in the background after every scan).
 func (l *Library) Dirty() map[string]int {
 	l.mu.RLock()
 	defer l.mu.RUnlock()
@@ -318,7 +318,7 @@ func (l *Library) Dirty() map[string]int {
 	return out
 }
 
-// RefreshDirty ricalcola lo stato git di tutti i progetti (es. quando la finestra torna in primo piano).
+// RefreshDirty recomputes the git state of all the projects (e.g. when the window comes back to the front).
 func (l *Library) RefreshDirty() { go l.computeDirty() }
 
 func (l *Library) computeDirty() {
@@ -391,7 +391,7 @@ func (l *Library) restartFetch(cfg config.Config) {
 	}()
 }
 
-// ---------- scheda progetto ----------
+// ---------- project card ----------
 
 type ReadmeResult struct {
 	Found bool `json:"found"`
@@ -403,7 +403,7 @@ func (l *Library) Readme(path string) (ReadmeResult, error) {
 	return ReadmeResult{Found: ok, Readme: r}, err
 }
 
-// GitInfo restituisce lo stato git di un progetto. Senza git disponibile IsRepo resta vero ma il resto è vuoto.
+// GitInfo returns the git state of a project. Without git IsRepo stays true but the rest is empty.
 func (l *Library) GitInfo(path string) (gitinfo.Info, error) {
 	info, err := l.git.Info(path)
 	if errors.Is(err, gitinfo.ErrNoGit) {
@@ -419,7 +419,7 @@ func (l *Library) GitInfo(path string) (gitinfo.Info, error) {
 
 // ---------- launcher ----------
 
-// Open apre path con il launcher indicato e lo registra tra i recenti.
+// Open opens path with the given launcher and records it among the recent ones.
 func (l *Library) Open(path, launcherID string) error {
 	cfg := l.store.Get()
 	for _, ln := range cfg.Launchers {
@@ -435,7 +435,7 @@ func (l *Library) Open(path, launcherID string) error {
 	return &fsops.Error{Code: "launcherNotFound"}
 }
 
-// TestLauncher prova un launcher non ancora salvato.
+// TestLauncher tries a launcher that is not saved yet.
 func (l *Library) TestLauncher(ln config.Launcher, path string) error {
 	cfg := l.store.Get()
 	if err := launcher.Launch(ln, launcher.NewTarget(path, cfg.Roots)); err != nil {
@@ -444,7 +444,7 @@ func (l *Library) TestLauncher(ln config.Launcher, path string) error {
 	return nil
 }
 
-// LauncherStatus dice dove si trova l'eseguibile di ogni launcher (vuoto = non trovato).
+// LauncherStatus tells where the executable of each launcher is (empty = not found).
 func (l *Library) LauncherStatus() map[string]string {
 	out := map[string]string{}
 	for _, ln := range l.store.Get().Launchers {
@@ -453,13 +453,13 @@ func (l *Library) LauncherStatus() map[string]string {
 	return out
 }
 
-// DetectEditor cerca un editor predefinito ("vscode", "intellij").
+// DetectEditor looks for a known editor ("vscode", "intellij").
 func (l *Library) DetectEditor(id string) string { return platform.EditorPath(id) }
 
-// ResolveCommand verifica che un comando esista (nel PATH o come percorso).
+// ResolveCommand checks that a command exists (in the PATH or as a path).
 func (l *Library) ResolveCommand(cmd string) string { return platform.Resolve(cmd) }
 
-// Reveal mostra path nel file manager.
+// Reveal shows path in the file manager.
 func (l *Library) Reveal(path string) error {
 	return application.Get().Env.OpenFileManager(path, false)
 }
@@ -489,7 +489,7 @@ func (l *Library) Mkdir(parent, name string) (string, error) {
 	return p, err
 }
 
-// Rename rinomina e aggiorna override e cronologia che puntano al vecchio percorso.
+// Rename renames and updates the overrides and history that point to the old path.
 func (l *Library) Rename(path, newName string) (string, error) {
 	if !fsops.Within(path, l.store.Get().Roots) {
 		return "", &fsops.Error{Code: "outsideRoots"}
@@ -506,7 +506,7 @@ func (l *Library) Rename(path, newName string) (string, error) {
 
 func (l *Library) IsEmptyDir(path string) bool { return fsops.IsEmptyDir(path) }
 
-// Trash sposta path nel Cestino e ripulisce override e cronologia.
+// Trash moves path to the trash and cleans up overrides and history.
 func (l *Library) Trash(path string) error {
 	if err := fsops.Trash(path, l.store.Get().Roots); err != nil {
 		return err
@@ -517,7 +517,7 @@ func (l *Library) Trash(path string) error {
 	return nil
 }
 
-// SetOverride segna path come "project" o "dir"; "" toglie l'eccezione.
+// SetOverride marks path as "project" or "dir"; "" removes the exception.
 func (l *Library) SetOverride(path, kind string) (AppState, error) {
 	_, err := l.store.Update(func(c *config.Config) {
 		if kind == "" {
@@ -531,7 +531,7 @@ func (l *Library) SetOverride(path, kind string) (AppState, error) {
 	return l.State(), err
 }
 
-// CreateRoot crea una cartella radice (wizard).
+// CreateRoot creates a root folder (wizard).
 func (l *Library) CreateRoot(path string) error {
 	return os.MkdirAll(filepath.Clean(path), 0o755)
 }
@@ -561,8 +561,8 @@ type CloneProgress struct {
 	Percent int    `json:"percent"`
 }
 
-// Clone esegue git clone url in parent/name, creando le cartelle mancanti.
-// Blocca fino alla fine; l'avanzamento arriva con l'evento clone:progress.
+// Clone runs git clone url into parent/name, creating the missing folders.
+// It blocks until the end; progress arrives with the clone:progress event.
 func (l *Library) Clone(id, url, parent, name string) (string, error) {
 	if !l.git.Available() {
 		return "", &fsops.Error{Code: "noGit"}
@@ -590,7 +590,7 @@ func (l *Library) Clone(id, url, parent, name string) (string, error) {
 	})
 	if err != nil {
 		if ctx.Err() != nil {
-			os.RemoveAll(dest) // clone annullato: niente cartelle a metà
+			os.RemoveAll(dest) // clone cancelled: no half-done folders
 			return "", &fsops.Error{Code: "cancelled"}
 		}
 		return "", &fsops.Error{Code: "clone", Detail: err.Error()}
@@ -605,9 +605,9 @@ func (l *Library) CancelClone(id string) {
 	}
 }
 
-// ---------- git (impostazioni e wizard) ----------
+// ---------- git (settings and wizard) ----------
 
-// DetectGit cerca git (nel percorso indicato o automaticamente) e lo usa da subito.
+// DetectGit looks for git (at the given path or automatically) and uses it right away.
 func (l *Library) DetectGit(path string) string {
 	found := l.git.Detect(path)
 	if found != "" {
@@ -625,7 +625,7 @@ func (l *Library) RunGitInstall() error {
 	return nil
 }
 
-// ---------- dialog di sistema ----------
+// ---------- system dialogs ----------
 
 func (l *Library) PickFolder(title, start string) (string, error) {
 	d := application.Get().Dialog.OpenFile().CanChooseDirectories(true).CanChooseFiles(false).SetTitle(title)
@@ -639,6 +639,6 @@ func (l *Library) PickFile(title string) (string, error) {
 	return application.Get().Dialog.OpenFile().CanChooseFiles(true).SetTitle(title).PromptForSingleSelection()
 }
 
-// RootsOf restituisce le radici configurate: main le usa per servire le immagini dei README.
-// È una funzione e non un metodo per non esporla al frontend.
+// RootsOf returns the configured roots: main uses them to serve the README images.
+// It is a function and not a method so it is not exposed to the frontend.
 func RootsOf(l *Library) []string { return l.store.Get().Roots }

@@ -1,5 +1,5 @@
-// Sostituto di @wailsio/runtime per i test end-to-end (vite --mode e2e).
-// Eventi in memoria e finestra/browser finti; le chiamate vengono registrate in window.__mock.calls.
+// Stand-in for @wailsio/runtime in the end-to-end tests (vite --mode e2e).
+// In-memory events and fake window/browser; calls are recorded in window.__mock.calls.
 import { log } from './log'
 
 type Listener = (ev: { name: string; data: unknown }) => void
@@ -12,7 +12,7 @@ export const Events = {
     return () => listeners.get(name)?.delete(cb)
   },
   Emit(name: string, data?: unknown) {
-    // come Wails: consegna asincrona
+    // like Wails: asynchronous delivery
     setTimeout(() => listeners.get(name)?.forEach((cb) => cb({ name, data })), 0)
   },
 }

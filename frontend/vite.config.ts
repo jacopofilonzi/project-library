@@ -7,7 +7,7 @@ const mock = (file: string) => fileURLToPath(new URL(`./e2e/mock/${file}`, impor
 
 // https://vitejs.dev/config/
 export default defineConfig(({ mode }) => {
-  // --mode e2e: il frontend gira in un browser normale, con un backend finto al posto di Wails
+  // --mode e2e: the frontend runs in a normal browser, with a fake backend instead of Wails
   const e2e = mode === "e2e";
   return {
     server: {

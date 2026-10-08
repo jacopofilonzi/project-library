@@ -10,7 +10,7 @@ import (
 	"syscall"
 )
 
-// HideConsole non serve fuori da Windows.
+// HideConsole is not needed outside Windows.
 func HideConsole(cmd *exec.Cmd) {}
 
 func startSetsid(command string, args []string, dir string) error {
@@ -20,11 +20,11 @@ func startSetsid(command string, args []string, dir string) error {
 	if err := cmd.Start(); err != nil {
 		return err
 	}
-	go cmd.Wait() // raccoglie il processo quando termina, evitando zombie
+	go cmd.Wait() // reap the process when it ends, avoiding zombies
 	return nil
 }
 
-// ExpandEnv espande $VAR e ~.
+// ExpandEnv expands $VAR and ~.
 func ExpandEnv(s string) string {
 	if s == "~" || strings.HasPrefix(s, "~/") {
 		s = filepath.Join(home(), s[1:])

@@ -9,7 +9,7 @@ import (
 	"time"
 )
 
-// StartDetached avvia un programma staccato dall'app. I bundle .app passano da `open`.
+// StartDetached starts a program detached from the app. .app bundles go through `open`.
 func StartDetached(command string, args []string, dir string) error {
 	if strings.HasSuffix(strings.TrimRight(command, "/"), ".app") {
 		openArgs := append([]string{"-na", command, "--args"}, args...)
@@ -53,7 +53,7 @@ func GitInstall() InstallInfo {
 	return InstallInfo{Command: "xcode-select --install", CanRun: true, URL: "https://git-scm.com/download/mac"}
 }
 
-// RunGitInstall apre il dialog di sistema per installare i Command Line Tools (che includono git).
+// RunGitInstall opens the system dialog that installs the Command Line Tools (which include git).
 func RunGitInstall() error {
 	return exec.Command("xcode-select", "--install").Start()
 }
@@ -62,7 +62,7 @@ func cliCandidates(id string) []string {
 	return []string{"/opt/homebrew/bin/" + id, "/usr/local/bin/" + id}
 }
 
-// CLIInstall propone Homebrew; l'app non lo esegue (serve un terminale).
+// CLIInstall suggests Homebrew; the app does not run it (it needs a terminal).
 func CLIInstall(id string) InstallInfo {
 	return InstallInfo{Command: "brew install " + id, URL: cliURL[id]}
 }
@@ -76,8 +76,8 @@ func nameProblem(name string) string {
 	return ""
 }
 
-// MoveToTrash usa il Finder, così l'elemento si può ripristinare con "Rimetti a posto".
-// Se il Finder non è disponibile (o l'automazione è negata) sposta in ~/.Trash.
+// MoveToTrash uses the Finder, so the item can be restored with "Put Back".
+// If the Finder is not available (or automation is denied) it moves to ~/.Trash.
 func MoveToTrash(path string) error {
 	esc := strings.NewReplacer(`\`, `\\`, `"`, `\"`).Replace(path)
 	script := fmt.Sprintf(`tell application "Finder" to delete POSIX file "%s"`, esc)

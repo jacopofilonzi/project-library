@@ -6,23 +6,23 @@ import (
 	"time"
 )
 
-// Repo è un repository dell'utente (suo, di un'organizzazione o di un gruppo di cui fa parte).
+// Repo is a repository of the user (their own, an organization's or a group's they belong to).
 type Repo struct {
 	Kind        Kind   `json:"kind"`
 	Host        string `json:"host"`
-	FullName    string `json:"fullName"` // owner/nome, su GitLab anche gruppo/sottogruppo/nome
+	FullName    string `json:"fullName"` // owner/name, on GitLab also group/subgroup/name
 	Description string `json:"description"`
 	Private     bool   `json:"private"`
-	// CloneURL segue il protocollo scelto nella CLI (ssh o https).
+	// CloneURL follows the protocol chosen in the CLI (ssh or https).
 	CloneURL string `json:"cloneUrl"`
 	Web      string `json:"web"`
 	Updated  string `json:"updated"` // RFC 3339
 }
 
-// maxPages limita l'elenco a 500 repository per account.
+// maxPages caps the list at 500 repositories per account.
 const maxPages = 5
 
-// Repos elenca i repository dell'account, i più recenti prima.
+// Repos lists the account's repositories, most recent first.
 func (c *CLI) Repos(acc Account) ([]Repo, error) {
 	ctx, cancel := timeout(60 * time.Second)
 	defer cancel()
@@ -97,5 +97,5 @@ func glRepos(raw []glProject, acc Account) []Repo {
 	return out
 }
 
-// glPath codifica gruppo/progetto per gli URL dell'API di GitLab (projects/gruppo%2Fprogetto).
+// glPath encodes group/project for the GitLab API URLs (projects/group%2Fproject).
 func glPath(fullName string) string { return url.PathEscape(fullName) }

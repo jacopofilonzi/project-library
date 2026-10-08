@@ -1,6 +1,6 @@
 import { defineConfig, devices } from '@playwright/test'
 
-// Test end-to-end dell'interfaccia: Vite in modalità e2e (backend finto, vedi e2e/mock) + Chromium.
+// End-to-end tests of the UI: Vite in e2e mode (fake backend, see e2e/mock) + Chromium.
 export default defineConfig({
   testDir: './e2e',
   fullyParallel: true,

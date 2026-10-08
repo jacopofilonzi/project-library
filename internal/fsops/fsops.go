@@ -1,5 +1,5 @@
-// Package fsops crea, rinomina ed elimina (nel Cestino) le cartelle.
-// Gli errori sono *Error con un codice che il frontend traduce.
+// Package fsops creates, renames and deletes (to the trash) folders.
+// Errors are *Error with a code the frontend translates.
 package fsops
 
 import (
@@ -13,7 +13,7 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/platform"
 )
 
-// Error porta un codice stabile ("name.badChars", "exists"…) e il dettaglio tecnico.
+// Error carries a stable code ("name.badChars", "exists"…) and the technical detail.
 type Error struct {
 	Code   string
 	Detail string
@@ -33,7 +33,7 @@ func fail(code string, err error) error {
 	return &Error{Code: code, Detail: err.Error()}
 }
 
-// CheckName verifica che name sia un nome valido e libero in parent.
+// CheckName checks that name is a valid and free name in parent.
 func CheckName(parent, name string) error {
 	if p := platform.NameProblem(name); p != "" {
 		return &Error{Code: "name." + p}
@@ -44,7 +44,7 @@ func CheckName(parent, name string) error {
 	return nil
 }
 
-// exists confronta i nomi senza distinguere maiuscole dove il file system non le distingue.
+// exists compares names case-insensitively where the file system is case-insensitive.
 func exists(parent, name string) bool {
 	if _, err := os.Lstat(filepath.Join(parent, name)); err == nil {
 		return true
@@ -61,7 +61,7 @@ func exists(parent, name string) bool {
 	return false
 }
 
-// Mkdir crea parent/name.
+// Mkdir creates parent/name.
 func Mkdir(parent, name string) (string, error) {
 	name = strings.TrimSpace(name)
 	if err := CheckName(parent, name); err != nil {
@@ -74,7 +74,7 @@ func Mkdir(parent, name string) (string, error) {
 	return path, nil
 }
 
-// Rename rinomina path in newName nella stessa cartella. Consente di cambiare solo le maiuscole.
+// Rename renames path to newName in the same folder. Changing only the case is allowed.
 func Rename(path, newName string) (string, error) {
 	newName = strings.TrimSpace(newName)
 	parent := filepath.Dir(path)
@@ -94,7 +94,7 @@ func Rename(path, newName string) (string, error) {
 	return dest, nil
 }
 
-// IsEmptyDir: la cartella non contiene niente (nemmeno file nascosti).
+// IsEmptyDir: the folder contains nothing (not even hidden files).
 func IsEmptyDir(path string) bool {
 	f, err := os.Open(path)
 	if err != nil {
@@ -105,7 +105,7 @@ func IsEmptyDir(path string) bool {
 	return errors.Is(err, io.EOF)
 }
 
-// Trash sposta path nel Cestino. Rifiuta le radici e i percorsi fuori dalle radici.
+// Trash moves path to the trash. It refuses the roots and paths outside the roots.
 func Trash(path string, roots []string) error {
 	if !Within(path, roots) {
 		return &Error{Code: "outsideRoots"}
@@ -119,7 +119,7 @@ func Trash(path string, roots []string) error {
 	return nil
 }
 
-// Within dice se path è strettamente dentro una delle radici (non una radice stessa).
+// Within tells whether path is strictly inside one of the roots (not a root itself).
 func Within(path string, roots []string) bool {
 	path = filepath.Clean(path)
 	for _, r := range roots {

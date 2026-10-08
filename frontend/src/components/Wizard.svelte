@@ -4,10 +4,10 @@
   import { lib, errMessage, type InstallInfo, type Launcher } from '../lib/api'
   import LauncherIcon from './LauncherIcon.svelte'
 
-  // ---------- bozza della configurazione ----------
+  // ---------- configuration draft ----------
   let lang = $state(store.cfg.language)
-  // cartelle da osservare: si propongono solo quelle che esistono già (di default <home>/Development);
-  // se non ce n'è nessuna l'elenco resta vuoto e l'utente sceglie dal selettore di sistema
+  // folders to watch: only existing ones are suggested (by default <home>/Development);
+  // if there are none the list stays empty and the user picks from the system dialog
   let roots = $state<string[]>([])
   let rootsChecked = $state(false)
   const proposed = [...store.cfg.roots]
@@ -25,12 +25,12 @@
   let copied = $state(false)
 
   const steps = needGit ? ['lang', 'roots', 'editors', 'git', 'multi'] : ['lang', 'roots', 'editors', 'multi']
-  // ultimo passo: chi usa più IDE viene portato alle associazioni preset → editor
+  // last step: users of several IDEs are taken to the preset → editor links
   let multi = $state(false)
   let step = $state(0)
   let busy = $state(false)
 
-  // rilevamento iniziale di editor e git
+  // initial detection of editors and git
   $effect(() => {
     for (const ed of editors) if (ed.launcher.builtin) lib.DetectEditor(ed.launcher.builtin).then((p) => (ed.detected = p))
     if (needGit) lib.GitInstallInfo().then((i) => (install = i))

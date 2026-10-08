@@ -1,8 +1,8 @@
-// Editor consigliato per i preset del catalogo, usato quando si aggiunge una regola.
+// Suggested editor for the catalog presets, used when a rule is added.
 import { store } from './state.svelte'
 import type { Launcher } from './api'
 
-/** id dei preset integrati → editor noti (builtin) in ordine di preferenza */
+/** built-in preset ids → known (builtin) editors in order of preference */
 const suggestions: Record<string, string[]> = {
   android: ['androidstudio', 'intellij'],
   gradle: ['intellij'],
@@ -27,8 +27,8 @@ const suggestions: Record<string, string[]> = {
 }
 
 /**
- * launcher da proporre per un preset: il primo editor consigliato che è abilitato o installato
- * (aggiungendo la regola viene abilitato), altrimenti il predefinito
+ * launcher to suggest for a preset: the first suggested editor that is enabled or installed
+ * (adding the rule enables it), otherwise the default one
  */
 export function suggestedLauncher(presetId: string): Launcher | undefined {
   const ls = store.cfg.launchers

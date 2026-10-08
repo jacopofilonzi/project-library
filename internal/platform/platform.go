@@ -1,8 +1,8 @@
-// Package platform raccoglie tutto ciò che dipende dal sistema operativo.
-// Ogni funzione esportata ha un'implementazione per Windows, macOS e Linux
-// nei file platform_<os>.go; il resto dell'app usa solo queste funzioni.
+// Package platform collects everything that depends on the operating system.
+// Every exported function has an implementation for Windows, macOS and Linux
+// in the platform_<os>.go files; the rest of the app uses only these functions.
 //
-// Funzioni per OS (definite in platform_<os>.go):
+// Per-OS functions (defined in platform_<os>.go):
 //
 //	MoveToTrash(path string) error
 //	StartDetached(command string, args []string, dir string) error
@@ -28,18 +28,18 @@ import (
 	"unicode/utf8"
 )
 
-// InstallInfo descrive come installare git su questo sistema.
+// InstallInfo describes how to install git on this system.
 type InstallInfo struct {
-	// Command è il comando da mostrare all'utente (vuoto se non ce n'è uno affidabile).
+	// Command is the command to show the user (empty if there is no reliable one).
 	Command string `json:"command"`
-	// CanRun indica se l'app può lanciare l'installazione da sola.
+	// CanRun tells whether the app can start the installation by itself.
 	CanRun bool `json:"canRun"`
-	// URL è la pagina di download, sempre presente.
+	// URL is the download page, always present.
 	URL string `json:"url"`
 }
 
-// Problemi di un nome di file o cartella, restituiti da NameProblem.
-// Sono codici: il frontend li traduce.
+// Problems with a file or folder name, returned by NameProblem.
+// They are codes: the frontend translates them.
 const (
 	NameEmpty     = "empty"
 	NameDots      = "dots"
@@ -50,7 +50,7 @@ const (
 	NameSeparator = "separator"
 )
 
-// NameProblem restituisce il codice del problema di name come nome di cartella, o "" se è valido.
+// NameProblem returns the code of the problem with name as a folder name, or "" if it is valid.
 func NameProblem(name string) string {
 	if strings.TrimSpace(name) == "" {
 		return NameEmpty
@@ -67,13 +67,13 @@ func NameProblem(name string) string {
 	return nameProblem(name)
 }
 
-// Editor è un editor noto, rilevato automaticamente su ogni sistema.
+// Editor is a known editor, detected automatically on every system.
 type Editor struct {
 	ID   string `json:"id"`
 	Name string `json:"name"`
 }
 
-// Editors è l'elenco degli editor noti. Quelli trovati vengono aggiunti ai launcher (disattivati).
+// Editors is the list of known editors. The ones found are added to the launchers (disabled).
 var Editors = []Editor{
 	{"vscode", "VS Code"},
 	{"intellij", "IntelliJ IDEA"},
@@ -91,7 +91,7 @@ var Editors = []Editor{
 	{"sublime", "Sublime Text"},
 }
 
-// jetbrains: nome dello script di Toolbox, nome della cartella/app di installazione.
+// jetbrains: name of the Toolbox script, name of the install folder/app.
 var jetbrains = map[string][2]string{
 	"intellij":      {"idea", "IntelliJ IDEA"},
 	"webstorm":      {"webstorm", "WebStorm"},
@@ -105,8 +105,8 @@ var jetbrains = map[string][2]string{
 	"androidstudio": {"studio", "Android Studio"},
 }
 
-// EditorPath cerca l'eseguibile di un editor noto (vedi Editors).
-// Restituisce "" se non lo trova.
+// EditorPath looks for the executable of a known editor (see Editors).
+// It returns "" if it does not find it.
 func EditorPath(id string) string {
 	for _, c := range editorCandidates(id) {
 		if p := resolve(c); p != "" {
@@ -116,12 +116,12 @@ func EditorPath(id string) string {
 	return ""
 }
 
-// GitCandidates restituisce i percorsi dove cercare git, PATH compreso.
+// GitCandidates returns the paths where to look for git, PATH included.
 func GitCandidates() []string {
 	return append([]string{"git"}, gitCandidates()...)
 }
 
-// resolve trasforma un candidato (nome nel PATH, percorso o glob) in un percorso esistente.
+// resolve turns a candidate (name in the PATH, path or glob) into an existing path.
 func resolve(c string) string {
 	c = ExpandEnv(c)
 	if !strings.ContainsAny(c, `/\`) {
@@ -133,7 +133,7 @@ func resolve(c string) string {
 	if strings.ContainsAny(c, "*?[") {
 		matches, _ := filepath.Glob(c)
 		sort.Strings(matches)
-		for i := len(matches) - 1; i >= 0; i-- { // la versione più recente per ultima in ordine alfabetico
+		for i := len(matches) - 1; i >= 0; i-- { // the most recent version comes last in alphabetical order
 			if _, err := os.Stat(matches[i]); err == nil {
 				return matches[i]
 			}
@@ -146,24 +146,24 @@ func resolve(c string) string {
 	return ""
 }
 
-// CLI note oltre a git: le usa internal/forge. Gli id sono anche i nomi degli eseguibili.
+// Known CLIs besides git: used by internal/forge. The ids are also the executable names.
 const (
 	CLIGitHub = "gh"
 	CLIGitLab = "glab"
 )
 
-// cliURL è la pagina con le istruzioni di installazione di ogni CLI.
+// cliURL is the page with the install instructions of each CLI.
 var cliURL = map[string]string{
 	CLIGitHub: "https://cli.github.com",
 	CLIGitLab: "https://gitlab.com/gitlab-org/cli#installation",
 }
 
-// CLICandidates restituisce dove cercare una CLI (gh, glab), PATH compreso.
+// CLICandidates returns where to look for a CLI (gh, glab), PATH included.
 func CLICandidates(id string) []string {
 	return append([]string{id}, cliCandidates(id)...)
 }
 
-// Resolve è come resolve ma esportata, per i comandi dei launcher custom.
+// Resolve is resolve, exported, for the commands of custom launchers.
 func Resolve(c string) string { return resolve(c) }
 
 func home() string {

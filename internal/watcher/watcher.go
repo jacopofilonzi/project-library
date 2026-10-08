@@ -1,5 +1,5 @@
-// Package watcher osserva le cartelle di raggruppamento (non i progetti, per non
-// reagire a ogni salvataggio di file) e segnala i cambiamenti con un debounce.
+// Package watcher watches the grouping folders (not the projects, so it does not
+// react to every file save) and reports changes with a debounce.
 package watcher
 
 import (
@@ -19,7 +19,7 @@ type Watcher struct {
 	done     chan struct{}
 }
 
-// New avvia il watcher; onChange viene chiamata al massimo una volta ogni delay.
+// New starts the watcher; onChange is called at most once every delay.
 func New(delay time.Duration, onChange func()) (*Watcher, error) {
 	fw, err := fsnotify.NewWatcher()
 	if err != nil {
@@ -39,7 +39,7 @@ func (w *Watcher) loop() {
 			if !ok {
 				return
 			}
-			// le sole modifiche di contenuto non cambiano l'albero
+			// content-only changes do not change the tree
 			if ev.Op&(fsnotify.Create|fsnotify.Remove|fsnotify.Rename) != 0 {
 				w.schedule()
 			}
@@ -60,7 +60,7 @@ func (w *Watcher) schedule() {
 	w.timer = time.AfterFunc(w.delay, w.onChange)
 }
 
-// Set sostituisce l'insieme delle cartelle osservate (non ricorsivo).
+// Set replaces the set of watched folders (non-recursive).
 func (w *Watcher) Set(dirs []string) {
 	w.mu.Lock()
 	defer w.mu.Unlock()

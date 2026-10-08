@@ -1,4 +1,4 @@
-// Stato globale dell'app (Svelte 5 runes).
+// Global app state (Svelte 5 runes).
 import { Events } from '@wailsio/runtime'
 import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset, type ForgeStatus, type ForgeAccount, type ForgeKind } from './api'
 import { setLang, t } from './i18n/index.svelte'
@@ -24,16 +24,16 @@ class Store {
   tree = $state<Node | null>(null)
   dirty = $state<Record<string, number>>({})
   launcherStatus = $state<Record<string, string>>({})
-  /** catalogo dei preset integrati (dall'app) */
+  /** catalog of the built-in presets (from the app) */
   catalog = $state<Preset[]>([])
-  /** stato di gh e glab (percorso e account), caricato in background */
+  /** state of gh and glab (path and accounts), loaded in the background */
   forges = $state<ForgeStatus[]>([])
-  /** cresce quando un'azione cambia lo stato git del progetto aperto (la scheda lo ricarica) */
+  /** grows when an action changes the git state of the open project (the card reloads it) */
   gitChanged = $state(0)
 
-  /** percorso corrente come nomi a partire dalla radice dell'albero */
+  /** current path as names starting from the tree root */
   path = $state<string[]>([])
-  /** nome del progetto selezionato nella cartella corrente */
+  /** name of the selected project in the current folder */
   sel = $state<string | null>(null)
 
   dialog = $state<Dialog | null>(null)
@@ -62,10 +62,10 @@ class Store {
   }
 
   /**
-   * Launcher con cui aprire node, in ordine:
-   * 1. scelto per quel progetto (projectLaunchers), se abilitato
-   * 2. prima regola che corrisponde ai file del progetto, con launcher abilitato
-   * 3. launcher predefinito
+   * Launcher to open node with, in order:
+   * 1. chosen for that project (projectLaunchers), if enabled
+   * 2. first rule that matches the project's files, with an enabled launcher
+   * 3. default launcher
    */
   launcherFor(node: Node): { launcher: Launcher | undefined; reason: 'project' | 'rule' | 'default' } {
     const forced = this.enabledLaunchers.find((l) => l.id === this.cfg.projectLaunchers[node.path])
@@ -73,7 +73,7 @@ class Store {
     return this.autoLauncherFor(node)
   }
 
-  /** scelta automatica (regole, poi predefinito), ignorando quella fatta a mano */
+  /** automatic choice (rules, then default), ignoring the manual one */
   autoLauncherFor(node: Node): { launcher: Launcher | undefined; reason: 'rule' | 'default' } {
     const ls = this.enabledLaunchers
     for (const id of node.ruleLaunchers ?? []) {
@@ -83,12 +83,12 @@ class Store {
     return { launcher: this.defaultLauncher, reason: 'default' }
   }
 
-  /** preset per id, cercato nel catalogo e poi tra quelli dell'utente (come nel backend) */
+  /** preset by id, looked up in the catalog and then among the user's (as in the backend) */
   presetById(id: string): Preset | undefined {
     return this.catalog.find((p) => p.id === id) ?? this.cfg.presets.find((p) => p.id === id)
   }
 
-  /** sceglie (id) o toglie ('') il launcher fisso di un progetto */
+  /** sets (id) or removes ('') the fixed launcher of a project */
   async setProjectLauncher(node: Node, id: string) {
     const ok = await this.save((c) => {
       if (id) c.projectLaunchers[node.path] = id
@@ -99,13 +99,13 @@ class Store {
     this.toast(l ? t('open.alwaysSaved', { name: node.name, launcher: l.name }) : t('open.autoSaved', { name: node.name }))
   }
 
-  /** etichetta della radice: il nome della cartella o "Radici" con più radici */
+  /** root label: the folder name, or "Roots" with several roots */
   get rootLabel(): string {
     if (!this.tree) return ''
     return this.tree.kind === 'root' ? t('roots') : this.tree.name
   }
 
-  // ---------- albero ----------
+  // ---------- tree ----------
   nodeAt(names: string[]): Node | null {
     let n = this.tree
     for (const name of names) {
@@ -121,7 +121,7 @@ class Store {
     if (!this.sel) return null
     return (this.current?.children ?? []).find((c) => c?.kind === 'project' && c.name === this.sel) ?? null
   }
-  /** cosa aprono i launcher: il progetto selezionato o la cartella vuota corrente */
+  /** what the launchers open: the selected project or the current empty folder */
   get target(): Node | null {
     if (this.selected) return this.selected
     const cur = this.current
@@ -129,7 +129,7 @@ class Store {
     return null
   }
 
-  /** indice di tutti i progetti: percorso assoluto → nodo e nomi dalla radice */
+  /** index of all projects: absolute path → node and names from the root */
   index = $derived.by(() => {
     const map = new Map<string, Indexed>()
     const walk = (n: Node, names: string[]) => {
@@ -143,7 +143,7 @@ class Store {
     return map
   })
 
-  /** nomi dalla radice per un percorso assoluto di cartella (null se non è nell'albero) */
+  /** names from the root for an absolute folder path (null if it is not in the tree) */
   namesOf(path: string): string[] | null {
     let found: string[] | null = null
     const walk = (n: Node, names: string[]) => {
@@ -158,7 +158,7 @@ class Store {
     return found
   }
 
-  /** dopo un nuovo albero: tiene il percorso valido più lungo */
+  /** after a new tree: keeps the longest valid path */
   private fixPath() {
     let p = [...this.path]
     while (p.length && !this.nodeAt(p)) p.pop()
@@ -180,7 +180,7 @@ class Store {
     this.rememberLocation()
   }
 
-  // salva dove sei (con un piccolo ritardo, la navigazione da tastiera è rapida)
+  // save where you are (with a small delay, keyboard navigation is fast)
   private locTimer: ReturnType<typeof setTimeout> | undefined
   private rememberLocation() {
     if (isSpotlight || !this.ready) return
@@ -205,7 +205,7 @@ class Store {
     applyTheme(s.config.theme)
   }
 
-  /** modifica la config con fn, la salva e applica lo stato restituito */
+  /** changes the config with fn, saves it and applies the returned state */
   async save(fn: (c: Config) => void): Promise<boolean> {
     const next = structuredClone($state.snapshot(this.cfg)) as Config
     fn(next)
@@ -214,7 +214,7 @@ class Store {
       this.refreshLaunchers()
       return true
     } catch (e) {
-      // il salvataggio è avvenuto, ma un effetto (scorciatoia, avvio automatico) è fallito
+      // the save happened, but an effect (shortcut, start with the system) failed
       this.applyState(await lib.State())
       this.toast(errMessage(e), true)
       return false
@@ -225,17 +225,17 @@ class Store {
     this.launcherStatus = ((await lib.LauncherStatus()) ?? {}) as Record<string, string>
   }
 
-  // ---------- GitHub e GitLab ----------
+  // ---------- GitHub and GitLab ----------
   async loadForges(refresh = false) {
     const list = (await lib.Forges(refresh).catch(() => null)) ?? []
     this.forges = list.map((f) => ({ ...f, accounts: f.accounts ?? [] }))
   }
-  /** account con il login fatto, di entrambe le CLI */
+  /** logged-in accounts of both CLIs */
   get forgeAccounts(): (ForgeAccount & { kind: ForgeKind })[] {
     return this.forges.flatMap((f) => (f.accounts ?? []).map((a) => ({ ...a, kind: f.kind as unknown as ForgeKind })))
   }
 
-  // ---------- azioni ----------
+  // ---------- actions ----------
   async open(node: Node, launcherId?: string) {
     const l = launcherId ? this.cfg.launchers.find((x) => x.id === launcherId) : this.launcherFor(node).launcher
     if (!l) {
@@ -268,7 +268,7 @@ class Store {
     }
   }
 
-  /** elimina: cartella vuota subito, altrimenti dialog di conferma */
+  /** delete: empty folder right away, otherwise a confirmation dialog */
   async askDelete(node: Node) {
     if (node.kind !== 'project' && (await lib.IsEmptyDir(node.path))) {
       await this.trash(node)
@@ -299,7 +299,7 @@ class Store {
     }
   }
 
-  /** elemento (id) delle impostazioni da mostrare all'apertura */
+  /** settings element (id) to show when they open */
   settingsAnchor = $state('')
 
   openSettings(section?: string, anchor = '') {
@@ -317,7 +317,7 @@ class Store {
     setTimeout(() => (this.toasts = this.toasts.filter((x) => x.id !== id)), err ? 5000 : 2200)
   }
 
-  // ---------- avvio ----------
+  // ---------- startup ----------
   async init() {
     this.applyState(await lib.State())
     this.setTree(await lib.Tree())
@@ -326,12 +326,12 @@ class Store {
     this.refreshLaunchers()
     if (!isSpotlight) this.loadForges()
     this.wizardOpen = !this.cfg.setupDone
-    // git non trovato dopo la configurazione iniziale: avviso una sola volta
+    // git not found after the initial setup: warn only once
     if (this.cfg.setupDone && !this.st?.gitAvailable && !this.cfg.gitWarningShown) {
       this.toast(t('card.gitUnavailable'), true)
       this.save((c) => (c.gitWarningShown = true))
     }
-    // riparte da dove eri: progetto selezionato, altrimenti la cartella
+    // start again where you were: selected project, otherwise the folder
     const last = this.cfg.lastSelected || this.cfg.lastPath
     if (!isSpotlight && last) this.goToPath(last)
 
@@ -347,7 +347,7 @@ class Store {
       if (launchersChanged) this.refreshLaunchers()
     })
     if (!isSpotlight) {
-      // dalla ricerca flottante: "mostra nell'app"
+      // from the floating search: "show in the app"
       Events.On('main:goto', (ev: { data: string }) => {
         this.paletteOpen = false
         this.goToPath(ev.data)
@@ -358,13 +358,13 @@ class Store {
   }
 }
 
-/** questa istanza del frontend è la finestra della ricerca flottante */
+/** this frontend instance is the floating search window */
 export const isSpotlight = new URLSearchParams(location.search).get('view') === 'spotlight'
 
-// ---------- tema ----------
+// ---------- theme ----------
 const dark = window.matchMedia('(prefers-color-scheme: dark)')
 let themeMode = 'system'
-/** tema effettivo (reattivo), dopo aver risolto "system" */
+/** effective theme (reactive), after resolving "system" */
 export const ui = $state({ theme: 'light' as 'light' | 'dark' })
 export function applyTheme(mode: string) {
   themeMode = mode

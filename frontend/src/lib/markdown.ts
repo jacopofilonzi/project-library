@@ -1,10 +1,10 @@
-// Rendering dei README: marked per il markdown, DOMPurify perché il contenuto non è fidato.
+// README rendering: marked for the markdown, DOMPurify because the content is untrusted.
 import { Marked } from 'marked'
 import DOMPurify from 'dompurify'
 
 const isAbsoluteUrl = (u: string) => /^[a-z][a-z0-9+.-]*:/i.test(u) || u.startsWith('//')
 
-/** percorso di un file del progetto, servito dal backend (solo immagini dentro le radici) */
+/** path of a project file, served by the backend (only images inside the roots) */
 function projectFileUrl(projectDir: string, rel: string): string {
   const clean = decodeURIComponent(rel.split('#')[0].split('?')[0]).replace(/^\.\//, '')
   const sep = projectDir.includes('\\') ? '\\' : '/'
@@ -17,7 +17,7 @@ export function renderMarkdown(md: string, projectDir: string): string {
   const html = marked.parse(md, { async: false }) as string
   const clean = DOMPurify.sanitize(html, { USE_PROFILES: { html: true }, FORBID_TAGS: ['style', 'form', 'input'] })
 
-  // immagini con percorso relativo → servite dal backend; link marcati per la gestione dei click
+  // images with a relative path → served by the backend; links marked for click handling
   const doc = new DOMParser().parseFromString(clean, 'text/html')
   doc.querySelectorAll('img').forEach((img) => {
     const src = img.getAttribute('src') ?? ''

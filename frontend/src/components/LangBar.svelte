@@ -2,7 +2,7 @@
   import { lib, type LanguageStat } from '../lib/api'
   import { t } from '../lib/i18n/index.svelte'
 
-  // composizione dei linguaggi del progetto, come la barra di GitHub
+  // language breakdown of the project, like GitHub's bar
   let { path }: { path: string } = $props()
   let stats = $state<LanguageStat[] | null>(null)
   let partial = $state(false)

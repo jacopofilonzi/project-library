@@ -1,4 +1,4 @@
-// Testi in inglese (lingua di default). it.ts deve avere esattamente le stesse chiavi.
+// English texts (default language). it.ts must have exactly the same keys.
 const en = {
   app: { search: 'Search', clone: 'Clone', theme: { toLight: 'Switch to light theme', toDark: 'Switch to dark theme' }, settings: 'Settings' },
   roots: 'Roots',

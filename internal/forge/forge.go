@@ -1,6 +1,6 @@
-// Package forge interroga le CLI di GitHub (gh) e GitLab (glab) installate dall'utente,
-// con gli account con cui ha già fatto il login: l'app non gestisce token né credenziali.
-// Come gitinfo, usa sempre i programmi installati e mai una libreria.
+// Package forge queries the GitHub (gh) and GitLab (glab) CLIs installed by the user,
+// with the accounts they already logged in with: the app handles no tokens or credentials.
+// Like gitinfo, it always uses the installed programs and never a library.
 package forge
 
 import (
@@ -19,7 +19,7 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/platform"
 )
 
-// Kind è il servizio: "github" (CLI gh) o "gitlab" (CLI glab).
+// Kind is the service: "github" (gh CLI) or "gitlab" (glab CLI).
 type Kind string
 
 const (
@@ -27,7 +27,7 @@ const (
 	GitLab Kind = "gitlab"
 )
 
-// Bin è il nome dell'eseguibile della CLI.
+// Bin is the name of the CLI executable.
 func (k Kind) Bin() string {
 	if k == GitHub {
 		return platform.CLIGitHub
@@ -37,15 +37,15 @@ func (k Kind) Bin() string {
 
 var ErrNoCLI = errors.New("cli not available")
 
-// Account è un login della CLI su un host (github.com, gitlab.com o un'istanza propria).
+// Account is a CLI login on a host (github.com, gitlab.com or a self-hosted instance).
 type Account struct {
 	Host string `json:"host"`
 	User string `json:"user"`
-	// Protocol è il protocollo che la CLI usa per git ("ssh" o "https"): decide l'URL di clone.
+	// Protocol is the protocol the CLI uses for git ("ssh" or "https"): it decides the clone URL.
 	Protocol string `json:"protocol"`
 }
 
-// CLI è una delle due CLI, con il percorso trovato e gli account (in cache).
+// CLI is one of the two CLIs, with the path found and the accounts (cached).
 type CLI struct {
 	Kind Kind
 
@@ -56,11 +56,11 @@ type CLI struct {
 	checked  time.Time
 }
 
-// accountsTTL: per quanto tempo vale l'elenco degli account (gh auth status passa dalla rete).
+// accountsTTL: how long the account list is valid (gh auth status goes over the network).
 const accountsTTL = 5 * time.Minute
 
-// Detect cerca la CLI: prima il percorso configurato, poi PATH e i percorsi tipici del sistema.
-// Azzera la cache degli account. Restituisce il percorso trovato (vuoto se non c'è).
+// Detect looks for the CLI: first the configured path, then the PATH and the usual system paths.
+// It clears the account cache. It returns the path found (empty if missing).
 func (c *CLI) Detect(configured string) string {
 	candidates := platform.CLICandidates(c.Kind.Bin())
 	if configured != "" {
@@ -93,7 +93,7 @@ func (c *CLI) Path() string {
 	return c.path
 }
 
-// run esegue la CLI senza prompt né colori. In caso di errore il messaggio è lo stderr della CLI.
+// run runs the CLI without prompts or colors. On error the message is the CLI's stderr.
 func (c *CLI) run(ctx context.Context, dir string, args ...string) ([]byte, error) {
 	p := c.Path()
 	if p == "" {
@@ -121,7 +121,7 @@ func (c *CLI) run(ctx context.Context, dir string, args ...string) ([]byte, erro
 	return out, nil
 }
 
-// Accounts restituisce gli account con il login fatto (in cache per qualche minuto, refresh la ignora).
+// Accounts returns the logged-in accounts (cached for a few minutes, refresh bypasses the cache).
 func (c *CLI) Accounts(refresh bool) ([]Account, string) {
 	c.mu.RLock()
 	fresh := !c.checked.IsZero() && time.Since(c.checked) < accountsTTL
@@ -135,7 +135,7 @@ func (c *CLI) Accounts(refresh bool) ([]Account, string) {
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), 20*time.Second)
 	defer cancel()
-	// auth status scrive su stderr e termina con errore se un host non è valido: si legge comunque tutto
+	// auth status writes to stderr and exits with an error if a host is invalid: read everything anyway
 	p := c.Path()
 	cmd := exec.CommandContext(ctx, p, "auth", "status")
 	cmd.Env = append(os.Environ(), "NO_COLOR=1", "CLICOLOR=0", "GH_NO_UPDATE_NOTIFIER=1", "GLAB_CHECK_UPDATE=false")
@@ -152,7 +152,7 @@ func (c *CLI) Accounts(refresh bool) ([]Account, string) {
 	return accs, msg
 }
 
-// Account restituisce l'account per host, se c'è.
+// Account returns the account for host, if any.
 func (c *CLI) Account(host string) (Account, bool) {
 	accs, _ := c.Accounts(false)
 	for _, a := range accs {
@@ -164,7 +164,7 @@ func (c *CLI) Account(host string) (Account, bool) {
 }
 
 var (
-	// gh: "Logged in to github.com account NAME (keyring)", versioni vecchie e glab: "Logged in to HOST as NAME (…)"
+	// gh: "Logged in to github.com account NAME (keyring)", older versions and glab: "Logged in to HOST as NAME (…)"
 	reLogged = regexp.MustCompile(`Logged in to (\S+) (?:account|as) (\S+)`)
 	reActive = regexp.MustCompile(`Active account: (true|false)`)
 	// gh: "Git operations protocol: ssh"; glab: "Git operations for HOST configured to use ssh protocol."
@@ -172,8 +172,8 @@ var (
 	reProtoGLab = regexp.MustCompile(`Git operations for \S+ configured to use (\w+) protocol`)
 )
 
-// parseAuthStatus legge l'output di `gh auth status` o `glab auth status`.
-// Con più account sullo stesso host (gh) tiene quello attivo.
+// parseAuthStatus reads the output of `gh auth status` or `glab auth status`.
+// With several accounts on the same host (gh) it keeps the active one.
 func parseAuthStatus(out string) []Account {
 	var accs []Account
 	active := map[int]bool{}
@@ -194,7 +194,7 @@ func parseAuthStatus(out string) []Account {
 			accs[last].Protocol = strings.ToLower(m[1])
 		}
 	}
-	// un account per host: quello attivo, altrimenti il primo
+	// one account per host: the active one, otherwise the first
 	var out2 []Account
 	seen := map[string]int{}
 	for i, a := range accs {
@@ -216,7 +216,7 @@ func lastLine(s string) string {
 	return strings.TrimSpace(lines[len(lines)-1])
 }
 
-// api chiama l'API REST dell'host tramite la CLI (che aggiunge il token) e decodifica il JSON in out.
+// api calls the host's REST API through the CLI (which adds the token) and decodes the JSON into out.
 func (c *CLI) api(ctx context.Context, host string, out any, args ...string) error {
 	full := append([]string{"api", "--hostname", host}, args...)
 	data, err := c.run(ctx, "", full...)

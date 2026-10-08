@@ -51,7 +51,7 @@ func editorCandidates(id string) []string {
 	case "sublime":
 		return []string{"subl", "/opt/sublime_text/sublime_text"}
 	}
-	// gli altri IDE JetBrains: script di Toolbox, PATH, snap, installazione in /opt
+	// the other JetBrains IDEs: Toolbox script, PATH, snap, install in /opt
 	if jb, ok := jetbrains[id]; ok {
 		script := jb[0]
 		return []string{
@@ -66,8 +66,8 @@ func gitCandidates() []string {
 	return []string{"/usr/bin/git", "/usr/local/bin/git"}
 }
 
-// GitInstall propone il comando del gestore pacchetti della distribuzione, letto da /etc/os-release.
-// L'app non lo esegue: servirebbe sudo.
+// GitInstall suggests the command of the distribution's package manager, read from /etc/os-release.
+// The app does not run it: it would need sudo.
 func GitInstall() InstallInfo {
 	info := InstallInfo{URL: "https://git-scm.com/download/linux"}
 	ids := osReleaseIDs()
@@ -92,7 +92,7 @@ func cliCandidates(id string) []string {
 	return []string{"/usr/bin/" + id, "/usr/local/bin/" + id, "/snap/bin/" + id, filepath.Join(home(), ".local/bin", id), "/home/linuxbrew/.linuxbrew/bin/" + id}
 }
 
-// CLIInstall propone il pacchetto della distribuzione, dove esiste; altrimenti solo la pagina di installazione.
+// CLIInstall suggests the distribution's package, where there is one; otherwise just the install page.
 func CLIInstall(id string) InstallInfo {
 	info := InstallInfo{URL: cliURL[id]}
 	ids := osReleaseIDs()
@@ -137,7 +137,7 @@ func osReleaseIDs() map[string]bool {
 
 func nameProblem(name string) string { return "" }
 
-// MoveToTrash usa `gio trash`; se non c'è implementa la specifica freedesktop del Cestino.
+// MoveToTrash uses `gio trash`; if missing it implements the freedesktop trash specification.
 func MoveToTrash(path string) error {
 	if gio, err := exec.LookPath("gio"); err == nil {
 		if err := exec.Command(gio, "trash", path).Run(); err == nil {

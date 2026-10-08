@@ -11,8 +11,8 @@ var (
 	procSHFileOpertn = shell32.NewProc("SHFileOperationW")
 )
 
-// shFileOpStruct è SHFILEOPSTRUCTW. Su 64 bit shellapi.h usa l'allineamento
-// naturale, che è anche quello di Go; su 386 usa pack(1), vedi trash_windows_386.go.
+// shFileOpStruct is SHFILEOPSTRUCTW. On 64 bit shellapi.h uses natural
+// alignment, which is also Go's; on 386 it uses pack(1), see trash_windows_386.go.
 type shFileOpStruct struct {
 	hwnd                  uintptr
 	wFunc                 uint32
@@ -32,13 +32,13 @@ const (
 	fofNoErrorUI      = 0x0400
 )
 
-// MoveToTrash sposta path nel Cestino (recuperabile da lì).
+// MoveToTrash moves path to the trash (it can be restored from there).
 func MoveToTrash(path string) error {
 	from, err := syscall.UTF16FromString(path)
 	if err != nil {
 		return err
 	}
-	from = append(from, 0) // la lista deve terminare con un doppio NUL
+	from = append(from, 0) // the list must end with a double NUL
 	return shFileOperation(&from[0])
 }
 

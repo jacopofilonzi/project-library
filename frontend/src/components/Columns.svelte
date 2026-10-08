@@ -8,7 +8,7 @@
 
   let width = $state(window.innerWidth)
 
-  // quante colonne stanno accanto alla scheda (min 480px); sempre almeno 2
+  // how many columns fit next to the card (min 480px); always at least 2
   let fit = $derived(Math.max(2, Math.floor((width - 480 - 28) / 220)))
   let start = $derived(Math.max(0, store.path.length + 1 - fit))
 

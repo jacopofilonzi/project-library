@@ -28,11 +28,11 @@
       const info = await lib.GitInfo(path)
       if (node.path === path) git = info
     } catch {
-      /* errori git: la scheda resta senza pannello */
+      /* git errors: the card stays without the panel */
     }
   }
 
-  // progetto senza git: git init sul posto
+  // project without git: git init in place
   async function initGit() {
     try {
       await lib.InitProject(node.path, true, false)
@@ -45,16 +45,16 @@
     }
   }
 
-  // ricarica solo quando cambia progetto (untrack: le modifiche alla config non devono ricaricare il README)
+  // reload only when the project changes (untrack: config changes must not reload the README)
   $effect(() => {
     const p = node.path
     untrack(() => load(p))
   })
-  // aggiorna lo stato git dopo un'azione che lo cambia (es. pubblicazione)
+  // refresh the git state after an action that changes it (e.g. publishing)
   $effect(() => {
     if (store.gitChanged) untrack(() => loadGit(node.path))
   })
-  // aggiorna lo stato git quando la finestra torna in primo piano
+  // refresh the git state when the window comes back to the front
   $effect(() => {
     const f = () => loadGit(node.path)
     window.addEventListener('focus', f)

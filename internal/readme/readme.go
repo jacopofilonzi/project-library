@@ -1,4 +1,4 @@
-// Package readme trova e legge il README di un progetto e ne estrae una descrizione breve.
+// Package readme finds and reads a project's README and extracts a short description.
 package readme
 
 import (
@@ -9,9 +9,9 @@ import (
 	"strings"
 )
 
-const maxSize = 1 << 20 // 1 MB: oltre questa soglia il README viene troncato
+const maxSize = 1 << 20 // 1 MB: beyond this the README is truncated
 
-// bom è il byte order mark UTF-8, tolto se il README inizia con esso.
+// bom is the UTF-8 byte order mark, removed if the README starts with it.
 var bom = string(rune(0xFEFF))
 
 type Format string
@@ -28,7 +28,7 @@ type Readme struct {
 	Truncated bool   `json:"truncated"`
 }
 
-// priority: più basso = preferito quando ci sono più README.
+// priority: lower = preferred when there are several READMEs.
 func priority(lower string) (int, Format, bool) {
 	switch lower {
 	case "readme.md":
@@ -48,7 +48,7 @@ func priority(lower string) (int, Format, bool) {
 	return 0, "", false
 }
 
-// Find restituisce il nome del README in dir e il suo formato, o "" se non c'è.
+// Find returns the name of the README in dir and its format, or "" if there is none.
 func Find(dir string) (string, Format) {
 	entries, err := os.ReadDir(dir)
 	if err != nil {
@@ -66,7 +66,7 @@ func Find(dir string) (string, Format) {
 	return best, bestF
 }
 
-// Read legge il README di dir. ok è false se non esiste.
+// Read reads the README of dir. ok is false if it does not exist.
 func Read(dir string) (Readme, bool, error) {
 	name, format := Find(dir)
 	if name == "" {
@@ -90,7 +90,7 @@ func Read(dir string) (Readme, bool, error) {
 	return r, true, nil
 }
 
-// Description restituisce il primo paragrafo di testo del README di dir (max 240 caratteri), o "".
+// Description returns the first text paragraph of the README of dir (max 240 characters), or "".
 func Description(dir string) string {
 	name, format := Find(dir)
 	if name == "" {
@@ -115,8 +115,8 @@ var (
 	reRstHeader = regexp.MustCompile(`^[=\-~^"'#*+]{3,}$`)
 )
 
-// FirstParagraph estrae il primo paragrafo "di testo": salta front matter, titoli, badge,
-// immagini, HTML, blocchi di codice, citazioni-avviso e liste.
+// FirstParagraph extracts the first "text" paragraph: it skips front matter, headings, badges,
+// images, HTML, code blocks, admonition quotes and lists.
 func FirstParagraph(content string, format Format) string {
 	lines := strings.Split(strings.ReplaceAll(content, "\r\n", "\n"), "\n")
 	i := 0
@@ -150,11 +150,11 @@ func FirstParagraph(content string, format Format) string {
 			strings.HasPrefix(l, "- ") || strings.HasPrefix(l, "* ") || strings.HasPrefix(l, "+ ") ||
 			strings.HasPrefix(l, ">") || strings.HasPrefix(l, "    ") || strings.HasPrefix(raw, "\t") ||
 			reRstHeader.MatchString(l) || strings.HasPrefix(l, "..") || strings.HasPrefix(l, ":")
-		// riga fatta solo di badge/immagini
+		// line made only of badges/images
 		if !skip && strings.TrimSpace(reLink.ReplaceAllString(reImage.ReplaceAllString(l, ""), "")) == "" {
 			skip = true
 		}
-		// titolo setext (riga seguita da === o ---)
+		// setext heading (line followed by === or ---)
 		if !skip && i+1 < len(lines) && reRstHeader.MatchString(strings.TrimSpace(lines[i+1])) && len(para) == 0 {
 			i++
 			skip = true

@@ -19,7 +19,7 @@ import (
 
 // ---------- preset ----------
 
-// Presets restituisce il catalogo integrato (i preset dell'utente sono nella config).
+// Presets returns the built-in catalog (the user's presets are in the config).
 func (l *Library) Presets() []presets.Preset {
 	out := presets.Catalog()
 	for i := range out {
@@ -28,10 +28,10 @@ func (l *Library) Presets() []presets.Preset {
 	return out
 }
 
-// ---------- editor noti ----------
+// ---------- known editors ----------
 
-// SyncEditors aggiunge ai launcher, disattivati, gli editor noti installati che non ci sono ancora.
-// Restituisce i nomi di quelli aggiunti.
+// SyncEditors adds to the launchers, disabled, the installed known editors that are not there yet.
+// It returns the names of the ones it added.
 func (l *Library) SyncEditors() []string {
 	cfg := l.store.Get()
 	have := map[string]bool{}
@@ -57,7 +57,7 @@ func (l *Library) SyncEditors() []string {
 	return names
 }
 
-// ---------- linguaggi ----------
+// ---------- languages ----------
 
 type LanguageResult struct {
 	Stats   []languages.Stat `json:"stats"`
@@ -74,7 +74,7 @@ type langEntry struct {
 	at  time.Time
 }
 
-// Languages restituisce la composizione dei linguaggi del progetto (in cache per un minuto).
+// Languages returns the language breakdown of the project (cached for a minute).
 func (l *Library) Languages(path string) LanguageResult {
 	langCache.Lock()
 	e, ok := langCache.m[path]
@@ -93,9 +93,9 @@ func (l *Library) Languages(path string) LanguageResult {
 	return res
 }
 
-// ---------- export / import della configurazione ----------
+// ---------- configuration export / import ----------
 
-// ExportConfig salva la configurazione in un file scelto dall'utente. Restituisce il percorso ("" se annullato).
+// ExportConfig saves the configuration to a file chosen by the user. It returns the path ("" if cancelled).
 func (l *Library) ExportConfig(title string) (string, error) {
 	path, err := application.Get().Dialog.SaveFile().
 		SetMessage(title).
@@ -118,8 +118,8 @@ func (l *Library) ExportConfig(title string) (string, error) {
 	return path, nil
 }
 
-// ImportConfig sostituisce la configurazione con quella di un file scelto dall'utente.
-// I file di versioni precedenti passano dalle stesse migrazioni del caricamento.
+// ImportConfig replaces the configuration with the one in a file chosen by the user.
+// Files from older versions go through the same migrations as loading.
 func (l *Library) ImportConfig(title string) (AppState, error) {
 	path, err := application.Get().Dialog.OpenFile().
 		CanChooseFiles(true).
@@ -140,9 +140,9 @@ func (l *Library) ImportConfig(title string) (AppState, error) {
 	return l.SaveConfig(next)
 }
 
-// ResetConfig riporta la configurazione ai valori iniziali: al ritorno il frontend riapre il wizard.
-// Resta solo la lingua, così il wizard parla quella dell'utente. La configurazione precedente
-// viene salvata in config.backup.json, accanto a config.json, e si può reimportare.
+// ResetConfig brings the configuration back to the initial values: the frontend then reopens the wizard.
+// Only the language is kept, so the wizard speaks the user's language. The previous configuration
+// is saved to config.backup.json, next to config.json, and can be imported again.
 func (l *Library) ResetConfig() (AppState, error) {
 	prev := l.store.Get()
 	data, err := json.MarshalIndent(prev, "", "  ")
@@ -158,11 +158,11 @@ func (l *Library) ResetConfig() (AppState, error) {
 	if _, err := l.SaveConfig(next); err != nil {
 		return l.State(), err
 	}
-	l.SyncEditors() // gli editor noti installati tornano nella lista, disattivati, come al primo avvio
+	l.SyncEditors() // the installed known editors come back to the list, disabled, as on the first run
 	return l.State(), nil
 }
 
-// backupPath è il file in cui ResetConfig salva la configurazione precedente.
+// backupPath is the file where ResetConfig saves the previous configuration.
 func (l *Library) backupPath() string {
 	return filepath.Join(filepath.Dir(l.store.Path()), "config.backup.json")
 }

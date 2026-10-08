@@ -4,10 +4,10 @@
   import { t } from '../../lib/i18n/index.svelte'
   import { lib, errMessage } from '../../lib/api'
 
-  // mode "new": crea una cartella in parent; mode "rename": rinomina path
+  // mode "new": creates a folder in parent; mode "rename": renames path
   let { mode, parent = '', path = '', name: initial = '' }: { mode: 'new' | 'rename'; parent?: string; path?: string; name?: string } = $props()
 
-  // il dialog viene ricreato a ogni apertura: le props servono solo come valori iniziali
+  // the dialog is recreated at every opening: the props are only initial values
   let name = $state(untrack(() => initial))
   let problem = $state('')
   let busy = $state(false)
@@ -20,7 +20,7 @@
     if (mode === 'rename') input?.select()
   })
 
-  // verifica il nome mentre si scrive (validazione fatta dal backend, regole del sistema operativo)
+  // checks the name while typing (validated by the backend, operating system rules)
   let timer: ReturnType<typeof setTimeout>
   $effect(() => {
     const n = name
@@ -28,7 +28,7 @@
     if (!n || (mode === 'rename' && n === initial)) { problem = ''; return }
     timer = setTimeout(async () => {
       const code = await lib.CheckName(dir, n)
-      // rinomina che cambia solo maiuscole/minuscole: consentita
+      // rename that only changes the case: allowed
       problem = mode === 'rename' && code === 'exists' && n.toLowerCase() === initial.toLowerCase() ? '' : code
     }, 120)
   })
@@ -45,7 +45,7 @@
         store.goToPath(created)
         store.toast(t('dlg.created', { name: name.trim() }))
       } else {
-        // se stavi guardando l'elemento rinominato (o qualcosa al suo interno) resti lì
+        // if you were looking at the renamed item (or something inside it) you stay there
         const wasHere = store.selected?.path === path || store.current?.path === path || !!store.current?.path.startsWith(path + (path.includes('\\') ? '\\' : '/'))
         const renamed = await lib.Rename(path, name)
         store.setTree(await lib.Tree())

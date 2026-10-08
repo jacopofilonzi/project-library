@@ -6,15 +6,15 @@ import (
 	"time"
 )
 
-// Owner è dove si può creare un repository: l'utente, un'organizzazione (GitHub) o un gruppo (GitLab).
+// Owner is where a repository can be created: the user, an organization (GitHub) or a group (GitLab).
 type Owner struct {
 	Name     string `json:"name"`
 	Personal bool   `json:"personal"`
-	// ID è il namespace di GitLab (0 per l'utente e su GitHub).
+	// ID is the GitLab namespace (0 for the user and on GitHub).
 	ID int `json:"id"`
 }
 
-// Owners elenca l'utente e le organizzazioni o i gruppi in cui può creare repository.
+// Owners lists the user and the organizations or groups where they can create repositories.
 func (c *CLI) Owners(acc Account) ([]Owner, error) {
 	ctx, cancel := timeout(30 * time.Second)
 	defer cancel()
@@ -31,7 +31,7 @@ func (c *CLI) Owners(acc Account) ([]Owner, error) {
 		}
 		return out, nil
 	}
-	// gruppi in cui l'utente è almeno Maintainer (il livello che di default può creare progetti)
+	// groups where the user is at least Maintainer (the level that can create projects by default)
 	var groups []struct {
 		ID       int    `json:"id"`
 		FullPath string `json:"full_path"`
@@ -45,11 +45,11 @@ func (c *CLI) Owners(acc Account) ([]Owner, error) {
 	return out, nil
 }
 
-// reNotFound riconosce la risposta 404 nel messaggio di errore di gh ("Not Found (HTTP 404)") e di glab.
+// reNotFound recognizes the 404 answer in the error message of gh ("Not Found (HTTP 404)") and glab.
 var reNotFound = regexp.MustCompile(`(?i)not found|\b404\b`)
 
-// Exists dice se owner/name esiste già sull'host. GitHub e GitLab non distinguono maiuscole
-// e minuscole, come quando si crea il repository.
+// Exists tells whether owner/name already exists on the host. GitHub and GitLab are case-insensitive,
+// as when the repository is created.
 func (c *CLI) Exists(acc Account, owner, name string) (bool, error) {
 	ctx, cancel := timeout(20 * time.Second)
 	defer cancel()
@@ -67,13 +67,13 @@ func (c *CLI) Exists(acc Account, owner, name string) (bool, error) {
 	return false, err
 }
 
-// Created è il repository appena creato.
+// Created is the repository just created.
 type Created struct {
 	Web      string `json:"web"`
 	CloneURL string `json:"cloneUrl"`
 }
 
-// Create crea un repository vuoto (senza README né licenza, così il primo push non va in conflitto).
+// Create creates an empty repository (no README or license, so the first push does not conflict).
 func (c *CLI) Create(acc Account, owner Owner, name, description string, private bool) (Created, error) {
 	ctx, cancel := timeout(60 * time.Second)
 	defer cancel()

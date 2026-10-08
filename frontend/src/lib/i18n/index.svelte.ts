@@ -25,7 +25,7 @@ function lookup(dict: unknown, key: string): unknown {
   return cur
 }
 
-/** Traduce key ("card.modified") sostituendo i parametri {nome}. Ripiega sull'inglese, poi sulla chiave. */
+/** Translates key ("card.modified") replacing the {name} parameters. Falls back to English, then to the key. */
 export function t(key: string, vars?: Record<string, string | number>): string {
   let s = lookup(dicts[i18n.lang], key) ?? lookup(en, key)
   if (typeof s !== 'string') return key
@@ -33,12 +33,12 @@ export function t(key: string, vars?: Record<string, string | number>): string {
   return s as string
 }
 
-/** Come t ma sceglie la variante singolare (key + "1") quando n === 1. */
+/** Like t but picks the singular variant (key + "1") when n === 1. */
 export function tn(key: string, n: number, vars?: Record<string, string | number>): string {
   return n === 1 ? t(key + '1', { n, ...vars }) : t(key, { n, ...vars })
 }
 
-/** Tempo relativo localizzato ("2 h fa" / "2 h ago"). */
+/** Localized relative time ("2 h ago" / "2 h fa"). */
 export function ago(ms: number): string {
   const s = (Date.now() - ms) / 1000
   if (s < 60) return t('time.now')

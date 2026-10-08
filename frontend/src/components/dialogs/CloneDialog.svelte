@@ -5,13 +5,13 @@
   import { t } from '../../lib/i18n/index.svelte'
   import { lib, errMessage, errCode, type CloneSuggestion, type CloneProgress, type Repo } from '../../lib/api'
 
-  // parent: cartella da cui è stato aperto; null = dalla navbar (si propone github/<owner>)
+  // parent: folder it was opened from; null = from the navbar (github/<owner> is suggested)
   let { parent }: { parent: string | null } = $props()
 
-  // il dialog viene ricreato a ogni apertura: parent serve solo come valore iniziale
+  // the dialog is recreated at every opening: parent is only the initial value
   const from = untrack(() => parent)
   const roots = store.cfg.roots
-  // radice di riferimento: quella che contiene parent, altrimenti la prima
+  // reference root: the one that contains parent, otherwise the first
   const root = (from && roots.find((r) => from === r || from.startsWith(r + '\\') || from.startsWith(r + '/'))) || roots[0] || ''
   const sep = root.includes('\\') ? '\\' : '/'
   const relOf = (p: string) => (p.length > root.length ? p.slice(root.length + 1) : '').split(/[\\/]/).filter(Boolean).join('/')
@@ -21,7 +21,7 @@
   let urlInput: HTMLInputElement | undefined = $state()
   let searchInput: HTMLInputElement | undefined = $state()
 
-  // con gh o glab collegati si sceglie tra i propri repository, altrimenti si incolla l'URL
+  // with gh or glab logged in you pick from your repositories, otherwise you paste the URL
   const hasForge = store.forgeAccounts.length > 0
   let tab = $state<'url' | 'repos'>(hasForge ? 'repos' : 'url')
   let repos = $state<Repo[] | null>(null)
@@ -42,7 +42,7 @@
     url = r.cloneUrl
   }
 
-  // autofocus non funziona sugli elementi aggiunti dopo il caricamento: il focus va dato a mano
+  // autofocus does not work on elements added after load: the focus is given by hand
   $effect(() => (tab === 'repos' ? searchInput : urlInput)?.focus())
   let dest = $state(startRel)
   let name = $state('')
@@ -109,7 +109,7 @@
     }
   }
 
-  // fasi di git clone tradotte quando le conosciamo
+  // git clone phases, translated when we know them
   function phaseLabel(p: string) {
     const k = 'dlg.phase.' + p
     const tr = t(k)

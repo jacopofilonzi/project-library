@@ -1,4 +1,4 @@
-// Registro delle chiamate al backend finto, leggibile dai test con page.evaluate(() => window.__mock.calls).
+// Log of the calls to the fake backend, readable from the tests with page.evaluate(() => window.__mock.calls).
 export type Call = { fn: string; args: unknown[] }
 
 declare global {
@@ -9,18 +9,18 @@ declare global {
 }
 
 export type MockOptions = {
-  /** wizard del primo avvio non ancora completato */
+  /** first-run wizard not completed yet */
   firstRun?: boolean
-  /** git non installato */
+  /** git not installed */
   noGit?: boolean
-  /** ultima posizione salvata (percorso assoluto di un progetto o di una cartella) */
+  /** last saved location (absolute path of a project or a folder) */
   lastSelected?: string
   language?: 'en' | 'it'
-  /** la cartella radice di default (~/Development) non esiste */
+  /** the default root folder (~/Development) does not exist */
   missingRoot?: boolean
-  /** percorso restituito dal selettore di cartelle di sistema */
+  /** path returned by the system folder picker */
   pickFolder?: string
-  /** GitHub CLI: assente (default), installata senza login o con il login fatto su github.com */
+  /** GitHub CLI: missing (default), installed without login, or logged in on github.com */
   forges?: 'none' | 'notLoggedIn' | 'loggedIn'
 }
 

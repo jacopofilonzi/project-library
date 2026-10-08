@@ -37,7 +37,7 @@ func TestMigrationV1(t *testing.T) {
 	if c.StartMode != StartWindow || c.Autostart || c.SpotlightHotkey == "" || c.Hotkey != "" || c.Version != currentVersion {
 		t.Fatalf("migration: %+v", c)
 	}
-	// dopo la migrazione una scorciatoia spotlight vuota (disattivata) resta vuota
+	// after the migration an empty (disabled) spotlight shortcut stays empty
 	s.Update(func(c *Config) { c.SpotlightHotkey = "" })
 	s2, _ := Load(path, dir)
 	if s2.Get().SpotlightHotkey != "" {
@@ -56,7 +56,7 @@ func TestMigrationV2Rules(t *testing.T) {
 	}
 	s, _ := Load(path, dir)
 	c := s.Get()
-	// la vecchia regola di default diventa i preset integrati equivalenti, le altre preset dell'utente
+	// the old default rule becomes the equivalent built-in presets, the others user presets
 	want := []Rule{{"gradle", "intellij"}, {"maven", "intellij"}, {"intellij", "intellij"}, {"custom-2", "arduino"}}
 	if len(c.Rules) != len(want) {
 		t.Fatalf("rules: %+v", c.Rules)

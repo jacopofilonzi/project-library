@@ -1,5 +1,5 @@
-// Package languages calcola la composizione dei linguaggi di un progetto (come la barra di GitHub):
-// byte per linguaggio, contando i file sorgente per estensione e saltando dipendenze e build.
+// Package languages computes the language breakdown of a project (like GitHub's bar):
+// bytes per language, counting source files by extension and skipping dependencies and builds.
 package languages
 
 import (
@@ -19,7 +19,7 @@ type Stat struct {
 
 type lang struct{ name, color string }
 
-// colori presi da GitHub Linguist
+// colors taken from GitHub Linguist
 var (
 	golang     = lang{"Go", "#00ADD8"}
 	typescript = lang{"TypeScript", "#3178c6"}
@@ -60,7 +60,7 @@ var byName = map[string]lang{
 	"makefile":   {"Makefile", "#427819"},
 }
 
-// cartelle di dipendenze, build e strumenti: non sono codice del progetto
+// dependency, build and tool folders: not the project's code
 var skipDirs = map[string]bool{
 	".git": true, ".hg": true, ".svn": true, "node_modules": true, "vendor": true, "dist": true, "build": true,
 	"out": true, "target": true, "bin": true, "obj": true, ".idea": true, ".vscode": true, ".gradle": true,
@@ -72,11 +72,11 @@ var skipDirs = map[string]bool{
 const (
 	maxFiles = 30000
 	budget   = 3 * time.Second
-	// sotto questa quota i linguaggi finiscono in "Other"
+	// below this share languages end up in "Other"
 	minPercent = 1.0
 )
 
-// Analyze restituisce i linguaggi di dir, dal più presente; partial è true se la scansione si è fermata ai limiti.
+// Analyze returns the languages of dir, most present first; partial is true if the scan stopped at the limits.
 func Analyze(dir string) (stats []Stat, partial bool) {
 	totals := map[lang]int64{}
 	files := 0
@@ -114,7 +114,7 @@ func classify(name string) (lang, bool) {
 		return l, true
 	}
 	if strings.HasSuffix(lower, ".min.js") || strings.HasSuffix(lower, ".min.css") || strings.HasSuffix(lower, ".d.ts") {
-		return lang{}, false // generati o dichiarazioni, non codice scritto
+		return lang{}, false // generated files or declarations, not hand-written code
 	}
 	l, ok := byExt[filepath.Ext(lower)]
 	return l, ok

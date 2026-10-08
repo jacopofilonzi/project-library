@@ -1,5 +1,5 @@
-// Package gitinfo interroga il git installato dall'utente (mai una libreria):
-// stesso comportamento del terminale, stesse credenziali e chiavi SSH.
+// Package gitinfo queries the git installed by the user (never a library):
+// same behavior as the terminal, same credentials and SSH keys.
 package gitinfo
 
 import (
@@ -26,15 +26,15 @@ type Commit struct {
 	Hash    string `json:"hash"`
 	Subject string `json:"subject"`
 	Author  string `json:"author"`
-	Time    int64  `json:"time"` // unix secondi
+	Time    int64  `json:"time"` // unix seconds
 }
 
 type Info struct {
 	IsRepo      bool    `json:"isRepo"`
 	Branch      string  `json:"branch"`
 	Detached    bool    `json:"detached"`
-	Remote      string  `json:"remote"`    // URL così com'è configurato
-	RemoteWeb   string  `json:"remoteWeb"` // URL https apribile nel browser, se ricavabile
+	Remote      string  `json:"remote"`    // URL as configured
+	RemoteWeb   string  `json:"remoteWeb"` // https URL that opens in the browser, when it can be derived
 	HasUpstream bool    `json:"hasUpstream"`
 	Ahead       int     `json:"ahead"`
 	Behind      int     `json:"behind"`
@@ -42,14 +42,14 @@ type Info struct {
 	Commit      *Commit `json:"commit"`
 }
 
-// Git risolve ed esegue il binario git.
+// Git resolves and runs the git binary.
 type Git struct {
 	mu   sync.RWMutex
 	path string
 }
 
-// Detect cerca git: prima il percorso configurato, poi PATH e i percorsi tipici del sistema.
-// Restituisce il percorso trovato (vuoto se non c'è).
+// Detect looks for git: first the configured path, then the PATH and the usual system paths.
+// It returns the path found (empty if missing).
 func (g *Git) Detect(configured string) string {
 	var found string
 	candidates := platform.GitCandidates()
@@ -91,7 +91,7 @@ func (g *Git) command(ctx context.Context, dir string, args ...string) (*exec.Cm
 	}
 	cmd := exec.CommandContext(ctx, p, args...)
 	cmd.Dir = dir
-	// Nessun prompt interattivo nel terminale: non c'è un terminale.
+	// No interactive prompt in the terminal: there is no terminal.
 	cmd.Env = append(os.Environ(), "GIT_TERMINAL_PROMPT=0", "LC_ALL=C")
 	platform.HideConsole(cmd)
 	return cmd, nil
@@ -108,13 +108,13 @@ func (g *Git) run(dir string, args ...string) (string, error) {
 	return string(out), err
 }
 
-// IsRepo: il progetto ha una propria cartella (o file, per worktree e submodule) .git.
+// IsRepo: the project has its own .git folder (or file, for worktrees and submodules).
 func IsRepo(dir string) bool {
 	_, err := os.Lstat(filepath.Join(dir, ".git"))
 	return err == nil
 }
 
-// Info raccoglie lo stato della repo in dir con tre comandi git.
+// Info collects the state of the repository in dir with three git commands.
 func (g *Git) Info(dir string) (Info, error) {
 	if !IsRepo(dir) {
 		return Info{}, nil
@@ -124,7 +124,7 @@ func (g *Git) Info(dir string) (Info, error) {
 	}
 	info := Info{IsRepo: true}
 
-	// branch, upstream, ahead/behind e file modificati in un colpo solo
+	// branch, upstream, ahead/behind and changed files in one go
 	if out, err := g.run(dir, "status", "--porcelain=v2", "--branch"); err == nil {
 		parseStatus(out, &info)
 	}
@@ -189,7 +189,7 @@ func parseStatus(out string, info *Info) {
 	}
 }
 
-// Dirty conta i file modificati o non tracciati.
+// Dirty counts the changed or untracked files.
 func (g *Git) Dirty(dir string) (int, error) {
 	out, err := g.run(dir, "status", "--porcelain")
 	if err != nil {
@@ -204,7 +204,7 @@ func (g *Git) Dirty(dir string) (int, error) {
 	return n, nil
 }
 
-// Fetch aggiorna i riferimenti remoti (per ahead/behind). Silenzioso, senza tag.
+// Fetch updates the remote refs (for ahead/behind). Quiet, without tags.
 func (g *Git) Fetch(dir string) error {
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
@@ -215,7 +215,7 @@ func (g *Git) Fetch(dir string) error {
 	return cmd.Run()
 }
 
-// runOut esegue git e restituisce l'output; in caso di errore il messaggio è l'output di git.
+// runOut runs git and returns its output; on error the message is git's output.
 func (g *Git) runOut(dir string, timeout time.Duration, args ...string) (string, error) {
 	ctx, cancel := context.WithTimeout(context.Background(), timeout)
 	defer cancel()
@@ -234,42 +234,42 @@ func (g *Git) runOut(dir string, timeout time.Duration, args ...string) (string,
 	return text, nil
 }
 
-// Pull aggiorna il branch corrente solo se può farlo con un fast-forward (nessun merge implicito).
+// Pull updates the current branch only if it can fast-forward (no implicit merge).
 func (g *Git) Pull(dir string) (string, error) {
 	return g.runOut(dir, 2*time.Minute, "pull", "--ff-only")
 }
 
-// FetchNow come Fetch, ma restituisce il messaggio di git in caso di errore.
+// FetchNow is like Fetch, but returns git's message on error.
 func (g *Git) FetchNow(dir string) error {
 	_, err := g.runOut(dir, 2*time.Minute, "fetch", "--no-tags")
 	return err
 }
 
-// Init crea una repository vuota in dir.
+// Init creates an empty repository in dir.
 func (g *Git) Init(dir string) error {
 	_, err := g.runOut(dir, 30*time.Second, "init")
 	return err
 }
 
-// AddRemote aggiunge il remote name con l'URL indicato.
+// AddRemote adds the remote name with the given URL.
 func (g *Git) AddRemote(dir, name, url string) error {
 	_, err := g.runOut(dir, 30*time.Second, "remote", "add", name, url)
 	return err
 }
 
-// PushUpstream pubblica il branch corrente sul remote e lo imposta come upstream.
+// PushUpstream pushes the current branch to the remote and sets it as upstream.
 func (g *Git) PushUpstream(dir, remote string) error {
 	_, err := g.runOut(dir, 5*time.Minute, "push", "--set-upstream", remote, "HEAD")
 	return err
 }
 
-// Change è un file modificato, aggiunto, eliminato o non tracciato.
+// Change is a changed, added, deleted or untracked file.
 type Change struct {
-	Status string `json:"status"` // codice di git status a due lettere, es. "M", "??", "A", "D", "R"
+	Status string `json:"status"` // two-letter git status code, e.g. "M", "??", "A", "D", "R"
 	Path   string `json:"path"`
 }
 
-// Changes elenca i file modificati (al massimo limit).
+// Changes lists the changed files (at most limit).
 func (g *Git) Changes(dir string, limit int) ([]Change, error) {
 	out, err := g.run(dir, "status", "--porcelain=v1", "-z")
 	if err != nil {
@@ -278,8 +278,8 @@ func (g *Git) Changes(dir string, limit int) ([]Change, error) {
 	return parseChanges(out, limit), nil
 }
 
-// parseChanges legge l'output di `git status --porcelain=v1 -z`.
-// Con -z i rename hanno il percorso di origine come voce separata, da saltare.
+// parseChanges reads the output of `git status --porcelain=v1 -z`.
+// With -z renames have the source path as a separate entry, to be skipped.
 func parseChanges(out string, limit int) []Change {
 	var res []Change
 	parts := strings.Split(out, "\x00")
@@ -291,7 +291,7 @@ func parseChanges(out string, limit int) []Change {
 		code := strings.TrimSpace(e[:2])
 		res = append(res, Change{Status: code, Path: e[3:]})
 		if e[0] == 'R' || e[0] == 'C' {
-			i++ // percorso di origine del rename
+			i++ // source path of the rename
 		}
 		if len(res) >= limit {
 			break
@@ -300,7 +300,7 @@ func parseChanges(out string, limit int) []Change {
 	return res
 }
 
-// Progress è un aggiornamento di git clone.
+// Progress is a git clone update.
 type Progress struct {
 	Phase   string `json:"phase"`
 	Percent int    `json:"percent"`
@@ -308,8 +308,8 @@ type Progress struct {
 
 var reProgress = regexp.MustCompile(`^(?:remote: )?([A-Za-z ]+):\s+(\d+)%`)
 
-// Clone esegue git clone e riporta le fasi con la percentuale.
-// In caso di errore restituisce le ultime righe di output di git.
+// Clone runs git clone and reports the phases with their percentage.
+// On error it returns git's last output lines.
 func (g *Git) Clone(ctx context.Context, url, dest string, progress func(Progress)) error {
 	cmd, err := g.command(ctx, filepath.Dir(dest), "clone", "--progress", url, dest)
 	if err != nil {
@@ -350,7 +350,7 @@ func (g *Git) Clone(ctx context.Context, url, dest string, progress func(Progres
 	return nil
 }
 
-// readLines divide l'output su \n e su \r (git aggiorna l'avanzamento con \r).
+// readLines splits the output on \n and on \r (git updates the progress with \r).
 func readLines(r io.Reader, fn func(string)) {
 	br := bufio.NewReader(r)
 	var buf strings.Builder
@@ -372,12 +372,12 @@ func readLines(r io.Reader, fn func(string)) {
 }
 
 var (
-	// forma scp "utente@host:percorso"; l'host deve contenere un punto, così "C:\repo" non viene scambiato per un remote
+	// scp form "user@host:path"; the host must contain a dot, so "C:\repo" is not mistaken for a remote
 	reSCP = regexp.MustCompile(`^(?:[\w.-]+@)?([\w-]+\.[\w.-]+):([^\\]+?)(?:\.git)?/?$`)
 	reURL = regexp.MustCompile(`^(?:https?|ssh|git)://(?:[^@/]+@)?([^/:]+)(?::\d+)?/(.+?)(?:\.git)?/?$`)
 )
 
-// WebURL trasforma un remote (https, ssh, scp-like) nell'indirizzo https della repo.
+// WebURL turns a remote (https, ssh, scp-like) into the https address of the repository.
 func WebURL(remote string) string {
 	remote = strings.TrimSpace(remote)
 	if m := reURL.FindStringSubmatch(remote); m != nil {
@@ -391,7 +391,7 @@ func WebURL(remote string) string {
 	return ""
 }
 
-// RepoName ricava owner e nome della repo da un URL di clone (per proporre la destinazione).
+// RepoName gets owner and repository name from a clone URL (to suggest the destination).
 func RepoName(url string) (host, owner, repo string, ok bool) {
 	web := WebURL(url)
 	if web == "" {

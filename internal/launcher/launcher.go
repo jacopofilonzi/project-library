@@ -1,4 +1,4 @@
-// Package launcher apre un progetto con un programma configurato.
+// Package launcher opens a project with a configured program.
 package launcher
 
 import (
@@ -12,15 +12,15 @@ import (
 
 var ErrNotFound = errors.New("launcher executable not found")
 
-// Target è ciò che viene aperto, con i valori dei segnaposti.
+// Target is what gets opened, with the placeholder values.
 type Target struct {
 	Path   string // {path}
 	Name   string // {name}
-	Source string // {source}: prima cartella sotto la radice (es. "github")
-	Group  string // {group}: cartelle intermedie (es. "jacopofilonzi")
+	Source string // {source}: first folder under the root (e.g. "github")
+	Group  string // {group}: intermediate folders (e.g. "jacopofilonzi")
 }
 
-// NewTarget calcola i segnaposti di path rispetto alla radice che lo contiene.
+// NewTarget computes the placeholders of path relative to the root that contains it.
 func NewTarget(path string, roots []string) Target {
 	t := Target{Path: path, Name: filepath.Base(path)}
 	for _, r := range roots {
@@ -38,8 +38,8 @@ func NewTarget(path string, roots []string) Target {
 	return t
 }
 
-// SplitArgs divide una riga di argomenti: gli spazi separano, le virgolette doppie raggruppano.
-// Il backslash è letterale (percorsi Windows).
+// SplitArgs splits an argument line: spaces separate, double quotes group.
+// Backslashes are literal (Windows paths).
 func SplitArgs(s string) []string {
 	var out []string
 	var cur strings.Builder
@@ -66,7 +66,7 @@ func SplitArgs(s string) []string {
 	return out
 }
 
-// Expand divide gli argomenti e sostituisce i segnaposti.
+// Expand splits the arguments and replaces the placeholders.
 func Expand(args string, t Target) []string {
 	r := strings.NewReplacer("{path}", t.Path, "{name}", t.Name, "{source}", t.Source, "{group}", t.Group)
 	parts := SplitArgs(args)
@@ -76,8 +76,8 @@ func Expand(args string, t Target) []string {
 	return parts
 }
 
-// Command restituisce l'eseguibile di un launcher: quello configurato o, per
-// i launcher predefiniti senza percorso, quello rilevato. Vuoto se non trovato.
+// Command returns the executable of a launcher: the configured one or, for
+// built-in launchers without a path, the detected one. Empty if not found.
 func Command(l config.Launcher) string {
 	if l.Command != "" {
 		return platform.Resolve(l.Command)
@@ -88,7 +88,7 @@ func Command(l config.Launcher) string {
 	return ""
 }
 
-// Launch apre target con il launcher l.
+// Launch opens target with the launcher l.
 func Launch(l config.Launcher, t Target) error {
 	cmd := Command(l)
 	if cmd == "" {

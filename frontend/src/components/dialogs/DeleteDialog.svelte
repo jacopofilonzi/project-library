@@ -7,19 +7,19 @@
   let { node }: { node: Node } = $props()
 
   let warnings = $state<string[]>([])
-  let strong = $state(false) // conferma forte: bisogna scrivere il nome
+  let strong = $state(false) // strong confirmation: the name must be typed
   let loading = $state(untrack(() => node.kind === 'project'))
   let typed = $state('')
   let nameInput: HTMLInputElement | undefined = $state()
   let cancelBtn: HTMLButtonElement | undefined = $state()
-  // focus sul campo del nome se serve la conferma forte, altrimenti su Annulla (mai su Elimina)
+  // focus on the name field if strong confirmation is needed, otherwise on Cancel (never on Delete)
   $effect(() => {
     if (loading) return
     ;(strong ? nameInput : cancelBtn)?.focus()
   })
   let busy = $state(false)
 
-  // per i progetti: controlla modifiche non committate, commit non pushati, assenza di remote
+  // for projects: check uncommitted changes, unpushed commits, missing remote
   $effect(() => {
     if (node.kind !== 'project') return
     ;(async () => {

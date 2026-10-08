@@ -23,7 +23,7 @@
       if (store.settingsOpen) store.settingsOpen = false
       else store.openSettings()
     })
-    // comandi della palette lanciati dalla ricerca flottante che servono qui
+    // palette commands launched from the floating search that need this window
     const offCommand = Events.On('main:command', (ev: { data: string }) => {
       if (store.wizardOpen) return
       store.paletteOpen = false
@@ -37,12 +37,12 @@
 
   let overlay = $derived(store.paletteOpen || store.settingsOpen || store.wizardOpen || !!store.dialog || !!store.ctx)
 
-  // ---------- navigazione da tastiera nelle colonne ----------
+  // ---------- keyboard navigation in the columns ----------
   function kids(names: string[]): Node[] {
     return (store.nodeAt(names)?.children ?? []).filter((c): c is Node => !!c)
   }
   function moveSelection(d: number) {
-    // l'elemento attivo è il progetto selezionato o l'ultima cartella del percorso
+    // the active element is the selected project or the last folder of the path
     const inLast = store.sel !== null || !store.path.length
     const parent = inLast ? store.path : store.path.slice(0, -1)
     const list = kids(parent)
@@ -75,8 +75,8 @@
       store.paletteOpen = !store.paletteOpen
       return
     }
-    // Ctrl/⌘ P e Ctrl/⌘ , arrivano dal backend come evento "shortcut:settings" (vedi main.go);
-    // qui si blocca solo l'eventuale stampa.
+    // Ctrl/⌘ P and Ctrl/⌘ , come from the backend as the "shortcut:settings" event (see main.go);
+    // here we only block printing.
     if (mod && (k === 'p' || k === ',')) {
       e.preventDefault()
       return

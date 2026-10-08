@@ -4,7 +4,7 @@
   import { t, tn } from '../../lib/i18n/index.svelte'
   import { lib, errMessage, serviceName, type Node, type Owner, type GitInfo, type PublishRequest } from '../../lib/api'
 
-  // crea il repository su GitHub o GitLab per un progetto git senza remote e fa il primo push
+  // creates the repository on GitHub or GitLab for a git project without a remote and pushes for the first time
   let { node }: { node: Node } = $props()
   const n = untrack(() => node)
 
@@ -14,7 +14,7 @@
   let owners = $state<Owner[]>([])
   let ownerIdx = $state(0)
 
-  // nome valido per GitHub e GitLab: lettere, numeri, punti, trattini e underscore
+  // valid name for GitHub and GitLab: letters, numbers, dots, dashes and underscores
   const cleanName = (s: string) => s.trim().replace(/[^A-Za-z0-9._-]+/g, '-').replace(/-{2,}/g, '-').replace(/^[-.]+|-+$/g, '')
   let name = $state(cleanName(n.name))
   let description = $state(n.desc ?? '')
@@ -36,8 +36,8 @@
 
   let nameOk = $derived(/^[A-Za-z0-9._-]+$/.test(name) && name !== '.' && name !== '..')
 
-  // disponibilità di proprietario/nome, controllata mentre si scrive (come fa GitHub)
-  let taken = $state<boolean | null>(null) // null = controllo in corso
+  // availability of owner/name, checked while typing (as GitHub does)
+  let taken = $state<boolean | null>(null) // null = check in progress
   let checkErr = $state('')
   let checkTimer: ReturnType<typeof setTimeout> | undefined
   let fullName = $derived(`${owners[ownerIdx]?.name ?? ''}/${name}`)
@@ -54,7 +54,7 @@
         const r = await lib.ForgeNameTaken(a.kind, a.host, o.name, nm)
         if (a === acc && o === owners[ownerIdx] && nm === name) taken = r
       } catch (e) {
-        // il controllo non è riuscito: si può comunque provare, l'errore vero arriverà dalla creazione
+        // the check failed: you can still try, the real error will come from the creation
         if (nm === name) checkErr = errMessage(e)
       }
     }, 400)

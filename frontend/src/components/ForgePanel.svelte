@@ -3,7 +3,7 @@
   import { t, tn } from '../lib/i18n/index.svelte'
   import { lib, type ForgeInfo } from '../lib/api'
 
-  // pull/merge request, issue e CI del remote, tramite gh o glab; nulla se nessuna CLI ha un account su quell'host
+  // pull/merge requests, issues and CI of the remote, through gh or glab; nothing if no CLI has an account on that host
   let { remote, branch }: { remote: string; branch: string } = $props()
 
   let info = $state<ForgeInfo | null>(null)

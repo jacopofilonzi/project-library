@@ -8,7 +8,7 @@ async function openApp(page: Page, opts: MockOptions = {}, url = '/') {
   await page.goto(url)
 }
 
-/** riga di una colonna con il nome esatto */
+/** column row with the exact name */
 const row = (page: Page, name: string) => page.locator('.row', { has: page.locator('.name', { hasText: new RegExp(`^${name}$`) }) })
 const calls = (page: Page) => page.evaluate(() => window.__mock.calls)
 
@@ -53,7 +53,7 @@ test('palette searches the current folder, then everywhere', async ({ page }) =>
   await expect(pal.locator('.chip')).toHaveText('everywhere')
   await expect(pal.locator('.it .t')).toHaveText(['discord-bot-java', 'dity-bot-rs'])
 
-  // ↵ porta al progetto
+  // ↵ goes to the project
   await page.keyboard.press('ArrowDown')
   await page.keyboard.press('Enter')
   await expect(pal).toBeHidden()
@@ -79,14 +79,14 @@ test('palette commands run with ">"', async ({ page }) => {
 
 test('launcher: content rules and the per-project choice', async ({ page }) => {
   await openApp(page)
-  // la regola Java/Gradle sceglie IntelliJ
+  // the Java/Gradle rule picks IntelliJ
   await row(page, 'local').click()
   await row(page, 'UNI').click()
-  await row(page, 'Ingegneria del Software').click()
+  await row(page, 'Software Engineering').click()
   await row(page, 'BuildPatternDemo').click()
   await expect(page.locator('.open .main')).toContainText('Open with IntelliJ IDEA')
 
-  // scelta manuale per un progetto Node
+  // manual choice for a Node project
   await page.locator('.crumbs button', { hasText: 'local' }).click()
   await row(page, 'awake').click()
   await expect(page.locator('.open .main')).toContainText('Open with VS Code')
@@ -137,14 +137,14 @@ test('deleting a project without remote needs its name', async ({ page }) => {
 test('an empty folder can be initialized as a project', async ({ page }) => {
   await openApp(page)
   await row(page, 'local').click()
-  await row(page, 'Nuova cartella').click()
+  await row(page, 'New folder').click()
   await expect(page.locator('.detail .tag')).toContainText('Empty folder')
   await page.getByRole('button', { name: 'Initialize project' }).click()
   await page.locator('.dlg').getByRole('button', { name: 'Initialize' }).click()
 
-  await expect(page.locator('.detail .head h1')).toHaveText('Nuova cartella')
+  await expect(page.locator('.detail .head h1')).toHaveText('New folder')
   await expect(page.locator('.readme .bar')).toContainText('README.md')
-  expect(await calls(page)).toContainEqual({ fn: 'InitProject', args: [`${ROOT}/local/Nuova cartella`, true, true] })
+  expect(await calls(page)).toContainEqual({ fn: 'InitProject', args: [`${ROOT}/local/New folder`, true, true] })
 })
 
 test('settings switch the language', async ({ page }) => {
@@ -215,12 +215,12 @@ test('floating search opens projects and runs commands', async ({ page }) => {
   await expect.poll(() => calls(page)).toContainEqual({ fn: 'Open', args: [`${ROOT}/local/awake`, 'vscode'] })
   expect(await calls(page)).toContainEqual({ fn: 'HideSpotlight', args: [] })
 
-  // Ctrl ↵ mostra il progetto nella finestra principale
+  // Ctrl ↵ shows the project in the main window
   await input.fill('ntfy')
   await page.keyboard.press('Control+Enter')
   expect(await calls(page)).toContainEqual({ fn: 'ShowInMain', args: [`${ROOT}/github/jacopofilonzi/NtfyJS`] })
 
-  // i comandi che servono alla finestra principale vengono passati a lei
+  // the commands that need the main window are handed over to it
   await input.fill('>settings')
   await page.keyboard.press('Enter')
   await expect.poll(() => calls(page)).toContainEqual({ fn: 'RunInMain', args: ['settings'] })
@@ -234,7 +234,7 @@ test('the wizard takes users of several IDEs to the preset library', async ({ pa
   await wiz.getByRole('button', { name: 'Start' }).click()
   await expect(wiz).toBeHidden()
   await expect(page.locator('.set .ph h3')).toHaveText('Launchers')
-  // ci sono già regole (gradle → IntelliJ): la libreria si apre col pulsante
+  // there are already rules (gradle → IntelliJ): the library opens with the button
   await page.getByRole('button', { name: '+ Add rule' }).click()
   await expect(page.locator('.pick .pk', { hasText: 'Java / Kotlin (Gradle)' })).toBeDisabled()
   await expect(page.locator('.pick .pk', { hasText: 'Rust' })).toContainText('VS Code')
@@ -244,25 +244,25 @@ test('preset rules are ordered by priority', async ({ page }) => {
   await openApp(page)
   await row(page, 'local').click()
   await row(page, 'pocket-app').click()
-  // solo la regola Gradle → IntelliJ
+  // only the Gradle → IntelliJ rule
   await expect(page.locator('.open .main')).toContainText('Open with IntelliJ IDEA')
   await expect(row(page, 'pocket-app').locator('img.lico')).toHaveAttribute('title', 'IntelliJ IDEA')
 
   await page.getByRole('button', { name: 'Settings' }).click()
   await page.locator('.set nav').getByRole('button', { name: 'Launchers' }).click()
-  // Android Studio è installato ma non ancora tra i launcher
+  // Android Studio is installed but not among the launchers yet
   await page.getByRole('button', { name: 'Detect installed editors' }).click()
   await expect(page.locator('.toast')).toContainText('Added (disabled): Android Studio')
   await expect(page.getByRole('checkbox', { name: 'Android Studio' })).not.toBeChecked()
 
-  // la libreria propone Android Studio (installato) e aggiungendo la regola lo abilita
+  // the library suggests Android Studio (installed) and adding the rule enables it
   await page.getByRole('button', { name: '+ Add rule' }).click()
   await expect(page.locator('.pick .pk', { hasText: 'Android' }).first()).toContainText('Android Studio')
   await page.locator('.pick .pk', { hasText: 'Android' }).first().click()
   await expect(page.getByRole('checkbox', { name: 'Android Studio' })).toBeChecked()
   const rules = page.locator('.rule:not(.preset) .rb b')
   await expect(rules).toHaveText(['Java / Kotlin (Gradle)', 'Android'])
-  // la regola Gradle è sopra: vince ancora IntelliJ
+  // the Gradle rule is above: IntelliJ still wins
   await page.keyboard.press('Escape')
   await expect(page.locator('.open .main')).toContainText('Open with IntelliJ IDEA')
 
@@ -286,7 +286,7 @@ test('built-in presets can be customized into an editable copy', async ({ page }
   await page.keyboard.press('Enter')
   await expect(copy.locator('.chips span')).toHaveCount(6)
 
-  // eliminare il preset toglie anche la sua regola
+  // deleting the preset removes its rule too
   await copy.getByRole('button', { name: 'Delete preset (and its rules)' }).click()
   await expect(page.locator('.rule')).toHaveCount(0)
 })
@@ -314,7 +314,7 @@ test('resetting the settings asks for confirmation, then runs the wizard', async
   await page.getByRole('button', { name: 'Reset…' }).click()
   const dlg = page.getByRole('alertdialog', { name: 'Reset all settings?' })
   await expect(dlg).toContainText('/cfg/config.backup.json')
-  // Esc chiude solo il popup, non le impostazioni
+  // Esc closes only the popup, not the settings
   await page.keyboard.press('Escape')
   await expect(dlg).toBeHidden()
   await expect(page.locator('.set')).toBeVisible()
@@ -406,7 +406,7 @@ test('a local project without remote can be published on GitHub', async ({ page 
   await expect(dlg.locator('h3')).toHaveText('Publish “awake”')
   await expect(dlg.getByLabel('Repository name')).toHaveValue('awake')
   await expect(dlg).toContainText('jacopofilonzi/awake is available')
-  // nome già usato (senza distinguere maiuscole): niente creazione
+  // name already used (case-insensitive): no creation
   await dlg.getByLabel('Repository name').fill('ntfyjs')
   await expect(dlg).toContainText('jacopofilonzi/ntfyjs already exists')
   await expect(dlg.getByRole('button', { name: 'Create repository' })).toBeDisabled()

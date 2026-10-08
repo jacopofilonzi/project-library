@@ -5,35 +5,35 @@ import (
 	"testing"
 )
 
-// TestLive interroga davvero la CLI installata, con il login dell'utente. Solo in lettura.
-// Si attiva con PL_FORGE_LIVE=gh (o glab) e, facoltativo, PL_FORGE_REPO=owner/nome e PL_FORGE_BRANCH.
+// TestLive really queries the installed CLI, with the user's login. Read-only.
+// Enable it with PL_FORGE_LIVE=gh (or glab) and, optionally, PL_FORGE_REPO=owner/name and PL_FORGE_BRANCH.
 func TestLive(t *testing.T) {
 	kind := map[string]Kind{"gh": GitHub, "glab": GitLab}[os.Getenv("PL_FORGE_LIVE")]
 	if kind == "" {
-		t.Skip("PL_FORGE_LIVE non impostata")
+		t.Skip("PL_FORGE_LIVE not set")
 	}
 	c := &CLI{Kind: kind}
 	if c.Detect("") == "" {
-		t.Fatalf("%s non trovata", kind.Bin())
+		t.Fatalf("%s not found", kind.Bin())
 	}
 	t.Logf("path: %s", c.Path())
 	accs, msg := c.Accounts(true)
 	t.Logf("accounts: %+v %s", accs, msg)
 	if len(accs) == 0 {
-		t.Fatal("nessun account")
+		t.Fatal("no account")
 	}
 	repos, err := c.Repos(accs[0])
 	if err != nil {
 		t.Fatalf("repos: %v", err)
 	}
-	t.Logf("%d repository, il primo: %+v", len(repos), repos[0])
+	t.Logf("%d repositories, the first: %+v", len(repos), repos[0])
 	owners, err := c.Owners(accs[0])
 	t.Logf("owners: %+v err=%v", owners, err)
 	if taken, err := c.Exists(accs[0], accs[0].User, repos[0].FullName[len(accs[0].User)+1:]); err != nil || !taken {
-		t.Errorf("Exists(%s) = %v, %v: dovrebbe esistere", repos[0].FullName, taken, err)
+		t.Errorf("Exists(%s) = %v, %v: should exist", repos[0].FullName, taken, err)
 	}
-	if taken, err := c.Exists(accs[0], accs[0].User, "project-library-nome-che-non-esiste-7f3a"); err != nil || taken {
-		t.Errorf("Exists(inesistente) = %v, %v", taken, err)
+	if taken, err := c.Exists(accs[0], accs[0].User, "project-library-name-that-does-not-exist-7f3a"); err != nil || taken {
+		t.Errorf("Exists(missing) = %v, %v", taken, err)
 	}
 	if repo := os.Getenv("PL_FORGE_REPO"); repo != "" {
 		info, err := c.Info(accs[0].Host, repo, os.Getenv("PL_FORGE_BRANCH"))

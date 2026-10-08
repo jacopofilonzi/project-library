@@ -1,4 +1,4 @@
-// Icone SVG inline (tratto, colore ereditato da currentColor).
+// Inline SVG icons (stroke, color inherited from currentColor).
 const svg = (size: number, body: string, extra = '') =>
   `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true" ${extra}>${body}</svg>`
 
@@ -13,7 +13,7 @@ export const icons = {
   branch: (s = 13) => svg(s, '<circle cx="6" cy="5" r="2"/><circle cx="6" cy="19" r="2"/><circle cx="18" cy="8" r="2"/><path d="M6 7v10M18 10c0 4-6 3-12 7"/>'),
 }
 
-/** colori per linguaggio (pallino in colonna, icona nella palette) */
+/** colors per language (dot in the column, icon in the palette) */
 export const langColor: Record<string, string> = {
   Go: '#29beb0', Rust: '#e3a27a', Node: '#6cc24a', Deno: '#3d3d3d', Java: '#e76f00', Python: '#3572a5',
   PHP: '#7a86b8', Ruby: '#cc342d', 'C#': '#7b5ea7', Dart: '#00b4ab', Elixir: '#6e4a7e', 'C/C++': '#5c6bc0',

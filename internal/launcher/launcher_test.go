@@ -24,9 +24,9 @@ func TestSplitArgs(t *testing.T) {
 
 func TestExpandAndTarget(t *testing.T) {
 	root := filepath.Join("C:", "Users", "x", "Development")
-	path := filepath.Join(root, "local", "UNI", "Ingegneria del Software", "Demo")
+	path := filepath.Join(root, "local", "UNI", "Software Engineering", "Demo")
 	tg := NewTarget(path, []string{root})
-	if tg.Source != "local" || tg.Group != "UNI/Ingegneria del Software" || tg.Name != "Demo" {
+	if tg.Source != "local" || tg.Group != "UNI/Software Engineering" || tg.Name != "Demo" {
 		t.Fatalf("%+v", tg)
 	}
 	got := Expand(`-d "{path}" --title {name}@{source}`, tg)

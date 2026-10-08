@@ -7,7 +7,7 @@ import (
 	"time"
 )
 
-// PR è una pull request (GitHub) o merge request (GitLab) aperta.
+// PR is an open pull request (GitHub) or merge request (GitLab).
 type PR struct {
 	Number int    `json:"number"`
 	Title  string `json:"title"`
@@ -16,35 +16,35 @@ type PR struct {
 	Draft  bool   `json:"draft"`
 }
 
-// CI è l'ultima esecuzione della CI sul branch (workflow di GitHub Actions o pipeline di GitLab).
+// CI is the latest CI run on the branch (GitHub Actions workflow or GitLab pipeline).
 type CI struct {
 	// State: "success", "failure", "running", "pending", "cancelled", "skipped".
 	State string `json:"state"`
 	Name  string `json:"name"`
 	URL   string `json:"url"`
-	// Runs è il numero di workflow o pipeline dell'ultimo commit (stato e link sono del peggiore).
+	// Runs is the number of workflows or pipelines of the last commit (state and link are the worst one's).
 	Runs int `json:"runs"`
 }
 
-// Info è quello che la scheda progetto mostra del repository remoto.
+// Info is what the project card shows about the remote repository.
 type Info struct {
 	Kind Kind   `json:"kind"`
 	Host string `json:"host"`
 	Web  string `json:"web"`
 	PRs  []PR   `json:"prs"`
-	// PRCount è il totale delle PR aperte; PRMore vale true se il totale è "almeno PRCount" (GitLab).
+	// PRCount is the total of open PRs; PRMore is true when the total is "at least PRCount" (GitLab).
 	PRCount int  `json:"prCount"`
 	PRMore  bool `json:"prMore"`
-	// Issues è il numero di issue aperte (-1 se non disponibile, es. issue disattivate).
+	// Issues is the number of open issues (-1 if not available, e.g. issues disabled).
 	Issues int `json:"issues"`
 	CI     *CI `json:"ci"`
 }
 
-// maxPRs: quante PR aperte elencare nella scheda.
+// maxPRs: how many open PRs to list in the card.
 const maxPRs = 5
 
-// Info raccoglie PR, issue e CI di fullName (owner/nome) sul branch indicato.
-// Le tre richieste partono insieme; una che fallisce lascia vuota solo la sua parte.
+// Info collects PRs, issues and CI of fullName (owner/name) on the given branch.
+// The three requests run together; one that fails leaves only its own part empty.
 func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 	ctx, cancel := timeout(30 * time.Second)
 	defer cancel()
@@ -93,7 +93,7 @@ func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 				var r struct {
 					Runs []ghRun `json:"workflow_runs"`
 				}
-				// solo le esecuzioni partite da un push: quelle pianificate o manuali non dicono nulla dell'ultimo commit
+				// only runs triggered by a push: scheduled or manual ones say nothing about the last commit
 				q := "repos/" + fullName + "/actions/runs?per_page=20&event=push&branch=" + url.QueryEscape(branch)
 				if err := c.api(ctx, host, &r, q); err != nil {
 					return err
@@ -133,7 +133,7 @@ func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 					Username string `json:"username"`
 				} `json:"author"`
 			}
-			// fino a 20 per il conteggio (GitLab non restituisce il totale nel corpo della risposta)
+			// up to 20 for the count (GitLab does not return the total in the response body)
 			if err := c.api(ctx, host, &r, p+"/merge_requests?state=opened&order_by=updated_at&per_page=20"); err != nil {
 				return err
 			}
@@ -168,7 +168,7 @@ func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 		}
 	}
 	wg.Wait()
-	// errore solo se non è arrivato niente: con risposte parziali la scheda mostra quello che c'è
+	// error only if nothing arrived: with partial answers the card shows what there is
 	if len(errs) > 0 && info.PRCount == 0 && info.Issues < 0 && info.CI == nil {
 		return info, errs[0]
 	}
@@ -215,11 +215,11 @@ type ghRun struct {
 	HTMLURL    string `json:"html_url"`
 }
 
-// stateRank: a parità di commit vince lo stato peggiore (un workflow fallito pesa più di uno superato).
+// stateRank: for the same commit the worst state wins (a failed workflow outweighs a passed one).
 var stateRank = map[string]int{"failure": 5, "running": 4, "pending": 3, "cancelled": 2, "success": 1, "skipped": 0}
 
-// ghCI unisce i workflow dell'ultimo commit (il primo delle esecuzioni, che arrivano dalla più recente):
-// stato, nome e link sono quelli del workflow peggiore.
+// ghCI merges the workflows of the last commit (the first of the runs, which come newest first):
+// state, name and link are those of the worst workflow.
 func ghCI(runs []ghRun) *CI {
 	if len(runs) == 0 {
 		return nil
@@ -241,7 +241,7 @@ func ghCI(runs []ghRun) *CI {
 	return ci
 }
 
-// ghState riduce status/conclusion di un workflow di GitHub Actions agli stati comuni.
+// ghState reduces the status/conclusion of a GitHub Actions workflow to the common states.
 func ghState(status, conclusion string) string {
 	if status != "completed" {
 		if status == "in_progress" {
@@ -261,7 +261,7 @@ func ghState(status, conclusion string) string {
 	}
 }
 
-// glState riduce lo stato di una pipeline di GitLab agli stati comuni.
+// glState reduces the state of a GitLab pipeline to the common states.
 func glState(status string) string {
 	switch status {
 	case "success":

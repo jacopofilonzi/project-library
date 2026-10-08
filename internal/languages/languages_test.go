@@ -23,11 +23,11 @@ func TestAnalyze(t *testing.T) {
 	write(t, root, "main.go", 7000)
 	write(t, root, "frontend/src/App.svelte", 2000)
 	write(t, root, "frontend/src/main.ts", 990)
-	write(t, root, "frontend/src/tiny.css", 10) // sotto l'1%: va in Other
+	write(t, root, "frontend/src/tiny.css", 10) // below 1%: goes to Other
 	write(t, root, "frontend/node_modules/x/index.js", 900000)
 	write(t, root, "dist/bundle.min.js", 500000)
-	write(t, root, "README.md", 5000)   // prosa: non conta
-	write(t, root, ".git/objects/x", 9) // nascosta: saltata
+	write(t, root, "README.md", 5000)   // prose: does not count
+	write(t, root, ".git/objects/x", 9) // hidden: skipped
 
 	stats, partial := Analyze(root)
 	if partial {

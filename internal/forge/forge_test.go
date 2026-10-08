@@ -126,10 +126,10 @@ func TestGhCIWorstOfLastCommit(t *testing.T) {
 func TestNotFound(t *testing.T) {
 	for _, msg := range []string{"gh: Not Found (HTTP 404)", "glab: 404 Project Not Found (HTTP 404)", "404 {message: 404 Project Not Found}"} {
 		if !reNotFound.MatchString(msg) {
-			t.Errorf("non riconosciuto: %q", msg)
+			t.Errorf("not recognized: %q", msg)
 		}
 	}
 	if reNotFound.MatchString("gh: Bad credentials (HTTP 401)") {
-		t.Error("401 scambiato per 404")
+		t.Error("401 mistaken for 404")
 	}
 }

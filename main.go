@@ -65,18 +65,18 @@ func main() {
 	if t := store.Get().Theme; t == "dark" || (t == "system" && app.Env.IsDarkMode()) {
 		bg = application.NewRGB(0x12, 0x12, 0x14)
 	}
-	// avvio automatico "solo tray": la finestra principale parte nascosta
+	// "tray only" autostart: the main window starts hidden
 	hidden := slices.Contains(os.Args[1:], core.HiddenFlag)
 	win := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:  "main",
 		Title: "Project Library",
 		Width: 1280, Height: 800,
-		// 2 colonne da 220px + scheda progetto da 480px
+		// 2 columns of 220px + a 480px project card
 		MinWidth: 920, MinHeight: 600,
 		Hidden:           hidden,
 		BackgroundColour: bg,
 		URL:              "/",
-		// Ctrl/⌘ P non arriva alla pagina (WebView2 la riserva alla stampa): la gestisce la finestra.
+		// Ctrl/⌘ P does not reach the page (WebView2 reserves it for printing): the window handles it.
 		KeyBindings: map[string]func(application.Window){
 			"CmdOrCtrl+P": func(application.Window) { app.Event.Emit("shortcut:settings") },
 			"CmdOrCtrl+,": func(application.Window) { app.Event.Emit("shortcut:settings") },
@@ -84,8 +84,8 @@ func main() {
 	})
 	core.MainWindow = win
 
-	// Ricerca flottante: finestra senza bordi, sopra le altre, fuori dalla barra delle applicazioni.
-	// Si nasconde quando perde il focus; la sua altezza la regola il frontend in base ai risultati.
+	// Floating search: borderless window, above the others, not in the taskbar.
+	// It hides when it loses focus; the frontend sets its height from the results.
 	spot := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:            "spotlight",
 		Title:           "Project Library Search",
@@ -110,7 +110,7 @@ func main() {
 	})
 	core.SpotlightWindow = spot
 
-	// Chiudendo la finestra: con "resta nella tray" si nasconde, altrimenti l'app termina.
+	// Closing the window: with "keep in the tray" it hides, otherwise the app quits.
 	win.RegisterHook(events.Common.WindowClosing, func(e *application.WindowEvent) {
 		if !quitting && !core.Quitting && store.Get().CloseToTray {
 			e.Cancel()
@@ -138,7 +138,7 @@ func main() {
 	tray.SetMenu(menu)
 	tray.OnClick(core.ShowMainWindow)
 
-	// aggiorna le voci della tray quando cambia la lingua
+	// update the tray items when the language changes
 	app.Event.On(core.EventConfig, func(*application.CustomEvent) {
 		search.SetLabel(trayLabel(lang(), "search"))
 		show.SetLabel(trayLabel(lang(), "show"))
@@ -167,8 +167,8 @@ var imageExt = map[string]bool{
 	".webp": true, ".bmp": true, ".ico": true, ".avif": true,
 }
 
-// projectFiles serve le immagini referenziate dai README: /project-file?p=<percorso assoluto>.
-// Solo file immagine dentro le cartelle radice.
+// projectFiles serves the images referenced by the READMEs: /project-file?p=<absolute path>.
+// Only image files inside the root folders.
 func projectFiles(lib *core.Library) application.Middleware {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -181,7 +181,7 @@ func projectFiles(lib *core.Library) application.Middleware {
 				http.NotFound(w, r)
 				return
 			}
-			// gli SVG non devono poter eseguire script
+			// SVGs must not be able to run scripts
 			w.Header().Set("Content-Security-Policy", "default-src 'none'; style-src 'unsafe-inline'; img-src data:")
 			w.Header().Set("X-Content-Type-Options", "nosniff")
 			http.ServeFile(w, r, p)

@@ -1,4 +1,4 @@
-// Package config gestisce config.json: valori di default, caricamento e salvataggio.
+// Package config manages config.json: defaults, loading and saving.
 package config
 
 import (
@@ -13,40 +13,40 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/presets"
 )
 
-// Launcher è un programma con cui aprire un progetto (editor, terminale…).
-// Args è una stringa con segnaposti ({path}, {name}, {source}, {group});
-// le virgolette raggruppano un argomento con spazi.
+// Launcher is a program a project can be opened with (editor, terminal…).
+// Args is a string with placeholders ({path}, {name}, {source}, {group});
+// double quotes group an argument that contains spaces.
 type Launcher struct {
 	ID      string `json:"id"`
 	Name    string `json:"name"`
 	Command string `json:"command"`
 	Args    string `json:"args"`
 	Enabled bool   `json:"enabled"`
-	// Builtin è l'id di un editor noto ("vscode", "intellij", "androidstudio"…), vuoto per i launcher custom.
+	// Builtin is the id of a known editor ("vscode", "intellij", "androidstudio"…), empty for custom launchers.
 	Builtin string `json:"builtin,omitempty"`
 }
 
-// Rule associa un preset (del catalogo o dell'utente) a un launcher.
-// Le regole sono ordinate: vince la prima che corrisponde e il cui launcher è abilitato.
+// Rule links a preset (from the catalog or the user's) to a launcher.
+// Rules are ordered: the first one that matches and whose launcher is enabled wins.
 type Rule struct {
 	Preset   string `json:"preset"`
 	Launcher string `json:"launcher"`
 }
 
-// LauncherRule è il formato delle regole fino alla config v2 (pattern diretti): letto solo per la migrazione.
+// LauncherRule is the rule format up to config v2 (plain patterns): read only by the migration.
 type LauncherRule struct {
 	Patterns []string `json:"patterns"`
 	Launcher string   `json:"launcher"`
 }
 
-// Recent è un'apertura con "Apri con".
+// Recent is an "Open with" event.
 type Recent struct {
 	Path     string `json:"path"`
 	Launcher string `json:"launcher"`
 	At       int64  `json:"at"` // unix ms
 }
 
-// Override forza la classificazione di una cartella.
+// Override forces how a folder is classified.
 const (
 	OverrideProject = "project"
 	OverrideDir     = "dir"
@@ -60,13 +60,13 @@ type Config struct {
 	Roots           []string   `json:"roots"`
 	Launchers       []Launcher `json:"launchers"`
 	DefaultLauncher string     `json:"defaultLauncher"`
-	// Presets: preset creati dall'utente (quelli integrati sono nel catalogo, vedi internal/presets).
+	// Presets: presets created by the user (the built-in ones are in the catalog, see internal/presets).
 	Presets []presets.Preset `json:"presets"`
-	// Rules: associazioni preset → launcher, in ordine di priorità.
+	// Rules: preset → launcher links, in priority order.
 	Rules []Rule `json:"rules"`
-	// LauncherRules: formato v2, convertito in Presets + Rules dalla migrazione.
+	// LauncherRules: v2 format, converted to Presets + Rules by the migration.
 	LauncherRules []LauncherRule `json:"launcherRules,omitempty"`
-	// ProjectLaunchers: launcher scelto a mano per un progetto (percorso → id). Ha la precedenza sulle regole.
+	// ProjectLaunchers: launcher chosen by hand for a project (path → id). Takes precedence over the rules.
 	ProjectLaunchers map[string]string `json:"projectLaunchers"`
 
 	Markers        []string          `json:"markers"`
@@ -77,27 +77,27 @@ type Config struct {
 	FollowLinks    bool              `json:"followLinks"`
 	Overrides      map[string]string `json:"overrides"`
 
-	GitPath         string `json:"gitPath"` // vuoto = rilevamento automatico
+	GitPath         string `json:"gitPath"` // empty = automatic detection
 	GitInfo         bool   `json:"gitInfo"`
 	GitFetch        bool   `json:"gitFetch"`
 	GitFetchMinutes int    `json:"gitFetchMinutes"`
 	GitWarningShown bool   `json:"gitWarningShown"`
-	// GhPath e GlabPath: percorsi di GitHub CLI e GitLab CLI (vuoti = rilevamento automatico).
+	// GhPath and GlabPath: paths of GitHub CLI and GitLab CLI (empty = automatic detection).
 	GhPath   string `json:"ghPath"`
 	GlabPath string `json:"glabPath"`
 
 	Recent []Recent `json:"recent"`
 
-	// Autostart è il vecchio interruttore (config v1): letto solo per la migrazione a StartMode.
+	// Autostart is the old switch (config v1): read only by the migration to StartMode.
 	Autostart bool `json:"autostart,omitempty"`
-	// StartMode: avvio con il sistema. "off", "window" (apre la finestra) o "tray" (solo tray e ricerca flottante).
+	// StartMode: start with the system. "off", "window" (opens the window) or "tray" (tray and floating search only).
 	StartMode   string `json:"startMode"`
 	CloseToTray bool   `json:"closeToTray"`
-	// Hotkey mostra la finestra principale; SpotlightHotkey apre la ricerca flottante. Vuote = disattivate.
+	// Hotkey shows the main window; SpotlightHotkey opens the floating search. Empty = disabled.
 	Hotkey          string `json:"hotkey"`
 	SpotlightHotkey string `json:"spotlightHotkey"`
 
-	// LastPath e LastSelected: dove eri alla chiusura (cartella corrente e progetto selezionato).
+	// LastPath and LastSelected: where you were when the app closed (current folder and selected project).
 	LastPath     string `json:"lastPath"`
 	LastSelected string `json:"lastSelected"`
 
@@ -109,7 +109,7 @@ const (
 	MaxRecent      = 20
 )
 
-// Modalità di avvio con il sistema.
+// Start-with-the-system modes.
 const (
 	StartOff    = "off"
 	StartWindow = "window"
@@ -126,7 +126,7 @@ var DefaultMarkers = []string{
 
 var DefaultIgnore = []string{"node_modules", "vendor", "target", ".cache", ".venv", "__pycache__", "desktop.ini", "Thumbs.db", ".DS_Store"}
 
-// Default restituisce la configurazione iniziale. home è la cartella utente.
+// Default returns the initial configuration. home is the user's home folder.
 func Default(home string) Config {
 	return Config{
 		Version:  currentVersion,
@@ -156,7 +156,7 @@ func Default(home string) Config {
 	}
 }
 
-// normalize ripara i valori mancanti o fuori range (config scritte a mano o vecchie).
+// normalize repairs missing or out-of-range values (hand-written or old configs).
 func (c *Config) normalize(home string) {
 	def := Default(home)
 	if c.Language != "en" && c.Language != "it" {
@@ -183,7 +183,7 @@ func (c *Config) normalize(home string) {
 	if c.Launchers == nil {
 		c.Launchers = def.Launchers
 	}
-	// migrazione v2 → v3: le regole a pattern diventano preset + regole
+	// migration v2 → v3: pattern rules become presets + rules
 	if c.Version < 3 {
 		c.migrateLauncherRules()
 	}
@@ -200,7 +200,7 @@ func (c *Config) normalize(home string) {
 	if len(c.Recent) > MaxRecent {
 		c.Recent = c.Recent[:MaxRecent]
 	}
-	// migrazione v1 → v2: l'interruttore autostart diventa StartMode, arriva la scorciatoia spotlight
+	// migration v1 → v2: the autostart switch becomes StartMode, the spotlight shortcut arrives
 	if c.Version < 2 {
 		if c.Autostart {
 			c.StartMode = StartWindow
@@ -214,11 +214,11 @@ func (c *Config) normalize(home string) {
 	c.Version = currentVersion
 }
 
-// oldDefaultRule è la regola che la config v2 preapplicava (Java → IntelliJ).
+// oldDefaultRule is the rule config v2 applied by default (Java → IntelliJ).
 var oldDefaultRule = []string{"pom.xml", "build.gradle*", "settings.gradle*", "gradlew", "*.iml"}
 
-// migrateLauncherRules converte le regole v2. La vecchia regola di default diventa i preset
-// integrati equivalenti; le altre diventano preset dell'utente.
+// migrateLauncherRules converts the v2 rules. The old default rule becomes the equivalent
+// built-in presets; the others become user presets.
 func (c *Config) migrateLauncherRules() {
 	for i, r := range c.LauncherRules {
 		if strings.Join(r.Patterns, "\x00") == strings.Join(oldDefaultRule, "\x00") {
@@ -233,7 +233,7 @@ func (c *Config) migrateLauncherRules() {
 	}
 }
 
-// Store tiene la configurazione in memoria e la salva su disco a ogni modifica.
+// Store keeps the configuration in memory and saves it to disk on every change.
 type Store struct {
 	mu   sync.RWMutex
 	path string
@@ -241,7 +241,7 @@ type Store struct {
 	cfg  Config
 }
 
-// Dir è la cartella dei dati dell'app (%APPDATA%, ~/Library/Application Support, ~/.config).
+// Dir is the app's data folder (%APPDATA%, ~/Library/Application Support, ~/.config).
 func Dir() (string, error) {
 	base, err := os.UserConfigDir()
 	if err != nil {
@@ -250,7 +250,7 @@ func Dir() (string, error) {
 	return filepath.Join(base, "project-library"), nil
 }
 
-// Load legge config.json, o parte dai default se non esiste.
+// Load reads config.json, or starts from the defaults if it does not exist.
 func Load(path, home string) (*Store, error) {
 	s := &Store{path: path, home: home, cfg: Default(home)}
 	data, err := os.ReadFile(path)
@@ -262,7 +262,7 @@ func Load(path, home string) (*Store, error) {
 	}
 	var c Config
 	if err := json.Unmarshal(data, &c); err != nil {
-		// Config illeggibile: la conserva a parte e riparte dai default.
+		// Unreadable config: keep it aside and start again from the defaults.
 		_ = os.Rename(path, path+".broken")
 		return s, nil
 	}
@@ -273,14 +273,14 @@ func Load(path, home string) (*Store, error) {
 
 func (s *Store) Path() string { return s.path }
 
-// Get restituisce una copia della configurazione.
+// Get returns a copy of the configuration.
 func (s *Store) Get() Config {
 	s.mu.RLock()
 	defer s.mu.RUnlock()
 	return s.cfg.clone()
 }
 
-// Update applica fn alla configurazione e la salva.
+// Update applies fn to the configuration and saves it.
 func (s *Store) Update(fn func(*Config)) (Config, error) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -302,7 +302,7 @@ func (s *Store) write(c Config) error {
 	if err != nil {
 		return err
 	}
-	// Scrittura atomica: file temporaneo + rename.
+	// Atomic write: temporary file + rename.
 	tmp := s.path + ".tmp"
 	if err := os.WriteFile(tmp, data, 0o644); err != nil {
 		return err
@@ -325,7 +325,7 @@ func (c Config) clone() Config {
 	for k, v := range c.ProjectLaunchers {
 		out.ProjectLaunchers[k] = v
 	}
-	// le liste vuote restano non-nil: in JSON "[]" e non "null"
+	// empty lists stay non-nil: "[]" in JSON, not "null"
 	out.Rules = append([]Rule{}, c.Rules...)
 	out.Presets = make([]presets.Preset, len(c.Presets))
 	for i, p := range c.Presets {
@@ -336,7 +336,7 @@ func (c Config) clone() Config {
 	return out
 }
 
-// AddRecent mette path in cima alla cronologia, senza duplicati.
+// AddRecent puts path at the top of the history, without duplicates.
 func (c *Config) AddRecent(path, launcher string, at int64) {
 	out := []Recent{{Path: path, Launcher: launcher, At: at}}
 	for _, r := range c.Recent {
@@ -350,8 +350,8 @@ func (c *Config) AddRecent(path, launcher string, at int64) {
 	c.Recent = out
 }
 
-// RenamePath aggiorna override, launcher per progetto e cronologia dopo il rename
-// (o l'eliminazione, con newPath vuoto) di oldPath e di tutto ciò che contiene.
+// RenamePath updates overrides, per-project launchers and history after oldPath
+// (and everything inside it) is renamed, or deleted when newPath is empty.
 func (c *Config) RenamePath(oldPath, newPath string) {
 	move := func(p string) (string, bool) {
 		if p == oldPath {
@@ -399,7 +399,7 @@ func (c *Config) RenamePath(oldPath, newPath string) {
 	c.Recent = rec
 }
 
-// under dice se p è dentro dir e restituisce il percorso relativo.
+// under tells whether p is inside dir and returns the relative path.
 func under(dir, p string) (string, bool) {
 	rel, err := filepath.Rel(dir, p)
 	if err != nil || rel == "." || rel == ".." || len(rel) >= 3 && rel[:3] == ".."+string(filepath.Separator) {

@@ -1,12 +1,12 @@
-// Package scanner costruisce l'albero delle cartelle e decide cosa è un progetto.
+// Package scanner builds the folder tree and decides what is a project.
 //
-// Per ogni cartella, in ordine:
-//  1. override manuale (progetto / cartella)
-//  2. nomi ignorati e cartelle nascoste vengono saltati
-//  3. contiene un marker → progetto (non si scende oltre)
-//  4. contiene almeno un file normale → progetto (se FilesAsProject)
-//  5. contiene solo sottocartelle → cartella, si scende
-//  6. vuota → cartella vuota (mostrata se ShowEmpty)
+// For every folder, in order:
+//  1. manual override (project / folder)
+//  2. ignored names and hidden folders are skipped
+//  3. contains a marker → project (the scan does not go further down)
+//  4. contains at least one regular file → project (if FilesAsProject)
+//  5. contains only subfolders → folder, the scan goes down
+//  6. empty → empty folder (shown if ShowEmpty)
 package scanner
 
 import (
@@ -26,7 +26,7 @@ const (
 	KindDir     Kind = "dir"
 	KindProject Kind = "project"
 	KindEmpty   Kind = "empty"
-	// KindRoot è il nodo virtuale che contiene più cartelle radice.
+	// KindRoot is the virtual node that holds several root folders.
 	KindRoot Kind = "root"
 )
 
@@ -37,11 +37,11 @@ type Node struct {
 	Lang    string `json:"lang,omitempty"`
 	Desc    string `json:"desc,omitempty"`
 	HasGit  bool   `json:"hasGit,omitempty"`
-	Missing bool   `json:"missing,omitempty"` // radice che non esiste su disco
-	// RuleLaunchers: launcher delle regole che corrispondono al progetto, in ordine di priorità.
-	// Il frontend usa il primo abilitato.
+	Missing bool   `json:"missing,omitempty"` // root that does not exist on disk
+	// RuleLaunchers: launchers of the rules that match the project, in priority order.
+	// The frontend uses the first enabled one.
 	RuleLaunchers []string `json:"ruleLaunchers,omitempty"`
-	Count         int      `json:"count"` // progetti nel sottoalbero
+	Count         int      `json:"count"` // projects in the subtree
 	Children      []*Node  `json:"children,omitempty"`
 }
 
@@ -52,10 +52,10 @@ type Options struct {
 	ShowEmpty      bool
 	FollowLinks    bool
 	MaxDepth       int
-	// Overrides: percorso assoluto → "project" | "dir".
+	// Overrides: absolute path → "project" | "dir".
 	Overrides       map[string]string
 	CaseInsensitive bool
-	// Rules sceglie il launcher di un progetto in base ai nomi che contiene.
+	// Rules chooses a project's launcher based on the names it contains.
 	Rules []Rule
 }
 
@@ -64,11 +64,11 @@ type Rule struct {
 	Launcher string
 }
 
-// junk sono file di sistema che non rendono una cartella un progetto.
+// junk are system files that do not make a folder a project.
 var junk = map[string]bool{"desktop.ini": true, "thumbs.db": true, ".ds_store": true, ".localized": true}
 
-// Scan analizza le radici. Con una sola radice restituisce quella; con più radici
-// un nodo virtuale (KindRoot) che le contiene.
+// Scan scans the roots. With a single root it returns that root; with several roots
+// a virtual node (KindRoot) that contains them.
 func Scan(roots []string, opt Options) *Node {
 	s := &scan{opt: opt, visited: map[string]bool{}}
 	var nodes []*Node
@@ -95,7 +95,7 @@ func Scan(roots []string, opt Options) *Node {
 
 type scan struct {
 	opt     Options
-	visited map[string]bool // con FollowLinks: cartelle reali già visitate (evita i loop)
+	visited map[string]bool // with FollowLinks: real folders already visited (avoids loops)
 }
 
 func (s *scan) key(name string) string {
@@ -117,13 +117,13 @@ func (s *scan) ignored(name string) bool {
 	return false
 }
 
-// match confronta un pattern glob con un nome, senza distinguere maiuscole.
+// match compares a glob pattern with a name, case-insensitively.
 func match(pattern, name string) bool {
 	ok, err := filepath.Match(strings.ToLower(pattern), strings.ToLower(name))
 	return err == nil && ok
 }
 
-// dir popola n (una cartella già classificata come "da esplorare").
+// dir fills n (a folder already classified as "to explore").
 func (s *scan) dir(n *Node, depth int) {
 	if s.opt.FollowLinks {
 		if real, err := filepath.EvalSymlinks(n.Path); err == nil {
@@ -151,8 +151,8 @@ func (s *scan) dir(n *Node, depth int) {
 	sortNodes(n.Children)
 }
 
-// isDir dice se l'elemento è una cartella da considerare. Symlink e junction
-// (che Go riporta come ModeIrregular su Windows) solo con FollowLinks.
+// isDir tells whether the entry is a folder to consider. Symlinks and junctions
+// (which Go reports as ModeIrregular on Windows) only with FollowLinks.
 func (s *scan) isDir(parent string, e fs.DirEntry) bool {
 	t := e.Type()
 	if t.IsDir() {
@@ -224,7 +224,7 @@ func (s *scan) classify(path, name string, depth int) *Node {
 	return n
 }
 
-// ignoredFile: i file nella lista ignora non contano per la regola "cartella con file".
+// ignoredFile: the files in the ignore list do not count for the "folder with files" rule.
 func (s *scan) ignoredFile(name string) bool {
 	for _, p := range s.opt.Ignore {
 		if match(p, name) {
@@ -269,8 +269,8 @@ func (s *scan) makeProject(n *Node, entries []fs.DirEntry) {
 	n.Desc = readme.Description(n.Path)
 }
 
-// MatchRules restituisce, senza duplicati e nell'ordine delle regole, i launcher delle regole
-// il cui preset corrisponde al progetto in dir (names: i nomi nella sua cartella principale).
+// MatchRules returns, without duplicates and in rule order, the launchers of the rules
+// whose preset matches the project in dir (names: the names in its top folder).
 func MatchRules(rules []Rule, dir string, names []string) []string {
 	var out []string
 	seen := map[string]bool{}
@@ -286,7 +286,7 @@ func MatchRules(rules []Rule, dir string, names []string) []string {
 	return out
 }
 
-// langRules: il primo marker trovato decide il linguaggio mostrato.
+// langRules: the first marker found decides the language shown.
 var langRules = []struct{ pattern, lang string }{
 	{"go.mod", "Go"},
 	{"Cargo.toml", "Rust"},
@@ -313,7 +313,7 @@ func DetectLang(names []string) string {
 	return ""
 }
 
-// sortNodes: prima cartelle (piene e vuote), poi progetti; dentro ogni gruppo per nome.
+// sortNodes: folders first (full and empty), then projects; by name within each group.
 func sortNodes(ns []*Node) {
 	sort.SliceStable(ns, func(i, j int) bool {
 		pi, pj := ns[i].Kind == KindProject, ns[j].Kind == KindProject
@@ -324,7 +324,7 @@ func sortNodes(ns []*Node) {
 	})
 }
 
-// Walk visita tutti i nodi dell'albero.
+// Walk visits all the nodes of the tree.
 func Walk(n *Node, fn func(*Node)) {
 	if n == nil {
 		return

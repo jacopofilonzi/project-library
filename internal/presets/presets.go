@@ -1,10 +1,10 @@
-// Package presets contiene il catalogo dei preset di riconoscimento dei progetti
-// (Java/Gradle, Node, Android…) e la logica per verificare se un progetto corrisponde.
+// Package presets holds the catalog of project recognition presets
+// (Java/Gradle, Node, Android…) and the logic that checks whether a project matches.
 //
-// Un preset è un elenco di pattern: basta che uno corrisponda. Un pattern senza "/"
-// si confronta con i nomi nella cartella principale del progetto (glob, senza maiuscole);
-// un pattern con "/" è un percorso relativo al progetto (glob per ogni segmento),
-// es. "app/src/main/AndroidManifest.xml".
+// A preset is a list of patterns: one match is enough. A pattern without "/"
+// is compared with the names in the project's top folder (glob, case-insensitive);
+// a pattern with "/" is a path relative to the project (glob in every segment),
+// e.g. "app/src/main/AndroidManifest.xml".
 package presets
 
 import (
@@ -17,12 +17,12 @@ type Preset struct {
 	ID       string   `json:"id"`
 	Name     string   `json:"name"`
 	Patterns []string `json:"patterns"`
-	// Builtin: preset del catalogo dell'app (collegato: si aggiorna con l'app, non si modifica).
+	// Builtin: preset from the app's catalog (linked: it updates with the app and cannot be edited).
 	Builtin bool `json:"builtin"`
 }
 
-// Catalog è il catalogo integrato. Gli id sono stabili: le regole li referenziano.
-// Nessun preset è attivo di default: l'utente li associa a un editor dalle impostazioni.
+// Catalog is the built-in catalog. The ids are stable: the rules reference them.
+// No preset is active by default: the user links them to an editor in the settings.
 func Catalog() []Preset {
 	return []Preset{
 		{ID: "android", Name: "Android", Patterns: []string{"app/src/main/AndroidManifest.xml", "src/main/AndroidManifest.xml", "AndroidManifest.xml"}},
@@ -48,7 +48,7 @@ func Catalog() []Preset {
 	}
 }
 
-// Find cerca un preset per id prima nel catalogo, poi tra quelli dell'utente.
+// Find looks for a preset by id first in the catalog, then among the user's.
 func Find(id string, user []Preset) (Preset, bool) {
 	for _, p := range Catalog() {
 		if p.ID == id {
@@ -64,7 +64,7 @@ func Find(id string, user []Preset) (Preset, bool) {
 	return Preset{}, false
 }
 
-// Matches dice se il progetto in dir (con i nomi names nella cartella principale) corrisponde al preset.
+// Matches tells whether the project in dir (with names in its top folder) matches the preset.
 func Matches(dir string, names []string, patterns []string) bool {
 	for _, pat := range patterns {
 		pat = strings.TrimSpace(pat)
@@ -91,7 +91,7 @@ func glob(pattern, name string) bool {
 	return err == nil && ok
 }
 
-// matchPath controlla un percorso relativo con glob nei segmenti (es. "*/src/main/AndroidManifest.xml").
+// matchPath checks a relative path with globs in its segments (e.g. "*/src/main/AndroidManifest.xml").
 func matchPath(dir, pattern string) bool {
 	if !strings.ContainsAny(pattern, "*?[") {
 		_, err := os.Stat(filepath.Join(dir, filepath.FromSlash(pattern)))

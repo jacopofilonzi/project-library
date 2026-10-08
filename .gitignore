@@ -1,4 +1,4 @@
-# build Wails
+# Wails build
 /build/bin/
 /bin/
 
@@ -12,14 +12,14 @@
 *.test
 *.out
 
-# editor e sistema
+# editors and system
 .idea/
 .vscode/
 .DS_Store
 Thumbs.db
 desktop.ini
 
-# task runner di Wails
+# Wails task runner
 /.task/
 
 # test end-to-end

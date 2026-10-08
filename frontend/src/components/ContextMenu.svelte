@@ -5,7 +5,7 @@
   let el: HTMLDivElement | undefined = $state()
   let pos = $state({ x: 0, y: 0 })
 
-  // tiene il menu dentro la finestra e porta il focus sulla prima voce
+  // keeps the menu inside the window and moves the focus to the first item
   $effect(() => {
     const c = store.ctx
     if (!c) return

@@ -7,7 +7,7 @@
   import PublishDialog from './PublishDialog.svelte'
 
   let d = $derived(store.dialog)
-  // il clone in corso non si chiude cliccando fuori: va annullato col pulsante
+  // a running clone does not close on outside clicks: it must be cancelled with the button
   function backdrop(e: MouseEvent) {
     if (e.target === e.currentTarget && d?.kind !== 'clone' && d?.kind !== 'publish') store.dialog = null
   }

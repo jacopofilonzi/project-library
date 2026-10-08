@@ -1,5 +1,5 @@
-# Build Windows (compilata da Linux, che costa la metà dei minuti) e release. Non parte a ogni push: solo quando si pubblica un tag v* (crea la release
-# con l'installer allegato) o a mano da Actions → Release → Run workflow (installer come artefatto, niente release).
+# Windows build (compiled on Linux, which costs half the minutes) and release. It does not run on every push: only when a v* tag
+# is pushed (creates the release with the installer attached) or by hand from Actions → Release → Run workflow (installer as an artifact, no release).
 name: Release
 
 on:
@@ -19,19 +19,19 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 40
     env:
-      # Wails su Windows non usa cgo: senza cgo si compila per Windows da Linux e si fa vet per gli altri sistemi
+      # Wails on Windows does not use cgo: without cgo we compile for Windows from Linux and vet the other systems
       CGO_ENABLED: '0'
     steps:
       - uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Versione del tag uguale a quella dell'app
+      - name: Tag version matches the app version
         if: startsWith(github.ref, 'refs/tags/')
         run: |
           app=$(grep -E '^\s+version:\s*"' build/config.yml | head -1 | sed -E 's/.*"([^"]+)".*/\1/')
           if [ "v$app" != "$GITHUB_REF_NAME" ]; then
-            echo "::error::il tag è $GITHUB_REF_NAME ma build/config.yml dice $app"
+            echo "::error::the tag is $GITHUB_REF_NAME but build/config.yml says $app"
             exit 1
           fi
 
@@ -45,29 +45,29 @@ jobs:
           cache: npm
           cache-dependency-path: frontend/package-lock.json
 
-      - name: CLI di Wails (stessa versione di go.mod)
+      - name: Wails CLI (same version as go.mod)
         run: |
           v=$(go list -m -f '{{.Version}}' github.com/wailsapp/wails/v3)
           go install "github.com/wailsapp/wails/v3/cmd/wails3@$v"
 
-      - name: Dipendenze, binding e frontend
+      - name: Dependencies, bindings and frontend
         run: |
           (cd frontend && npm ci)
           GOOS=windows wails3 generate bindings -clean=true -ts -i
-          # main.go incorpora frontend/dist: senza la build go vet non compila
+          # main.go embeds frontend/dist: without the build go vet does not compile
           (cd frontend && npm run build)
 
       - name: Test Go
         run: |
           GOOS=windows go vet ./...
-          # internal/core importa Wails, che fuori da Windows richiede cgo: qui si controlla e si prova il resto
-          # (go test compila anche i pacchetti senza test). internal/core resta coperto dal vet per Windows.
+          # internal/core imports Wails, which needs cgo outside Windows: here we check and test the rest
+          # (go test compiles packages without tests too). internal/core stays covered by the Windows vet.
           pkgs=$(go list ./internal/... | grep -v /internal/core)
           GOOS=darwin go vet $pkgs
           go vet $pkgs
           go test $pkgs
 
-      - name: Controllo dei tipi
+      - name: Type check
         working-directory: frontend
         run: npm run check -- --fail-on-warnings
 
@@ -85,7 +85,7 @@ jobs:
           GOOS: windows
         run: wails3 package GOOS=windows ARCH=amd64
 
-      - name: Artefatto (avvio manuale)
+      - name: Artifact (manual run)
         if: github.event_name == 'workflow_dispatch'
         uses: actions/upload-artifact@v4
         with:
@@ -101,7 +101,7 @@ jobs:
           prev=$(git describe --tags --abbrev=0 "$GITHUB_REF_NAME^" 2>/dev/null || true)
           range=${prev:+$prev..}$GITHUB_REF_NAME
           {
-            echo "## Novità"
+            echo "## What's new"
             echo
             git log "$range" --no-merges --pretty='- %s' | grep -vE '^- chore: (release|version)' || true
           } > notes.md

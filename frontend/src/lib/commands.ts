@@ -1,5 +1,5 @@
-// Comandi della palette (si attivano scrivendo ">").
-// Nella ricerca flottante i comandi che servono alla finestra principale vengono eseguiti lì (RunInMain).
+// Palette commands (activated by typing ">").
+// In the floating search, commands that need the main window run there (RunInMain).
 import { store, ui, isSpotlight } from './state.svelte'
 import { t } from './i18n/index.svelte'
 import { lib, errMessage } from './api'
@@ -8,7 +8,7 @@ export type Command = {
   id: string
   label: string
   key?: string
-  /** richiede la finestra principale (dialog, impostazioni, cartella corrente) */
+  /** needs the main window (dialogs, settings, current folder) */
   main?: boolean
   run: () => void | Promise<void>
 }
@@ -49,7 +49,7 @@ export function commands(): Command[] {
   return list
 }
 
-/** esegue un comando: nella ricerca flottante quelli "main" passano alla finestra principale */
+/** runs a command: in the floating search the "main" ones go to the main window */
 export async function runCommand(c: Command) {
   try {
     if (isSpotlight && c.main) {
@@ -62,7 +62,7 @@ export async function runCommand(c: Command) {
   }
 }
 
-/** eseguito dalla finestra principale quando lo chiede la ricerca flottante */
+/** run by the main window when the floating search asks for it */
 export function runCommandById(id: string) {
   const c = commands().find((x) => x.id === id)
   if (c && id !== 'show') c.run()

@@ -1,5 +1,5 @@
-// Backend finto per i test end-to-end: stesse funzioni dei binding di internal/core (Library),
-// con un piccolo albero di progetti in memoria che crea, rinomina ed elimina davvero.
+// Fake backend for the end-to-end tests: same functions as the internal/core (Library) bindings,
+// with a small in-memory project tree that really creates, renames and deletes.
 import { Events } from './runtime'
 import { log, options } from './log'
 
@@ -8,7 +8,7 @@ const join = (...p: string[]) => p.join('/')
 const base = (p: string) => p.slice(p.lastIndexOf('/') + 1)
 const parentOf = (p: string) => p.slice(0, p.lastIndexOf('/'))
 
-// ---------- file system finto ----------
+// ---------- fake file system ----------
 type FNode = { name: string; kind: 'dir' | 'project' | 'empty'; lang?: string; desc?: string; hasGit?: boolean; files?: string[]; children?: FNode[] }
 
 const proj = (name: string, lang: string, files: string[], extra: Partial<FNode> = {}): FNode => ({ name, kind: 'project', lang, files, ...extra })
@@ -24,8 +24,8 @@ const fs: FNode = dir('Development', [
     ]),
   ]),
   dir('local', [
-    { name: 'Nuova cartella', kind: 'empty' },
-    dir('UNI', [dir('Ingegneria del Software', [proj('BuildPatternDemo', 'Java', ['build.gradle.kts', 'gradlew'])])]),
+    { name: 'New folder', kind: 'empty' },
+    dir('UNI', [dir('Software Engineering', [proj('BuildPatternDemo', 'Java', ['build.gradle.kts', 'gradlew'])])]),
     proj('awake', 'Node', ['package.json', 'README.md', '.git'], { hasGit: true, desc: 'Self-hosted Wake-on-LAN over the internet.' }),
     proj('dity-bot-rs', 'Rust', ['Cargo.toml', '.git'], { hasGit: true }),
     proj('pocket-app', 'Kotlin', ['app/src/main/AndroidManifest.xml', 'build.gradle.kts', 'gradlew']),
@@ -50,7 +50,7 @@ const globRe = (g: string) => new RegExp('^' + g.replace(/[.+^${}()|[\]\\]/g, '\
 
 function toTree(n: FNode, path: string): any {
   if (n.kind === 'project') {
-    // come scanner.MatchRules: launcher delle regole che corrispondono, in ordine e senza doppioni
+    // like scanner.MatchRules: launchers of the matching rules, in order and without duplicates
     const ruleLaunchers: string[] = []
     for (const r of config.rules ?? []) {
       const p = findPreset(r.preset)
@@ -65,7 +65,7 @@ function toTree(n: FNode, path: string): any {
   return { name: n.name, path, kind, count: children.reduce((s: number, c: any) => s + c.count, 0), children }
 }
 
-// ---------- preset (parte del catalogo di internal/presets) ----------
+// ---------- presets (part of the internal/presets catalog) ----------
 const catalog = [
   { id: 'android', name: 'Android', patterns: ['app/src/main/AndroidManifest.xml', 'src/main/AndroidManifest.xml', 'AndroidManifest.xml'] },
   { id: 'gradle', name: 'Java / Kotlin (Gradle)', patterns: ['build.gradle', 'build.gradle.kts', 'settings.gradle', 'settings.gradle.kts', 'gradlew'] },
@@ -75,11 +75,11 @@ const catalog = [
 ]
 const findPreset = (id: string) => catalog.find((p) => p.id === id) ?? (config.presets ?? []).find((p: any) => p.id === id)
 
-// editor noti "installati" sulla macchina finta, oltre a VS Code e IntelliJ
+// known editors "installed" on the fake machine, besides VS Code and IntelliJ
 const installed: Record<string, string> = { vscode: 'C:/VSCode/Code.exe', intellij: 'C:/JetBrains/idea64.exe', androidstudio: 'C:/Android/studio64.exe' }
 const knownNames: Record<string, string> = { androidstudio: 'Android Studio' }
 
-// ---------- git finto ----------
+// ---------- fake git ----------
 const gitData: Record<string, any> = {
   [join(ROOT, 'github/jacopofilonzi/TimeTable')]: { isRepo: true, branch: 'main', remote: 'git@github.com:jacopofilonzi/TimeTable.git', remoteWeb: 'https://github.com/jacopofilonzi/TimeTable', hasUpstream: true, ahead: 0, behind: 0, dirty: 0, commit: { hash: 'af8c550', subject: 'Feat: usage tracking', author: 'Filonzi Jacopo', time: 1791000000 } },
   [join(ROOT, 'github/jacopofilonzi/NtfyJS')]: { isRepo: true, branch: 'main', remote: 'https://github.com/jacopofilonzi/NtfyJS', remoteWeb: 'https://github.com/jacopofilonzi/NtfyJS', hasUpstream: true, ahead: 1, behind: 0, dirty: 7, commit: { hash: '5428c14', subject: 'Blanked gitignore', author: 'Filonzi Jacopo', time: 1788000000 } },
@@ -137,7 +137,7 @@ function nameProblem(name: string): string {
   return ''
 }
 
-// ---------- binding ----------
+// ---------- bindings ----------
 export const State = async () => state()
 export const SaveConfig = async (c: any) => { log('SaveConfig', c); config = structuredClone(c); emitConfig(); emitTree(); return state() }
 export const Tree = async () => Tree_()
@@ -256,7 +256,7 @@ export const GitInstallInfo = async () => ({ command: 'winget install --id Git.G
 export const RunGitInstall = async () => { log('RunGitInstall') }
 export const PickFolder = async () => options.pickFolder ?? ''
 
-// ---------- GitHub e GitLab finti: gh installata (secondo options.forges), glab mai ----------
+// ---------- fake GitHub and GitLab: gh installed (depending on options.forges), glab never ----------
 const ghAccount = { host: 'github.com', user: 'jacopofilonzi', protocol: 'ssh' }
 export async function Forges(refresh: boolean) {
   log('Forges', refresh)

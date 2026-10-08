@@ -1,4 +1,4 @@
-// Voci dei menu contestuali (tasto destro, pulsante ⋯, pulsante + delle colonne).
+// Context menu items (right click, ⋯ button, + button of the columns).
 import { store, type CtxItem } from './state.svelte'
 import { t } from './i18n/index.svelte'
 import type { Node } from './api'
@@ -30,7 +30,7 @@ export function nodeMenu(node: Node): CtxItem[] {
   items.push('-', ...overrideItems(node), '-')
   items.push(
     { label: t('ctx.rename'), key: 'F2', run: () => (store.dialog = { kind: 'rename', path: node.path, name: node.name }) },
-    { label: t('ctx.delete'), key: store.os === 'darwin' ? '⌘⌫' : 'Canc', danger: true, run: () => store.askDelete(node) },
+    { label: t('ctx.delete'), key: store.os === 'darwin' ? '⌘⌫' : 'Del', danger: true, run: () => store.askDelete(node) },
   )
   return items
 }

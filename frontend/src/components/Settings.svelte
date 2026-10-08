@@ -14,7 +14,7 @@
     if (pb) pb.scrollTop = 0
   }
 
-  // ---------- generale ----------
+  // ---------- general ----------
   let rootExists = $state<Record<string, boolean>>({})
   $effect(() => {
     for (const r of store.cfg.roots) lib.Exists(r).then((ok) => (rootExists[r] = ok))
@@ -64,7 +64,7 @@
       draft = { name: t('settings.launchers.newName'), command: '', args: '"{path}"' }
     })
   }
-  // elimina un launcher custom insieme alle regole e alle scelte per progetto che lo usano
+  // deletes a custom launcher together with the rules and per-project choices that use it
   function deleteLauncher(i: number) {
     editing = null
     store.save((c) => {
@@ -74,7 +74,7 @@
     })
   }
 
-  // ---------- regole (preset → launcher, in ordine di priorità) ----------
+  // ---------- rules (preset → launcher, in priority order) ----------
   let picking = $state(false)
   let allPresets = $derived([...store.catalog, ...store.cfg.presets])
   let usedPresets = $derived(new Set(store.cfg.rules.map((r) => r.preset)))
@@ -84,7 +84,7 @@
     const id = suggestedLauncher(preset.id)?.id ?? ''
     store.save((c) => {
       c.rules.push({ preset: preset.id, launcher: id })
-      // un editor installato ma spento si accende: la regola altrimenti verrebbe saltata
+      // an installed but disabled editor gets enabled: otherwise the rule would be skipped
       const l = c.launchers.find((x) => x.id === id)
       if (l) l.enabled = true
     })
@@ -95,7 +95,7 @@
       c.rules.splice(i + d, 0, r)
     })
   }
-  // "Personalizza": copia modificabile del preset integrato, che prende il suo posto nella regola
+  // "Customize": editable copy of the built-in preset, which takes its place in the rule
   function customize(i: number, p: Preset) {
     const id = 'custom-' + Date.now()
     store.save((c) => {
@@ -104,7 +104,7 @@
     })
   }
 
-  // ---------- preset dell'utente ----------
+  // ---------- user presets ----------
   function newPreset() {
     picking = false
     const id = 'custom-' + Date.now()
@@ -126,7 +126,7 @@
       if (!p.patterns.includes(v)) p.patterns.push(v)
     })
   }
-  // elimina il preset e le regole che lo usano
+  // deletes the preset and the rules that use it
   function deletePreset(id: string) {
     store.save((c) => {
       c.presets.splice(presetIndex(c, id), 1)
@@ -145,7 +145,7 @@
     else store.toast(found.length ? t('settings.launchers.detected', { list: found.join(', ') }) : t('settings.launchers.detectedNone'))
   }
 
-  // apertura dal wizard: mostra direttamente le regole
+  // opened from the wizard: show the rules directly
   $effect(() => {
     const a = store.settingsAnchor
     if (!a || !pb) return
@@ -169,7 +169,7 @@
     try {
       const before = JSON.stringify(store.cfg)
       store.applyState(await lib.ImportConfig(t('settings.about.import')))
-      if (JSON.stringify(store.cfg) === before) return // annullato o identico
+      if (JSON.stringify(store.cfg) === before) return // cancelled or unchanged
       store.setTree(await lib.Tree())
       store.refreshLaunchers()
       store.toast(t('settings.about.imported'))
@@ -177,7 +177,7 @@
       store.toast(errMessage(e), true)
     }
   }
-  // ---------- reimposta ----------
+  // ---------- reset ----------
   let resetAsk = $state(false)
   let resetCancel: HTMLButtonElement | undefined = $state()
   $effect(() => { if (resetAsk) resetCancel?.focus() })
@@ -199,7 +199,7 @@
     if (p) draft.command = p
   }
 
-  // ---------- scansione ----------
+  // ---------- scanning ----------
   function addChip(e: KeyboardEvent, key: 'markers' | 'ignore') {
     const el = e.currentTarget as HTMLInputElement
     if (e.key !== 'Enter' || !el.value.trim()) return
@@ -224,7 +224,7 @@
     if (p) { gitPath = p; applyGit() }
   }
 
-  // ---------- GitHub e GitLab ----------
+  // ---------- GitHub and GitLab ----------
   let checking = $state(false)
   let cliInstall = $state<Record<string, InstallInfo>>({})
   let cliStarted = $state<Record<string, boolean>>({})
@@ -232,7 +232,7 @@
   let copiedCmd = $state('')
   const binOf = (k: string) => (k === 'gitlab' ? 'glab' : 'gh')
   const configuredPath = (k: string) => (k === 'gitlab' ? store.cfg.glabPath : store.cfg.ghPath)
-  // all'apertura della sezione: stato in cache, caricato all'avvio
+  // when the section opens: cached state, loaded at startup
   $effect(() => {
     if (store.settingsSection === 'git' && !store.forges.length) store.loadForges()
   })
@@ -269,7 +269,7 @@
 
   let overrides = $derived(Object.entries(store.cfg.overrides ?? {}).sort(([a], [b]) => a.localeCompare(b)))
   const configDir = $derived((store.st?.configPath ?? '').replace(/[\\/][^\\/]*$/, ''))
-  // stesso file che scrive ResetConfig nel backend, accanto a config.json
+  // same file ResetConfig writes in the backend, next to config.json
   const backupPath = $derived((store.st?.configPath ?? '').replace(/[^\\/]*$/, 'config.backup.json'))
 
   function onkey(e: KeyboardEvent) {
@@ -530,7 +530,7 @@
           <table class="tbl"><tbody>
             {#each [
               [store.mod + ' K', 'search'], ['>', 'commands'], [store.mod + ' P  /  ' + store.mod + ' ,', 'settings'], ['↵', 'open'], [store.mod + ' 1…9', 'openN'],
-              [store.mod + ' E', 'reveal'], [store.mod + ' Shift N', 'newFolder'], ['F2', 'rename'], [store.os === 'darwin' ? '⌘ ⌫' : 'Canc / Del', 'delete'],
+              [store.mod + ' E', 'reveal'], [store.mod + ' Shift N', 'newFolder'], ['F2', 'rename'], [store.os === 'darwin' ? '⌘ ⌫' : 'Del', 'delete'],
               ['← ↑ ↓ →', 'navigate'], ['Esc', 'close'],
             ] as [k, d]}
               <tr><td>{t('settings.shortcuts.' + d)}</td><td><kbd>{k}</kbd></td></tr>

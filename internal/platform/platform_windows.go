@@ -14,12 +14,12 @@ const (
 	createNewProcessGroup = 0x00000200
 )
 
-// HideConsole evita che i processi figli (git, script .cmd) aprano una finestra console.
+// HideConsole keeps child processes (git, .cmd scripts) from opening a console window.
 func HideConsole(cmd *exec.Cmd) {
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true, CreationFlags: createNoWindow}
 }
 
-// StartDetached avvia un programma che sopravvive alla chiusura dell'app.
+// StartDetached starts a program that outlives the app.
 func StartDetached(command string, args []string, dir string) error {
 	cmd := exec.Command(command, args...)
 	cmd.Dir = dir
@@ -71,7 +71,7 @@ func GitInstall() InstallInfo {
 	return InstallInfo{Command: "winget install --id Git.Git -e --source winget", CanRun: true, URL: "https://git-scm.com/download/win"}
 }
 
-// RunGitInstall apre una console visibile con winget, così l'utente vede l'avanzamento e il prompt UAC.
+// RunGitInstall opens a visible console with winget, so the user sees the progress and the UAC prompt.
 func RunGitInstall() error {
 	cmd := exec.Command("cmd.exe", "/c", "start", "Git", "cmd.exe", "/k", GitInstall().Command)
 	return cmd.Start()
@@ -95,7 +95,7 @@ func CLIInstall(id string) InstallInfo {
 	return InstallInfo{Command: "winget install --id " + cliWinget[id] + " -e --source winget", CanRun: true, URL: cliURL[id]}
 }
 
-// RunCLIInstall apre una console visibile con winget, come RunGitInstall.
+// RunCLIInstall opens a visible console with winget, like RunGitInstall.
 func RunCLIInstall(id string) error {
 	return exec.Command("cmd.exe", "/c", "start", id, "cmd.exe", "/k", CLIInstall(id).Command).Start()
 }
@@ -119,7 +119,7 @@ func nameProblem(name string) string {
 
 var winEnv = regexp.MustCompile(`%([^%]+)%`)
 
-// ExpandEnv espande sia %VAR% sia $VAR e ~.
+// ExpandEnv expands both %VAR% and $VAR and ~.
 func ExpandEnv(s string) string {
 	s = winEnv.ReplaceAllStringFunc(s, func(m string) string {
 		if v, ok := os.LookupEnv(m[1 : len(m)-1]); ok {

@@ -17,7 +17,7 @@
 
   let { launcher }: { launcher: Launcher } = $props()
   const logos: Record<string, string> = { vscode, intellij, androidstudio, webstorm, pycharm, goland, rider, clion, phpstorm, rubymine, cursor, zed, sublime }
-  // editor noti senza logo: un colore riconoscibile al posto del grigio dei launcher custom
+  // known editors without a logo: a recognizable color instead of the gray of custom launchers
   const colors: Record<string, string> = { rustrover: '#E8590C' }
   let logo = $derived(logos[launcher.builtin ?? ''])
 </script>

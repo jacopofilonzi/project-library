@@ -12,9 +12,9 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/platform"
 )
 
-// ---------- GitHub e GitLab (gh e glab) ----------
+// ---------- GitHub and GitLab (gh and glab) ----------
 
-// forges contiene le due CLI e le cache delle risposte.
+// forges holds the two CLIs and the response caches.
 type forges struct {
 	gh   forge.CLI
 	glab forge.CLI
@@ -47,7 +47,7 @@ func (f *forges) cli(kind string) *forge.CLI {
 	return &f.gh
 }
 
-// detect cerca le CLI con i percorsi della config e svuota le cache.
+// detect looks for the CLIs with the paths in the config and clears the caches.
 func (f *forges) detect(cfg config.Config) {
 	f.gh.Detect(cfg.GhPath)
 	f.glab.Detect(cfg.GlabPath)
@@ -56,16 +56,16 @@ func (f *forges) detect(cfg config.Config) {
 	f.mu.Unlock()
 }
 
-// ForgeStatus è lo stato di una CLI per le impostazioni.
+// ForgeStatus is the state of a CLI, for the settings.
 type ForgeStatus struct {
 	Kind     forge.Kind      `json:"kind"`
-	Path     string          `json:"path"`     // vuoto = non trovata
-	Accounts []forge.Account `json:"accounts"` // vuoto = login non fatto
-	// Message: l'ultima riga di `auth status` quando non c'è nessun account (es. "run gh auth login").
+	Path     string          `json:"path"`     // empty = not found
+	Accounts []forge.Account `json:"accounts"` // empty = not logged in
+	// Message: the last line of `auth status` when there is no account (e.g. "run gh auth login").
 	Message string `json:"message"`
 }
 
-// Forges restituisce lo stato di gh e glab. Con refresh rileva di nuovo le CLI e rilegge gli account.
+// Forges returns the state of gh and glab. With refresh it detects the CLIs again and re-reads the accounts.
 func (l *Library) Forges(refresh bool) []ForgeStatus {
 	if refresh {
 		l.forge.detect(l.store.Get())
@@ -92,13 +92,13 @@ func (l *Library) RunForgeInstall(kind string) error {
 	return nil
 }
 
-// RepoList sono i repository di tutti gli account; Errors raccoglie gli account che non hanno risposto.
+// RepoList holds the repositories of all the accounts; Errors collects the accounts that did not answer.
 type RepoList struct {
 	Repos  []forge.Repo `json:"repos"`
 	Errors []string     `json:"errors"`
 }
 
-// ForgeRepos elenca i repository di tutti gli account di gh e glab (in cache per qualche minuto).
+// ForgeRepos lists the repositories of all the gh and glab accounts (cached for a few minutes).
 func (l *Library) ForgeRepos(refresh bool) RepoList {
 	f := &l.forge
 	f.mu.Lock()
@@ -135,7 +135,7 @@ func (l *Library) ForgeRepos(refresh bool) RepoList {
 	return res
 }
 
-// remoteOf ricava host e owner/nome da un remote git e trova la CLI con un account su quell'host.
+// remoteOf gets host and owner/name from a git remote and finds the CLI with an account on that host.
 func (l *Library) remoteOf(remote string) (c *forge.CLI, host, fullName string, ok bool) {
 	web := gitinfo.WebURL(remote)
 	if web == "" {
@@ -150,8 +150,8 @@ func (l *Library) remoteOf(remote string) (c *forge.CLI, host, fullName string, 
 	return nil, "", "", false
 }
 
-// ForgeInfo restituisce PR, issue e CI del remote sul branch. nil se nessuna CLI ha un account
-// sull'host del remote: in quel caso la scheda non mostra niente.
+// ForgeInfo returns PRs, issues and CI of the remote on the branch. nil if no CLI has an account
+// on the remote's host: in that case the card shows nothing.
 func (l *Library) ForgeInfo(remote, branch string) (*forge.Info, error) {
 	c, host, fullName, ok := l.remoteOf(remote)
 	if !ok {
@@ -175,19 +175,19 @@ func (l *Library) ForgeInfo(remote, branch string) (*forge.Info, error) {
 	return &info, nil
 }
 
-// ForgeOwners elenca dove l'account di kind su host può creare un repository.
+// ForgeOwners lists where the kind account on host can create a repository.
 func (l *Library) ForgeOwners(kind, host string) ([]forge.Owner, error) {
 	c := l.forge.cli(kind)
 	acc, ok := c.Account(host)
 	if !ok {
 		return nil, &fsops.Error{Code: "forgeNoAccount", Detail: host}
 	}
-	// l'utente resta sempre disponibile anche se l'elenco di organizzazioni o gruppi non arriva
+	// the user is always available even if the list of organizations or groups does not arrive
 	owners, _ := c.Owners(acc)
 	return owners, nil
 }
 
-// ForgeNameTaken dice se owner/name esiste già sull'host (controllo prima di creare il repository).
+// ForgeNameTaken tells whether owner/name already exists on the host (checked before creating the repository).
 func (l *Library) ForgeNameTaken(kind, host, owner, name string) (bool, error) {
 	c := l.forge.cli(kind)
 	acc, ok := c.Account(host)
@@ -201,7 +201,7 @@ func (l *Library) ForgeNameTaken(kind, host, owner, name string) (bool, error) {
 	return taken, nil
 }
 
-// PublishRequest descrive il repository da creare per un progetto locale senza remote.
+// PublishRequest describes the repository to create for a local project without a remote.
 type PublishRequest struct {
 	Path        string      `json:"path"`
 	Kind        forge.Kind  `json:"kind"`
@@ -212,15 +212,15 @@ type PublishRequest struct {
 	Private     bool        `json:"private"`
 }
 
-// PublishResult: il repository creato; Pushed è falso se il progetto non ha ancora commit
-// o se il push non è riuscito (PushError contiene il messaggio di git).
+// PublishResult: the created repository; Pushed is false if the project has no commits yet
+// or the push failed (PushError holds git's message).
 type PublishResult struct {
 	Web       string `json:"web"`
 	Pushed    bool   `json:"pushed"`
 	PushError string `json:"pushError"`
 }
 
-// Publish crea il repository su GitHub o GitLab, lo aggiunge come remote origin e fa il primo push.
+// Publish creates the repository on GitHub or GitLab, adds it as the origin remote and pushes for the first time.
 func (l *Library) Publish(req PublishRequest) (PublishResult, error) {
 	if !l.git.Available() {
 		return PublishResult{}, &fsops.Error{Code: "noGit"}
@@ -249,7 +249,7 @@ func (l *Library) Publish(req PublishRequest) (PublishResult, error) {
 		return res, &fsops.Error{Code: "addRemote", Detail: err.Error()}
 	}
 	l.forge.mu.Lock()
-	l.forge.repos = nil // il nuovo repository deve comparire nell'elenco del clone
+	l.forge.repos = nil // the new repository must show up in the clone list
 	l.forge.mu.Unlock()
 	if info.Commit != nil {
 		if err := l.git.PushUpstream(req.Path, "origin"); err != nil {

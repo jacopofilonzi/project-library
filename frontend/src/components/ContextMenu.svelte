@@ -1,6 +1,6 @@
 <script lang="ts">
   import { tick } from 'svelte'
-  import { store } from '../lib/state.svelte'
+  import { store, uiZoom } from '../lib/state.svelte'
 
   let el: HTMLDivElement | undefined = $state()
   let pos = $state({ x: 0, y: 0 })
@@ -9,10 +9,14 @@
   $effect(() => {
     const c = store.ctx
     if (!c) return
-    pos = { x: c.x, y: c.y }
+    // mouse coordinates are screen pixels, the menu is placed in (zoomed) CSS pixels
+    const z = uiZoom()
+    const x = c.x / z
+    const y = c.y / z
+    pos = { x, y }
     tick().then(() => {
       if (!el) return
-      pos = { x: Math.min(c.x, innerWidth - el.offsetWidth - 8), y: Math.min(c.y, innerHeight - el.offsetHeight - 8) }
+      pos = { x: Math.min(x, innerWidth / z - el.offsetWidth - 8), y: Math.min(y, innerHeight / z - el.offsetHeight - 8) }
       el.querySelector('button')?.focus()
     })
   })

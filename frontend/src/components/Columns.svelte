@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { store } from '../lib/state.svelte'
+  import { store, ui } from '../lib/state.svelte'
   import { t, tn } from '../lib/i18n/index.svelte'
   import { icons } from '../lib/icons'
   import LauncherIcon from './LauncherIcon.svelte'
@@ -10,7 +10,7 @@
   let width = $state(window.innerWidth)
 
   // how many columns fit next to the card (min 480px); always at least 2
-  let fit = $derived(Math.max(2, Math.floor((width - 480 - 28) / 220)))
+  let fit = $derived(Math.max(2, Math.floor((width / ui.zoom - 480 - 28) / 220)))
   let start = $derived(Math.max(0, store.path.length + 1 - fit))
 
   type Column = { index: number; node: Node; label: string }

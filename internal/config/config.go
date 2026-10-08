@@ -58,7 +58,8 @@ type Config struct {
 	Version  int    `json:"version"`
 	Language string `json:"language"` // "en" | "it"
 	Theme    string `json:"theme"`    // "system" | "light" | "dark"
-	// UIScale is the zoom of the main window (1 = 100%), between MinUIScale and MaxUIScale.
+	// UIScale is the size of the main window's interface (1 = 100%), between MinUIScale and MaxUIScale.
+	// The frontend applies it as CSS zoom.
 	UIScale float64 `json:"uiScale"`
 
 	Roots           []string   `json:"roots"`

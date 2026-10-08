@@ -210,9 +210,6 @@ func (l *Library) applySystem(cfg, prev config.Config) []error {
 			errs = append(errs, &fsops.Error{Code: "autostart", Detail: err.Error()})
 		}
 	}
-	if cfg.UIScale != prev.UIScale && MainWindow != nil {
-		MainWindow.SetZoom(cfg.UIScale)
-	}
 	if cfg.GitFetch != prev.GitFetch || cfg.GitFetchMinutes != prev.GitFetchMinutes || prev.Version == 0 {
 		l.restartFetch(cfg)
 	}

@@ -242,6 +242,7 @@ class Store {
     this.st = s
     setLang(s.config.language)
     applyTheme(s.config.theme)
+    applyScale(s.config.uiScale)
   }
 
   // ---------- UI scale ----------
@@ -395,6 +396,7 @@ class Store {
       this.st = { ...this.st, config }
       setLang(config.language)
       applyTheme(config.theme)
+      applyScale(config.uiScale)
       if (launchersChanged) this.refreshLaunchers()
     })
     if (!isSpotlight) {
@@ -415,11 +417,27 @@ class Store {
 /** this frontend instance is the floating search window */
 export const isSpotlight = new URLSearchParams(location.search).get('view') === 'spotlight'
 
+// ---------- interface scale ----------
+// CSS zoom on the whole page, not the window zoom: Wails does not let the WebView zoom go below 100%
+// while the app runs. With CSS zoom, viewport units and positions taken from mouse events are zoomed
+// too: the CSS divides vh/vw by --z, and code that places things at screen coordinates divides by uiZoom().
+let zoomNow = 1
+export function uiZoom() {
+  return zoomNow
+}
+export function applyScale(scale: number | undefined) {
+  if (isSpotlight) return // the floating search keeps its size
+  zoomNow = scale && scale > 0 ? scale : 1
+  document.documentElement.style.zoom = String(zoomNow)
+  document.documentElement.style.setProperty('--z', String(zoomNow))
+  ui.zoom = zoomNow
+}
+
 // ---------- theme ----------
 const dark = window.matchMedia('(prefers-color-scheme: dark)')
 let themeMode = 'system'
 /** effective theme (reactive), after resolving "system" */
-export const ui = $state({ theme: 'light' as 'light' | 'dark' })
+export const ui = $state({ theme: 'light' as 'light' | 'dark', zoom: 1 })
 export function applyTheme(mode: string) {
   themeMode = mode
   ui.theme = mode === 'system' ? (dark.matches ? 'dark' : 'light') : mode === 'dark' ? 'dark' : 'light'

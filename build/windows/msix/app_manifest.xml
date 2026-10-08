@@ -9,13 +9,13 @@
   
   <Identity 
     Name="com.example.projectlibrary"
-    Publisher="CN=My Company"
+    Publisher="CN=Jacopo Filonzi"
     Version="0.1.0.0" 
     ProcessorArchitecture="x64" />
   
   <Properties>
-    <DisplayName>My Product</DisplayName>
-    <PublisherDisplayName>My Company</PublisherDisplayName>
+    <DisplayName>Project Library</DisplayName>
+    <PublisherDisplayName>Jacopo Filonzi</PublisherDisplayName>
     <Description>A project-library application</Description>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
@@ -31,7 +31,7 @@
   <Applications>
     <Application Id="com.example.projectlibrary" Executable="project-library.exe" EntryPoint="Windows.FullTrustApplication">
       <uap:VisualElements
-        DisplayName="My Product"
+        DisplayName="Project Library"
         Description="A project-library application"
         BackgroundColor="transparent"
         Square150x150Logo="Assets\Square150x150Logo.png"

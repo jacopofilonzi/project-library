@@ -1,13 +1,13 @@
 [Desktop Entry]
 Version=1.0
-Name=My Product
-Comment=A project-library application
+Name=Project Library
+Comment=Browse and open the projects in your Development folder
 # The Exec line includes %u to pass the URL to the application
-Exec=/usr/local/bin/project-library.exe %u
+Exec=/usr/local/bin/project-library %u
 Terminal=false
 Type=Application
-Icon=project-library.exe
+Icon=project-library
 Categories=Utility;
-StartupWMClass=project-library.exe
+StartupWMClass=project-library
 
  

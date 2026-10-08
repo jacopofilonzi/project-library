@@ -10,13 +10,13 @@
     <Installer
         Path="project-library.exe"
         Arguments=""
-        InstallLocation="C:\Program Files\My Company\My Product">
+        InstallLocation="C:\Program Files\Jacopo Filonzi\Project Library">
     </Installer>
     <PackageInformation
-        PackageName="My Product"
-        PackageDisplayName="My Product"
-        PublisherName="CN=My Company"
-        PublisherDisplayName="My Company"
+        PackageName="Project Library"
+        PackageDisplayName="Project Library"
+        PublisherName="CN=Jacopo Filonzi"
+        PublisherDisplayName="Jacopo Filonzi"
         Version="0.1.0.0"
         PackageDescription="A project-library application">
         <Capabilities>
@@ -27,7 +27,7 @@
             <Application
                 Id="com.example.projectlibrary"
                 Description="A project-library application"
-                DisplayName="My Product"
+                DisplayName="Project Library"
                 ExecutableName="project-library.exe"
                 EntryPoint="Windows.FullTrustApplication">
                 
@@ -41,8 +41,8 @@
         </Dependencies>
         <Properties>
             <Framework>false</Framework>
-            <DisplayName>My Product</DisplayName>
-            <PublisherDisplayName>My Company</PublisherDisplayName>
+            <DisplayName>Project Library</DisplayName>
+            <PublisherDisplayName>Jacopo Filonzi</PublisherDisplayName>
             <Description>A project-library application</Description>
             <Logo>Assets\AppIcon.png</Logo>
         </Properties>

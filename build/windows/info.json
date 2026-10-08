@@ -5,11 +5,11 @@
 	"info": {
 		"0000": {
 			"ProductVersion": "0.1.0",
-			"CompanyName": "My Company",
-			"FileDescription": "A project-library application",
-			"LegalCopyright": "© 2026, My Company",
-			"ProductName": "My Product",
-			"Comments": "This is a comment"
+			"CompanyName": "Jacopo Filonzi",
+			"FileDescription": "Browse and open the projects in your Development folder",
+			"LegalCopyright": "(c) 2026, Jacopo Filonzi",
+			"ProductName": "Project Library",
+			"Comments": "Browse and open the projects in your Development folder"
 		}
 	}
 }

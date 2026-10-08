@@ -22,7 +22,7 @@ Il piano completo e le decisioni prese sono in [PLAN.md](PLAN.md); il riferiment
 ```sh
 wails3 dev            # sviluppo con hot reload
 wails3 build          # build di produzione in bin/
-wails3 package        # installer/pacchetto per il sistema corrente
+wails3 package ARCH=amd64   # installer Windows (NSIS, per utente) in bin/; serve makensis nel PATH
 go test ./internal/...
 cd frontend && npm run check   # controllo dei tipi Svelte/TypeScript
 ```

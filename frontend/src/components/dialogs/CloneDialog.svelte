@@ -16,6 +16,9 @@
   const startRel = parent ? relOf(parent) : relOf(store.current?.path ?? root)
 
   let url = $state('')
+  let urlInput: HTMLInputElement | undefined = $state()
+  // autofocus non funziona sugli elementi aggiunti dopo il caricamento: il focus va dato a mano
+  $effect(() => urlInput?.focus())
   let dest = $state(startRel)
   let name = $state('')
   let openAfter = $state(true)
@@ -98,8 +101,7 @@
 <div class="bd">
   {#if !store.st?.gitAvailable}<div class="warn">{t('dlg.noGit')}</div>{/if}
   <label>{t('dlg.url')}
-    <!-- svelte-ignore a11y_autofocus -->
-    <input type="text" bind:value={url} placeholder={t('dlg.urlPlaceholder')} autocomplete="off" spellcheck="false" disabled={running} autofocus onkeydown={(e) => e.key === 'Enter' && run()} />
+    <input type="text" bind:this={urlInput} bind:value={url} placeholder={t('dlg.urlPlaceholder')} autocomplete="off" spellcheck="false" disabled={running} onkeydown={(e) => e.key === 'Enter' && run()} />
   </label>
   <label>{t('dlg.dest')}
     <div class="pre"><span title={root}>{root}{sep}</span><input type="text" bind:value={dest} oninput={() => (destTouched = true)} autocomplete="off" spellcheck="false" disabled={running} /></div>

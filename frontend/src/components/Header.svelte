@@ -12,7 +12,7 @@
 </script>
 
 <header class="top">
-  <div class="logo"><img src={logo} alt="" width="22" height="22" />project<span>/</span>library</div>
+  <div class="logo"><img src={logo} alt="" width="22" height="22" /><span class="wm">project<span>/</span>library</span></div>
   <nav class="crumbs" aria-label="Path">
     {#each crumbs as c, i}
       {#if i > 0}<i>/</i>{/if}

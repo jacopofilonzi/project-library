@@ -9,6 +9,13 @@
   let strong = $state(false) // conferma forte: bisogna scrivere il nome
   let loading = $state(node.kind === 'project')
   let typed = $state('')
+  let nameInput: HTMLInputElement | undefined = $state()
+  let cancelBtn: HTMLButtonElement | undefined = $state()
+  // focus sul campo del nome se serve la conferma forte, altrimenti su Annulla (mai su Elimina)
+  $effect(() => {
+    if (loading) return
+    ;(strong ? nameInput : cancelBtn)?.focus()
+  })
   let busy = $state(false)
 
   // per i progetti: controlla modifiche non committate, commit non pushati, assenza di remote
@@ -63,11 +70,11 @@
   {/if}
   <div class="final selectable">{node.path}</div>
   {#if strong}
-    <label>{t('dlg.typeName', { name: node.name })}<input type="text" bind:value={typed} autocomplete="off" spellcheck="false" onkeydown={(e) => e.key === 'Enter' && confirm()} /></label>
+    <label>{t('dlg.typeName', { name: node.name })}<input type="text" bind:this={nameInput} bind:value={typed} autocomplete="off" spellcheck="false" onkeydown={(e) => e.key === 'Enter' && confirm()} /></label>
   {/if}
   <p class="hint">{t('dlg.toTrash', { trash: store.trashName })}</p>
 </div>
 <div class="ft">
-  <button onclick={() => (store.dialog = null)}>{t('dlg.cancel')}</button>
+  <button bind:this={cancelBtn} onclick={() => (store.dialog = null)}>{t('dlg.cancel')}</button>
   <button class="d" disabled={!ok} onclick={confirm}>{t('dlg.delete')}</button>
 </div>

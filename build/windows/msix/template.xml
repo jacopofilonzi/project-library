@@ -17,7 +17,7 @@
         PackageDisplayName="Project Library"
         PublisherName="CN=Jacopo Filonzi"
         PublisherDisplayName="Jacopo Filonzi"
-        Version="0.1.9.0"
+        Version="0.1.91.0"
         PackageDescription="A project-library application">
         <Capabilities>
             <Capability Name="runFullTrust" />

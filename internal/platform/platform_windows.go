@@ -134,3 +134,6 @@ func ExpandEnv(s string) string {
 }
 
 func CaseInsensitive() bool { return true }
+
+// UpdateAsset is the end of the installer's name among the release files.
+func UpdateAsset() string { return "-installer.exe" }

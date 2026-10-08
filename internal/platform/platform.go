@@ -17,6 +17,7 @@
 //	nameProblem(name string) string
 //	ExpandEnv(s string) string
 //	CaseInsensitive() bool
+//	UpdateAsset() string
 package platform
 
 import (

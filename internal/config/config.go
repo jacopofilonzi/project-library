@@ -97,6 +97,11 @@ type Config struct {
 	Hotkey          string `json:"hotkey"`
 	SpotlightHotkey string `json:"spotlightHotkey"`
 
+	// CheckUpdates: look for a new release at startup. NotifiedVersion: the last version
+	// a desktop notification was sent for (one notification per version).
+	CheckUpdates    bool   `json:"checkUpdates"`
+	NotifiedVersion string `json:"notifiedVersion"`
+
 	// LastPath and LastSelected: where you were when the app closed (current folder and selected project).
 	LastPath     string `json:"lastPath"`
 	LastSelected string `json:"lastSelected"`
@@ -105,7 +110,7 @@ type Config struct {
 }
 
 const (
-	currentVersion = 3
+	currentVersion = 4
 	MaxRecent      = 20
 )
 
@@ -153,6 +158,7 @@ func Default(home string) Config {
 		CloseToTray:      false,
 		Hotkey:           "CmdOrCtrl+Alt+Space",
 		SpotlightHotkey:  "Super+Ctrl+K",
+		CheckUpdates:     true,
 	}
 }
 
@@ -210,6 +216,10 @@ func (c *Config) normalize(home string) {
 	c.Autostart = false
 	if c.StartMode != StartWindow && c.StartMode != StartTray {
 		c.StartMode = StartOff
+	}
+	// migration v3 → v4: the update check arrives, on by default
+	if c.Version < 4 {
+		c.CheckUpdates = true
 	}
 	c.Version = currentVersion
 }

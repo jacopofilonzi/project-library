@@ -86,6 +86,7 @@ func (l *Library) ServiceStartup(ctx context.Context, _ application.ServiceOptio
 	}
 	l.rescan(false)
 	l.applySystem(cfg, config.Config{})
+	go l.startupUpdateCheck()
 	return nil
 }
 

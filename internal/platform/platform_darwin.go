@@ -93,3 +93,6 @@ func MoveToTrash(path string) error {
 }
 
 func CaseInsensitive() bool { return true }
+
+// UpdateAsset: no macOS package is published yet, the update links to the release page.
+func UpdateAsset() string { return "" }

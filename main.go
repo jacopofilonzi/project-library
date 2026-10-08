@@ -11,10 +11,12 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
+	"github.com/wailsapp/wails/v3/pkg/services/notifications"
 
 	"github.com/jacopofilonzi/project-library/internal/config"
 	"github.com/jacopofilonzi/project-library/internal/core"
 	"github.com/jacopofilonzi/project-library/internal/fsops"
+	"github.com/jacopofilonzi/project-library/internal/update"
 )
 
 //go:embed all:frontend/dist
@@ -37,6 +39,7 @@ func main() {
 		log.Fatal(err)
 	}
 	lib := core.New(store)
+	notifier := notifications.New()
 
 	quitting := false
 	app := application.New(application.Options{
@@ -45,6 +48,7 @@ func main() {
 		Icon:        appIcon,
 		Services: []application.Service{
 			application.NewService(lib),
+			application.NewService(notifier),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
@@ -146,6 +150,19 @@ func main() {
 		menu.Update()
 	})
 
+	// new release found at startup: desktop notification, a click brings the app to the front
+	core.OnUpdate = func(info update.Info, lang string) {
+		err := notifier.SendNotification(notifications.NotificationOptions{
+			ID:    "update-" + info.Latest,
+			Title: trayLabel(lang, "updateTitle"),
+			Body:  strings.ReplaceAll(trayLabel(lang, "updateBody"), "{version}", info.Latest),
+		})
+		if err != nil {
+			log.Printf("update notification: %v", err)
+		}
+	}
+	notifier.OnNotificationResponse(func(notifications.NotificationResult) { core.ShowMainWindow() })
+
 	if err := app.Run(); err != nil {
 		log.Fatal(err)
 	}
@@ -153,8 +170,10 @@ func main() {
 
 func trayLabel(lang, key string) string {
 	labels := map[string]map[string]string{
-		"en": {"search": "Search projects…", "show": "Show Project Library", "quit": "Quit"},
-		"it": {"search": "Cerca progetti…", "show": "Mostra Project Library", "quit": "Esci"},
+		"en": {"search": "Search projects…", "show": "Show Project Library", "quit": "Quit",
+			"updateTitle": "Update available", "updateBody": "Project Library {version} is ready to download."},
+		"it": {"search": "Cerca progetti…", "show": "Mostra Project Library", "quit": "Esci",
+			"updateTitle": "Aggiornamento disponibile", "updateBody": "Project Library {version} è pronta da scaricare."},
 	}
 	if l, ok := labels[lang]; ok {
 		return l[key]

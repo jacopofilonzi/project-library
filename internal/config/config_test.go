@@ -77,3 +77,21 @@ func TestNewConfigHasNoRules(t *testing.T) {
 		t.Fatal("presets must not be pre-applied")
 	}
 }
+
+func TestMigrationV3TurnsOnUpdateCheck(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(path, []byte(`{"version":3,"setupDone":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := Load(path, dir)
+	if !s.Get().CheckUpdates {
+		t.Fatal("update check must be on after the migration")
+	}
+	// once migrated, turning it off sticks
+	s.Update(func(c *Config) { c.CheckUpdates = false })
+	s2, _ := Load(path, dir)
+	if s2.Get().CheckUpdates {
+		t.Fatal("disabled update check must stay disabled")
+	}
+}

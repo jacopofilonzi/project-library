@@ -11,6 +11,9 @@
 //	gitCandidates() []string
 //	GitInstall() InstallInfo
 //	RunGitInstall() error
+//	cliCandidates(id string) []string
+//	CLIInstall(id string) InstallInfo
+//	RunCLIInstall(id string) error
 //	nameProblem(name string) string
 //	ExpandEnv(s string) string
 //	CaseInsensitive() bool
@@ -141,6 +144,23 @@ func resolve(c string) string {
 		return c
 	}
 	return ""
+}
+
+// CLI note oltre a git: le usa internal/forge. Gli id sono anche i nomi degli eseguibili.
+const (
+	CLIGitHub = "gh"
+	CLIGitLab = "glab"
+)
+
+// cliURL è la pagina con le istruzioni di installazione di ogni CLI.
+var cliURL = map[string]string{
+	CLIGitHub: "https://cli.github.com",
+	CLIGitLab: "https://gitlab.com/gitlab-org/cli#installation",
+}
+
+// CLICandidates restituisce dove cercare una CLI (gh, glab), PATH compreso.
+func CLICandidates(id string) []string {
+	return append([]string{id}, cliCandidates(id)...)
 }
 
 // Resolve è come resolve ma esportata, per i comandi dei launcher custom.

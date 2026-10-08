@@ -88,6 +88,33 @@ func GitInstall() InstallInfo {
 
 func RunGitInstall() error { return fmt.Errorf("not supported") }
 
+func cliCandidates(id string) []string {
+	return []string{"/usr/bin/" + id, "/usr/local/bin/" + id, "/snap/bin/" + id, filepath.Join(home(), ".local/bin", id), "/home/linuxbrew/.linuxbrew/bin/" + id}
+}
+
+// CLIInstall propone il pacchetto della distribuzione, dove esiste; altrimenti solo la pagina di installazione.
+func CLIInstall(id string) InstallInfo {
+	info := InstallInfo{URL: cliURL[id]}
+	ids := osReleaseIDs()
+	switch {
+	case ids["debian"] || ids["ubuntu"]:
+		if id == CLIGitHub {
+			info.Command = "sudo apt install gh"
+		}
+	case ids["fedora"]:
+		info.Command = "sudo dnf install " + id
+	case ids["arch"]:
+		if id == CLIGitHub {
+			info.Command = "sudo pacman -S github-cli"
+		} else {
+			info.Command = "sudo pacman -S glab"
+		}
+	}
+	return info
+}
+
+func RunCLIInstall(id string) error { return fmt.Errorf("not supported") }
+
 func osReleaseIDs() map[string]bool {
 	ids := map[string]bool{}
 	f, err := os.Open("/etc/os-release")

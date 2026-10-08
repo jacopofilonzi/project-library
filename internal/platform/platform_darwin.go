@@ -58,6 +58,17 @@ func RunGitInstall() error {
 	return exec.Command("xcode-select", "--install").Start()
 }
 
+func cliCandidates(id string) []string {
+	return []string{"/opt/homebrew/bin/" + id, "/usr/local/bin/" + id}
+}
+
+// CLIInstall propone Homebrew; l'app non lo esegue (serve un terminale).
+func CLIInstall(id string) InstallInfo {
+	return InstallInfo{Command: "brew install " + id, URL: cliURL[id]}
+}
+
+func RunCLIInstall(id string) error { return fmt.Errorf("not supported") }
+
 func nameProblem(name string) string {
 	if strings.Contains(name, ":") {
 		return NameBadChars

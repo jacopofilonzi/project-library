@@ -77,6 +77,29 @@ func RunGitInstall() error {
 	return cmd.Start()
 }
 
+func cliCandidates(id string) []string {
+	exe := id + ".exe"
+	c := []string{`%LOCALAPPDATA%\Microsoft\WinGet\Links\` + exe, `%USERPROFILE%\scoop\shims\` + exe}
+	switch id {
+	case CLIGitHub:
+		c = append(c, `%ProgramFiles%\GitHub CLI\gh.exe`, `%LOCALAPPDATA%\Programs\GitHub CLI\gh.exe`)
+	case CLIGitLab:
+		c = append(c, `%ProgramFiles%\glab\glab.exe`, `%LOCALAPPDATA%\Programs\glab\glab.exe`)
+	}
+	return c
+}
+
+var cliWinget = map[string]string{CLIGitHub: "GitHub.cli", CLIGitLab: "GLab.GLab"}
+
+func CLIInstall(id string) InstallInfo {
+	return InstallInfo{Command: "winget install --id " + cliWinget[id] + " -e --source winget", CanRun: true, URL: cliURL[id]}
+}
+
+// RunCLIInstall apre una console visibile con winget, come RunGitInstall.
+func RunCLIInstall(id string) error {
+	return exec.Command("cmd.exe", "/c", "start", id, "cmd.exe", "/k", CLIInstall(id).Command).Start()
+}
+
 var reservedName = regexp.MustCompile(`(?i)^(con|prn|aux|nul|com[1-9]|lpt[1-9])(\..*)?$`)
 
 func nameProblem(name string) string {

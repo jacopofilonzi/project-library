@@ -251,6 +251,18 @@ func (g *Git) Init(dir string) error {
 	return err
 }
 
+// AddRemote aggiunge il remote name con l'URL indicato.
+func (g *Git) AddRemote(dir, name, url string) error {
+	_, err := g.runOut(dir, 30*time.Second, "remote", "add", name, url)
+	return err
+}
+
+// PushUpstream pubblica il branch corrente sul remote e lo imposta come upstream.
+func (g *Git) PushUpstream(dir, remote string) error {
+	_, err := g.runOut(dir, 5*time.Minute, "push", "--set-upstream", remote, "HEAD")
+	return err
+}
+
 // Change è un file modificato, aggiunto, eliminato o non tracciato.
 type Change struct {
 	Status string `json:"status"` // codice di git status a due lettere, es. "M", "??", "A", "D", "R"

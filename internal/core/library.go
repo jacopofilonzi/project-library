@@ -53,6 +53,7 @@ var (
 type Library struct {
 	store *config.Store
 	git   gitinfo.Git
+	forge forges
 
 	mu    sync.RWMutex
 	tree  *scanner.Node
@@ -67,7 +68,9 @@ type Library struct {
 }
 
 func New(store *config.Store) *Library {
-	return &Library{store: store, dirty: map[string]int{}}
+	l := &Library{store: store, dirty: map[string]int{}}
+	l.forge.init()
+	return l
 }
 
 // ServiceStartup viene chiamata da Wails all'avvio.
@@ -75,6 +78,7 @@ func (l *Library) ServiceStartup(ctx context.Context, _ application.ServiceOptio
 	l.SyncEditors() // editor noti installati dopo l'ultimo avvio: aggiunti, disattivati
 	cfg := l.store.Get()
 	l.git.Detect(cfg.GitPath)
+	go l.forge.detect(cfg)
 	if w, err := watcher.New(400*time.Millisecond, func() { l.rescan(true) }); err == nil {
 		l.watch = w
 	} else {
@@ -129,6 +133,9 @@ func (l *Library) SaveConfig(next config.Config) (AppState, error) {
 	cfg := l.store.Get()
 	if cfg.GitPath != prev.GitPath {
 		l.git.Detect(cfg.GitPath)
+	}
+	if cfg.GhPath != prev.GhPath || cfg.GlabPath != prev.GlabPath {
+		l.forge.detect(cfg)
 	}
 	if scanChanged(prev, cfg) {
 		go l.rescan(true)

@@ -82,6 +82,9 @@ type Config struct {
 	GitFetch        bool   `json:"gitFetch"`
 	GitFetchMinutes int    `json:"gitFetchMinutes"`
 	GitWarningShown bool   `json:"gitWarningShown"`
+	// GhPath e GlabPath: percorsi di GitHub CLI e GitLab CLI (vuoti = rilevamento automatico).
+	GhPath   string `json:"ghPath"`
+	GlabPath string `json:"glabPath"`
 
 	Recent []Recent `json:"recent"`
 

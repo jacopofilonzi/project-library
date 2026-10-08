@@ -23,6 +23,7 @@
     if (p && !store.cfg.roots.includes(p)) store.save((c) => c.roots.push(p))
   }
   let hotkey = $state(store.cfg.hotkey)
+  let spotKey = $state(store.cfg.spotlightHotkey)
 
   // ---------- launcher ----------
   let editing = $state<string | null>(null)
@@ -167,11 +168,20 @@
           <div class="f"><div class="l"><b>{t('settings.general.theme')}</b><span>{t('settings.general.themeSub')}</span></div>
             <div class="seg">{#each ['system', 'light', 'dark'] as v}<button class:on={store.cfg.theme === v} onclick={() => store.save((c) => (c.theme = v))}>{t('settings.general.' + v)}</button>{/each}</div></div>
           <div class="grp">{t('settings.sections.general')}</div>
-          <div class="f"><div class="l"><b>{t('settings.general.autostart')}</b></div><input type="checkbox" class="sw" checked={store.cfg.autostart} onchange={(e) => store.save((c) => (c.autostart = (e.currentTarget as HTMLInputElement).checked))} /></div>
+          <div class="f"><div class="l"><b>{t('settings.general.startMode')}</b><span>{t('settings.general.startModeSub')}</span></div>
+            <div class="seg">{#each ['off', 'window', 'tray'] as v}<button class:on={store.cfg.startMode === v} onclick={() => store.save((c) => (c.startMode = v))}>{t('settings.general.start.' + v)}</button>{/each}</div></div>
+          {#if store.cfg.startMode === 'tray' && !store.cfg.closeToTray}
+            <div class="note warn">{t('settings.general.trayHint')} <button class="btn" onclick={() => store.save((c) => (c.closeToTray = true))}>{t('settings.general.trayHintBtn')}</button></div>
+          {/if}
           <div class="f"><div class="l"><b>{t('settings.general.tray')}</b><span>{t('settings.general.traySub')}</span></div><input type="checkbox" class="sw" checked={store.cfg.closeToTray} onchange={(e) => store.save((c) => (c.closeToTray = (e.currentTarget as HTMLInputElement).checked))} /></div>
+          <div class="grp">{t('settings.general.shortcutsGrp')}</div>
+          <div class="f"><div class="l"><b>{t('settings.general.spotlightHotkey')}</b><span>{t('settings.general.spotlightHotkeySub')}</span></div>
+            <input type="text" bind:value={spotKey} style="width:190px" onkeydown={(e) => e.key === 'Enter' && store.save((c) => (c.spotlightHotkey = spotKey.trim()))} />
+            <button class="btn" disabled={spotKey.trim() === store.cfg.spotlightHotkey} onclick={() => store.save((c) => (c.spotlightHotkey = spotKey.trim()))}>{t('settings.general.apply')}</button></div>
           <div class="f"><div class="l"><b>{t('settings.general.hotkey')}</b><span>{t('settings.general.hotkeySub')}</span></div>
             <input type="text" bind:value={hotkey} style="width:190px" onkeydown={(e) => e.key === 'Enter' && store.save((c) => (c.hotkey = hotkey.trim()))} />
             <button class="btn" disabled={hotkey.trim() === store.cfg.hotkey} onclick={() => store.save((c) => (c.hotkey = hotkey.trim()))}>{t('settings.general.apply')}</button></div>
+          <div class="note">{t('settings.general.hotkeyFormat')}</div>
 
         {:else if store.settingsSection === 'launchers'}
           <div class="grp">{t('settings.launchers.group')}</div>
@@ -305,14 +315,19 @@
           <div class="grp">{t('settings.shortcuts.group')}</div>
           <table class="tbl"><tbody>
             {#each [
-              [store.mod + ' K', 'search'], [store.mod + ' P  /  ' + store.mod + ' ,', 'settings'], ['↵', 'open'], [store.mod + ' 1…9', 'openN'],
+              [store.mod + ' K', 'search'], ['>', 'commands'], [store.mod + ' P  /  ' + store.mod + ' ,', 'settings'], ['↵', 'open'], [store.mod + ' 1…9', 'openN'],
               [store.mod + ' E', 'reveal'], [store.mod + ' Shift N', 'newFolder'], ['F2', 'rename'], [store.os === 'darwin' ? '⌘ ⌫' : 'Canc / Del', 'delete'],
               ['← ↑ ↓ →', 'navigate'], ['Esc', 'close'],
             ] as [k, d]}
               <tr><td>{t('settings.shortcuts.' + d)}</td><td><kbd>{k}</kbd></td></tr>
             {/each}
           </tbody></table>
-          <div class="note">{store.cfg.hotkey ? t('settings.shortcuts.global', { key: store.cfg.hotkey }) : t('settings.shortcuts.globalOff')}</div>
+          <div class="grp">{t('settings.shortcuts.globalGrp')}</div>
+          <table class="tbl"><tbody>
+            <tr><td>{t('settings.shortcuts.spotlight')}</td><td>{#if store.cfg.spotlightHotkey}<kbd>{store.cfg.spotlightHotkey}</kbd>{:else}{t('settings.shortcuts.off')}{/if}</td></tr>
+            <tr><td>{t('settings.shortcuts.showMain')}</td><td>{#if store.cfg.hotkey}<kbd>{store.cfg.hotkey}</kbd>{:else}{t('settings.shortcuts.off')}{/if}</td></tr>
+          </tbody></table>
+          <div class="note">{t('settings.shortcuts.globalNote')}</div>
 
         {:else if store.settingsSection === 'about'}
           <div class="grp">Project Library</div>

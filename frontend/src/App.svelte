@@ -14,14 +14,25 @@
   import ContextMenu from './components/ContextMenu.svelte'
   import Toasts from './components/Toasts.svelte'
   import type { Node } from './lib/api'
+  import { runCommandById } from './lib/commands'
 
   onMount(() => {
     store.init()
-    return Events.On('shortcut:settings', () => {
+    const offSettings = Events.On('shortcut:settings', () => {
       if (store.wizardOpen) return
       if (store.settingsOpen) store.settingsOpen = false
       else store.openSettings()
     })
+    // comandi della palette lanciati dalla ricerca flottante che servono qui
+    const offCommand = Events.On('main:command', (ev: { data: string }) => {
+      if (store.wizardOpen) return
+      store.paletteOpen = false
+      runCommandById(ev.data)
+    })
+    return () => {
+      offSettings()
+      offCommand()
+    }
   })
 
   let overlay = $derived(store.paletteOpen || store.settingsOpen || store.wizardOpen || !!store.dialog || !!store.ctx)

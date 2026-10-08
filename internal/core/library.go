@@ -513,6 +513,7 @@ func (l *Library) SetOverride(path, kind string) (AppState, error) {
 			c.Overrides[path] = kind
 		}
 	})
+	emitEvent(EventConfig, l.store.Get())
 	l.rescan(true)
 	return l.State(), err
 }

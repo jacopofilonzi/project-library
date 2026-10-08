@@ -20,6 +20,8 @@ func (l *Library) SetLastLocation(dir, selected string) error {
 		c.LastPath = dir
 		c.LastSelected = selected
 	})
+	// le altre finestre devono avere la config aggiornata, o un loro salvataggio la riporterebbe indietro
+	emitEvent(EventConfig, l.store.Get())
 	return err
 }
 

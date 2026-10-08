@@ -2,13 +2,54 @@
   import { store } from '../lib/state.svelte'
   import { t, tn, ago } from '../lib/i18n/index.svelte'
   import { icons } from '../lib/icons'
-  import { lib, type GitInfo } from '../lib/api'
+  import { lib, errMessage, type GitInfo } from '../lib/api'
 
-  let { info }: { info: GitInfo } = $props()
+  let { info, path, onrefresh }: { info: GitInfo; path: string; onrefresh: () => void } = $props()
+
+  let busy = $state<'' | 'fetch' | 'pull'>('')
+  let showChanges = $state(false)
+  let changes = $state<{ status: string; path: string }[] | null>(null)
 
   function openRemote() {
     if (info.remoteWeb) lib.OpenURL(info.remoteWeb).then(() => store.toast(t('card.linkOpened')))
   }
+
+  async function fetchNow() {
+    busy = 'fetch'
+    try {
+      await lib.GitFetch(path)
+      store.toast(t('git.fetched'))
+      onrefresh()
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+    busy = ''
+  }
+
+  async function pull() {
+    busy = 'pull'
+    try {
+      const out = await lib.GitPull(path)
+      store.toast(/up to date/i.test(out) ? t('git.upToDate') : t('git.pulled'))
+      onrefresh()
+      if (showChanges) loadChanges()
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+    busy = ''
+  }
+
+  async function loadChanges() {
+    changes = ((await lib.GitChanges(path).catch(() => [])) ?? []) as { status: string; path: string }[]
+  }
+
+  function toggleChanges() {
+    showChanges = !showChanges
+    if (showChanges) loadChanges()
+  }
+
+  // legenda dei codici di git status
+  const statusLabel = (s: string) => t('git.status.' + (s === '??' ? 'untracked' : s[0] ?? 'M'))
 </script>
 
 {#if !store.st?.gitAvailable}
@@ -18,7 +59,7 @@
     <div class="top">
       <span class="pill mono">{@html icons.branch()}{info.branch || '—'}{info.detached ? ` (${t('card.detached')})` : ''}</span>
       {#if info.dirty}
-        <span class="pill warn">{tn('card.modified', info.dirty)}</span>
+        <button class="pill warn act" aria-expanded={showChanges} onclick={toggleChanges}>{tn('card.modified', info.dirty)} {showChanges ? '▴' : '▾'}</button>
       {:else}
         <span class="pill ok">{t('card.clean')}</span>
       {/if}
@@ -48,5 +89,23 @@
         <span class="who">{t('card.noCommits')}</span>
       {/if}
     </div>
+    {#if info.remote}
+      <div class="gitacts">
+        <button class="btn" disabled={!!busy} onclick={fetchNow}>{busy === 'fetch' ? t('git.fetching') : t('git.fetch')}</button>
+        <button class="btn" disabled={!!busy || !info.hasUpstream} title={info.hasUpstream ? t('git.pullHint') : t('card.noUpstream')} onclick={pull}>{busy === 'pull' ? t('git.pulling') : t('git.pull')}</button>
+      </div>
+    {/if}
+    {#if showChanges}
+      <div class="changes">
+        {#if changes === null}
+          <div class="who">…</div>
+        {:else}
+          {#each changes as c (c.path)}
+            <div class="ch"><span class="st st-{c.status === '??' ? 'u' : c.status[0]}" title={statusLabel(c.status)}>{c.status}</span><span class="selectable">{c.path}</span></div>
+          {/each}
+          {#if changes.length >= 200}<div class="who">{t('git.truncated')}</div>{/if}
+        {/if}
+      </div>
+    {/if}
   </div>
 {/if}

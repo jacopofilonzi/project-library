@@ -1,9 +1,9 @@
 <script lang="ts">
-  import { untrack } from 'svelte'
+  import { untrack, tick } from 'svelte'
   import { store } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
   import { icons, colorOf } from '../lib/icons'
-  import { lib, type Node, type GitInfo, type ReadmeResult } from '../lib/api'
+  import { lib, errMessage, type Node, type GitInfo, type ReadmeResult } from '../lib/api'
   import OpenWith from './OpenWith.svelte'
   import GitPanel from './GitPanel.svelte'
   import ReadmeView from './ReadmeView.svelte'
@@ -28,6 +28,19 @@
       if (node.path === path) git = info
     } catch {
       /* errori git: la scheda resta senza pannello */
+    }
+  }
+
+  // progetto senza git: git init sul posto
+  async function initGit() {
+    try {
+      await lib.InitProject(node.path, true, false)
+      store.setTree(await lib.Tree())
+      await tick()
+      loadGit(node.path)
+      store.toast(t('init.gitDone', { name: node.name }))
+    } catch (e) {
+      store.toast(errMessage(e), true)
     }
   }
 
@@ -59,9 +72,9 @@
     </div>
     {#if store.cfg.gitInfo}
       {#if node.hasGit}
-        {#if git}<GitPanel info={git} />{/if}
+        {#if git}<GitPanel info={git} path={node.path} onrefresh={() => loadGit(node.path)} />{/if}
       {:else}
-        <div class="nogit">{@html icons.branch()} {t('card.notGit')}</div>
+        <div class="nogit">{@html icons.branch()} {t('card.notGit')}{#if store.st?.gitAvailable}<button class="btn" onclick={initGit}>{t('init.gitButton')}</button>{/if}</div>
       {/if}
     {/if}
     <ReadmeView {readme} dir={node.path} error={readmeError} />

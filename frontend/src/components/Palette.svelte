@@ -1,12 +1,18 @@
 <script lang="ts">
-  import { tick } from 'svelte'
+  import { tick, onMount } from 'svelte'
+  import { Events } from '@wailsio/runtime'
   import { store, type Indexed } from '../lib/state.svelte'
   import { t, tn, ago } from '../lib/i18n/index.svelte'
   import { colorOf, initials } from '../lib/icons'
+  import { commands, runCommand, type Command } from '../lib/commands'
+  import { lib } from '../lib/api'
   import LauncherIcon from './LauncherIcon.svelte'
 
+  // spotlight: ricerca flottante, sempre su tutto Development; ↵ apre il progetto, Ctrl/⌘ ↵ lo mostra nell'app
+  let { spotlight = false }: { spotlight?: boolean } = $props()
+
   let q = $state('')
-  let global = $state(!store.path.length)
+  let global = $state(spotlight || !store.path.length)
   let idx = $state(0)
   let input: HTMLInputElement | undefined = $state()
   let list: HTMLDivElement | undefined = $state()
@@ -15,12 +21,29 @@
     input?.focus()
   })
 
+  // la ricerca flottante riparte da zero ogni volta che compare
+  onMount(() => {
+    if (!spotlight) return
+    return Events.On('spotlight:open', () => {
+      q = ''
+      idx = 0
+      tick().then(() => input?.focus())
+    })
+  })
+
+  function close() {
+    if (spotlight) lib.HideSpotlight()
+    else store.paletteOpen = false
+  }
+
   let here = $derived(store.path.at(-1) ?? store.rootLabel)
   let all = $derived([...store.index.values()])
+  let commandMode = $derived(q.startsWith('>'))
+  let cq = $derived(q.slice(1).trim().toLowerCase())
 
   const esc = (s: string) => s.replace(/[&<>"']/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c]!)
-  function hl(text: string) {
-    const terms = q.trim().split(/\s+/).filter(Boolean).map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
+  function hl(text: string, query = q) {
+    const terms = query.trim().split(/\s+/).filter(Boolean).map((x) => x.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'))
     const safe = esc(text)
     return terms.length ? safe.replace(new RegExp('(' + terms.map(esc).join('|') + ')', 'gi'), '<mark>$1</mark>') : safe
   }
@@ -31,9 +54,15 @@
     return q.toLowerCase().split(/\s+/).filter(Boolean).every((term) => hay.includes(term))
   }
 
-  type Item = { kind: 'proj'; e: Indexed; launcher?: string; at?: number } | { kind: 'glob'; n: number }
+  type Item = { kind: 'proj'; e: Indexed; launcher?: string; at?: number } | { kind: 'glob'; n: number } | { kind: 'cmd'; c: Command }
 
   let view = $derived.by(() => {
+    if (commandMode) {
+      const items: Item[] = commands()
+        .filter((c) => !cq || cq.split(/\s+/).every((term) => c.label.toLowerCase().includes(term)))
+        .map((c) => ({ kind: 'cmd', c }))
+      return { section: t('palette.commands'), items, recent: false, total: items.length }
+    }
     // "ovunque" senza testo: ultimi 5 aperti con "Apri con"
     if (global && !q) {
       const items: Item[] = (store.cfg.recent ?? [])
@@ -63,7 +92,8 @@
     tick().then(() => list?.querySelector('.it.on')?.scrollIntoView({ block: 'nearest' }))
   })
 
-  function go(i: number, launch: boolean) {
+  // alt: Ctrl/⌘ ↵. Nella finestra principale apre con l'editor, nella ricerca flottante mostra nell'app.
+  function go(i: number, alt: boolean) {
     const it = view.items[i]
     if (!it) return
     if (it.kind === 'glob') {
@@ -71,9 +101,20 @@
       idx = 0
       return
     }
+    if (it.kind === 'cmd') {
+      close()
+      runCommand(it.c)
+      return
+    }
+    const node = it.e.node
+    if (spotlight) {
+      if (alt) lib.ShowInMain(node.path)
+      else store.open(node)
+      return
+    }
     store.paletteOpen = false
-    store.goToPath(it.e.node.path)
-    if (launch) store.open(it.e.node)
+    store.goToPath(node.path)
+    if (alt) store.open(node)
   }
 
   function onkey(e: KeyboardEvent) {
@@ -81,9 +122,9 @@
     if (e.key === 'ArrowDown') { e.preventDefault(); idx = Math.min(view.items.length - 1, idx + 1) }
     else if (e.key === 'ArrowUp') { e.preventDefault(); idx = Math.max(0, idx - 1) }
     else if (e.key === 'Enter') { e.preventDefault(); go(idx, mod) }
-    else if (e.key === 'Tab') { e.preventDefault(); if (store.path.length) { global = !global; idx = 0 } }
+    else if (e.key === 'Tab') { e.preventDefault(); if (!spotlight && store.path.length && !commandMode) { global = !global; idx = 0 } }
     else if (e.key === 'Backspace' && !q && !global) { global = true; idx = 0 }
-    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); store.paletteOpen = false }
+    else if (e.key === 'Escape') { e.preventDefault(); e.stopPropagation(); close() }
   }
 
   // launcher del progetto evidenziato (regole e scelte per progetto comprese)
@@ -93,24 +134,29 @@
   })
 </script>
 
-<!-- svelte-ignore a11y_no_static_element_interactions -->
-<div class="pal-bg" onmousedown={(e) => e.target === e.currentTarget && (store.paletteOpen = false)}>
-  <div class="pal" role="dialog" aria-modal="true" aria-label={t('palette.label')}>
+{#snippet panel()}
+  <div class="pal" class:floating={spotlight} role="dialog" aria-modal="true" aria-label={t('palette.label')}>
     <div class="in">
       <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="11" cy="11" r="7"/><path d="M20 20l-3.5-3.5"/></svg>
-      {#if global}
-        <span class="chip global">{t('palette.everywhere')}</span>
-      {:else}
-        <span class="chip" title={store.path.join('/')}>{t('palette.in', { name: here })}<button title={t('palette.toGlobal')} onclick={() => { global = true; input?.focus() }}>×</button></span>
+      {#if commandMode}
+        <span class="chip global">{t('palette.commandChip')}</span>
+      {:else if !spotlight}
+        {#if global}
+          <span class="chip global">{t('palette.everywhere')}</span>
+        {:else}
+          <span class="chip" title={store.path.join('/')}>{t('palette.in', { name: here })}<button title={t('palette.toGlobal')} onclick={() => { global = true; input?.focus() }}>×</button></span>
+        {/if}
       {/if}
       <input bind:this={input} bind:value={q} oninput={() => (idx = 0)} onkeydown={onkey} autocomplete="off" spellcheck="false" aria-label={t('palette.label')}
-        placeholder={global ? t('palette.searchAll') : t('palette.searchIn', { name: here })} />
+        placeholder={spotlight ? t('palette.spotlightPlaceholder') : global ? t('palette.searchAll') : t('palette.searchIn', { name: here })} />
     </div>
     <div class="lst" role="listbox" bind:this={list}>
       <div class="sec">{view.section}</div>
       {#if view.recent && !view.items.length}
         <div class="none">{t('palette.noRecent')}</div>
-      {:else if !view.total && !view.items.some((x) => x.kind === 'glob' && x.n)}
+      {:else if commandMode && !view.items.length}
+        <div class="none">{t('palette.noCommands')}</div>
+      {:else if !commandMode && !view.total && !view.items.some((x) => x.kind === 'glob' && x.n)}
         <div class="none">{global ? t('palette.none') : t('palette.noneIn', { name: here })}{q ? t('palette.noneFor', { q }) : ''}.</div>
       {/if}
       {#each view.items as it, i}
@@ -121,6 +167,10 @@
             <div class="ib glob">⌕</div>
             <div class="m"><div class="t">{t('palette.global', { q })}</div><div class="s">{tn('palette.globalSub', it.n, { name: here })}</div></div>
             <span class="w">⇥</span>
+          {:else if it.kind === 'cmd'}
+            <div class="ib glob">›</div>
+            <div class="m"><div class="t">{@html hl(it.c.label, cq)}</div></div>
+            {#if it.c.key}<span class="w">{it.c.key}</span>{/if}
           {:else}
             {@const p = it.e.node}
             {@const where = (global ? it.e.parent : it.e.parent.slice(store.path.length)).join('/')}
@@ -140,11 +190,29 @@
       {/each}
     </div>
     <div class="ft">
-      <span>{t('palette.keys.move')}</span><span>{t('palette.keys.go')}</span>
-      {#if def}<span>{t('palette.keys.open', { mod: store.mod, name: def.name })}</span>{/if}
+      <span>{t('palette.keys.move')}</span>
+      {#if commandMode}
+        <span>{t('palette.keys.run')}</span>
+      {:else if spotlight}
+        {#if def}<span>{t('palette.keys.openWith', { name: def.name })}</span>{/if}
+        <span>{t('palette.keys.showInApp', { mod: store.mod })}</span>
+      {:else}
+        <span>{t('palette.keys.go')}</span>
+        {#if def}<span>{t('palette.keys.open', { mod: store.mod, name: def.name })}</span>{/if}
+      {/if}
       <span class="sp"></span>
-      {#if store.path.length}<span>{t('palette.keys.scope')}</span>{/if}
+      {#if !commandMode}<span>{t('palette.keys.commands')}</span>{/if}
+      {#if !spotlight && store.path.length && !commandMode}<span>{t('palette.keys.scope')}</span>{/if}
       <span>{t('palette.keys.close')}</span>
     </div>
   </div>
-</div>
+{/snippet}
+
+{#if spotlight}
+  {@render panel()}
+{:else}
+  <!-- svelte-ignore a11y_no_static_element_interactions -->
+  <div class="pal-bg" onmousedown={(e) => e.target === e.currentTarget && close()}>
+    {@render panel()}
+  </div>
+{/if}

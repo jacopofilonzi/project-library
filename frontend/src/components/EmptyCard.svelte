@@ -32,6 +32,7 @@
       <div class="emptyacts">
         <button class="tbtn" onclick={() => (store.dialog = { kind: 'newFolder', parent: node.path })}>{t('col.newFolder')}</button>
         <button class="tbtn" onclick={() => (store.dialog = { kind: 'clone', parent: node.path })}>{t('col.cloneHere')}</button>
+        <button class="tbtn" onclick={() => (store.dialog = { kind: 'init', path: node.path, name: node.name })}>{t('init.button')}</button>
         <button class="tbtn" onclick={mark}>{t('empty.markProject')}</button>
       </div>
     </div>

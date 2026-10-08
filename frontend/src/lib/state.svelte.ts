@@ -8,6 +8,7 @@ export type Dialog =
   | { kind: 'rename'; path: string; name: string }
   | { kind: 'delete'; node: Node }
   | { kind: 'clone'; parent: string | null }
+  | { kind: 'init'; path: string; name: string }
 
 export type CtxItem = { label: string; key?: string; danger?: boolean; run: () => void } | '-'
 export type Ctx = { x: number; y: number; items: CtxItem[] }
@@ -164,6 +165,17 @@ class Store {
   go(names: string[], sel: string | null = null) {
     this.path = names
     this.sel = sel
+    this.rememberLocation()
+  }
+
+  // salva dove sei (con un piccolo ritardo, la navigazione da tastiera è rapida)
+  private locTimer: ReturnType<typeof setTimeout> | undefined
+  private rememberLocation() {
+    if (isSpotlight || !this.ready) return
+    clearTimeout(this.locTimer)
+    this.locTimer = setTimeout(() => {
+      lib.SetLastLocation(this.current?.path ?? '', this.selected?.path ?? '').catch(() => {})
+    }, 600)
   }
 
   goToPath(path: string) {
@@ -210,7 +222,8 @@ class Store {
     }
     try {
       await lib.Open(node.path, l.id)
-      this.toast(t('open.opened', { launcher: l.name, name: node.name }))
+      if (isSpotlight) lib.HideSpotlight()
+      else this.toast(t('open.opened', { launcher: l.name, name: node.name }))
     } catch (e) {
       this.toast(errMessage(e), true)
     }
@@ -290,17 +303,35 @@ class Store {
       this.toast(t('card.gitUnavailable'), true)
       this.save((c) => (c.gitWarningShown = true))
     }
-    if (this.tree?.kind !== 'root' && this.tree) this.path = []
+    // riparte da dove eri: progetto selezionato, altrimenti la cartella
+    const last = this.cfg.lastSelected || this.cfg.lastPath
+    if (!isSpotlight && last) this.goToPath(last)
 
     Events.On('tree:updated', (ev: { data: Node }) => this.setTree(ev.data))
     Events.On('git:dirty', (ev: { data: Record<string, number> }) => (this.dirty = ev.data ?? {}))
     Events.On('config:updated', (ev: { data: Parameters<typeof normalizeConfig>[0] }) => {
-      if (this.st) this.st = { ...this.st, config: normalizeConfig(ev.data) }
+      if (!this.st) return
+      const config = normalizeConfig(ev.data)
+      const launchersChanged = JSON.stringify(this.st.config.launchers) !== JSON.stringify(config.launchers)
+      this.st = { ...this.st, config }
+      setLang(config.language)
+      applyTheme(config.theme)
+      if (launchersChanged) this.refreshLaunchers()
     })
-    window.addEventListener('focus', () => lib.RefreshDirty())
+    if (!isSpotlight) {
+      // dalla ricerca flottante: "mostra nell'app"
+      Events.On('main:goto', (ev: { data: string }) => {
+        this.paletteOpen = false
+        this.goToPath(ev.data)
+      })
+      window.addEventListener('focus', () => lib.RefreshDirty())
+    }
     this.ready = true
   }
 }
+
+/** questa istanza del frontend è la finestra della ricerca flottante */
+export const isSpotlight = new URLSearchParams(location.search).get('view') === 'spotlight'
 
 // ---------- tema ----------
 const dark = window.matchMedia('(prefers-color-scheme: dark)')

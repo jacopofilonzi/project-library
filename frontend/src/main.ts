@@ -7,5 +7,8 @@ import '@fontsource/geist-mono/400.css'
 import '@fontsource/geist-mono/500.css'
 import './app.css'
 import App from './App.svelte'
+import Spotlight from './components/Spotlight.svelte'
+import { isSpotlight } from './lib/state.svelte'
 
-mount(App, { target: document.getElementById('app')! })
+// la stessa build serve due finestre: la principale e la ricerca flottante (?view=spotlight)
+mount(isSpotlight ? Spotlight : App, { target: document.getElementById('app')! })

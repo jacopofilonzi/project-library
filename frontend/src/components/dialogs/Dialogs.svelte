@@ -3,6 +3,7 @@
   import NameDialog from './NameDialog.svelte'
   import DeleteDialog from './DeleteDialog.svelte'
   import CloneDialog from './CloneDialog.svelte'
+  import InitDialog from './InitDialog.svelte'
 
   let d = $derived(store.dialog)
   // il clone in corso non si chiude cliccando fuori: va annullato col pulsante
@@ -24,6 +25,8 @@
           <DeleteDialog node={d.node} />
         {:else if d.kind === 'clone'}
           <CloneDialog parent={d.parent} />
+        {:else if d.kind === 'init'}
+          <InitDialog path={d.path} name={d.name} />
         {/if}
       {/key}
     </div>

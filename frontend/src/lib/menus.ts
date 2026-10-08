@@ -18,6 +18,9 @@ export function nodeMenu(node: Node): CtxItem[] {
     { label: t('ctx.reveal'), key: store.mod + ' E', run: () => store.reveal(node.path) },
     { label: t('ctx.copyPath'), run: () => store.copyPath(node.path) },
   )
+  if (node.kind === 'empty' && !node.missing) {
+    items.push({ label: t('init.button') + '…', run: () => (store.dialog = { kind: 'init', path: node.path, name: node.name }) })
+  }
   if (node.kind !== 'project' && !node.missing) {
     items.push(
       { label: t('ctx.newFolder'), run: () => (store.dialog = { kind: 'newFolder', parent: node.path }) },

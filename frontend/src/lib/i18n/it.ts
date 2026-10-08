@@ -63,6 +63,7 @@ const it: Dict = {
     reason: { project: 'Scelto per questo progetto', rule: 'Scelto da una regola', default: 'Launcher predefinito' },
   },
   ctx: {
+    move: 'Sposta in…',
     open: 'Apri con {name}',
     reveal: 'Mostra nel file manager',
     copyPath: 'Copia percorso',
@@ -74,6 +75,19 @@ const it: Dict = {
     markProject: 'Segna come progetto',
     markDir: 'Segna come cartella',
     clearOverride: 'Ripristina il riconoscimento automatico',
+  },
+  move: {
+    title: 'Sposta “{name}”',
+    search: 'Cerca cartelle…',
+    where: 'Cartella di destinazione',
+    none: 'Nessuna cartella corrisponde',
+    from: 'Da',
+    to: 'A',
+    pick: 'scegli una cartella qui sopra',
+    keeps: 'L’editor scelto per questo progetto, le sue eccezioni e la cronologia lo seguono.',
+    go: 'Sposta',
+    working: 'Spostamento…',
+    done: '“{name}” spostato in {dest}',
   },
   dlg: {
     fromUrl: 'URL',
@@ -138,6 +152,9 @@ const it: Dict = {
     exists: 'Esiste già un elemento con questo nome.',
   },
   errors: {
+    sameFolder: 'È già in quella cartella',
+    moveInside: 'Una cartella non può essere spostata dentro sé stessa',
+    crossDevice: 'Lo spostamento su un altro disco non è supportato',
     update: 'Impossibile controllare gli aggiornamenti',
     forge: 'Errore di GitHub/GitLab',
     forgeNoAccount: 'Nessun account collegato su questo host',

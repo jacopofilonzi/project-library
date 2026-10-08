@@ -29,6 +29,7 @@ export function nodeMenu(node: Node): CtxItem[] {
   }
   items.push('-', ...overrideItems(node), '-')
   items.push(
+    { label: t('ctx.move'), run: () => (store.dialog = { kind: 'move', node }) },
     { label: t('ctx.rename'), key: 'F2', run: () => (store.dialog = { kind: 'rename', path: node.path, name: node.name }) },
     { label: t('ctx.delete'), key: store.os === 'darwin' ? '⌘⌫' : 'Del', danger: true, run: () => store.askDelete(node) },
   )

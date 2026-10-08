@@ -62,6 +62,7 @@ const en = {
     reason: { project: 'Chosen for this project', rule: 'Chosen by a rule', default: 'Default launcher' },
   },
   ctx: {
+    move: 'Move to…',
     open: 'Open with {name}',
     reveal: 'Show in file manager',
     copyPath: 'Copy path',
@@ -73,6 +74,19 @@ const en = {
     markProject: 'Mark as project',
     markDir: 'Mark as folder',
     clearOverride: 'Restore automatic detection',
+  },
+  move: {
+    title: 'Move “{name}”',
+    search: 'Search folders…',
+    where: 'Destination folder',
+    none: 'No folder matches',
+    from: 'From',
+    to: 'To',
+    pick: 'choose a folder above',
+    keeps: 'The editor chosen for this project, its exceptions and its history follow it.',
+    go: 'Move',
+    working: 'Moving…',
+    done: '“{name}” moved to {dest}',
   },
   dlg: {
     fromUrl: 'URL',
@@ -137,6 +151,9 @@ const en = {
     exists: 'An item with this name already exists.',
   },
   errors: {
+    sameFolder: 'It is already in that folder',
+    moveInside: 'A folder cannot be moved inside itself',
+    crossDevice: 'Moving to another disk is not supported',
     update: 'Could not check for updates',
     forge: 'GitHub/GitLab error',
     forgeNoAccount: 'No account logged in on this host',

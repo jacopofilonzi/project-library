@@ -5,6 +5,7 @@
   import CloneDialog from './CloneDialog.svelte'
   import InitDialog from './InitDialog.svelte'
   import PublishDialog from './PublishDialog.svelte'
+  import MoveDialog from './MoveDialog.svelte'
 
   let d = $derived(store.dialog)
   // a running clone does not close on outside clicks: it must be cancelled with the button
@@ -28,6 +29,8 @@
           <CloneDialog parent={d.parent} />
         {:else if d.kind === 'init'}
           <InitDialog path={d.path} name={d.name} />
+        {:else if d.kind === 'move'}
+          <MoveDialog node={d.node} dest={d.dest} />
         {:else if d.kind === 'publish'}
           <PublishDialog node={d.node} />
         {/if}

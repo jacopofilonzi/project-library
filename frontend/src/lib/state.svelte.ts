@@ -10,6 +10,7 @@ export type Dialog =
   | { kind: 'clone'; parent: string | null }
   | { kind: 'init'; path: string; name: string }
   | { kind: 'publish'; node: Node }
+  | { kind: 'move'; node: Node; dest?: string }
 
 export type CtxItem = { label: string; key?: string; danger?: boolean; run: () => void } | '-'
 export type Ctx = { x: number; y: number; items: CtxItem[] }
@@ -191,6 +192,41 @@ class Store {
     this.locTimer = setTimeout(() => {
       lib.SetLastLocation(this.current?.path ?? '', this.selected?.path ?? '').catch(() => {})
     }, 600)
+  }
+
+  // ---------- moving ----------
+  /** path of the item being dragged in the columns ('' = none) */
+  dragging = $state('')
+  /** folder currently under the dragged item ('' = none) */
+  dropTarget = $state('')
+
+  /** node (folder or project) with this absolute path, if it is in the tree */
+  nodeByPath(path: string): Node | null {
+    let found: Node | null = null
+    const walk = (n: Node) => {
+      if (found) return
+      if (n.path === path) { found = n; return }
+      for (const c of n.children ?? []) if (c) walk(c)
+    }
+    if (this.tree) walk(this.tree)
+    return found
+  }
+
+  /** src can be moved into dest: not itself, not inside itself, not where it already is */
+  canMoveTo(src: string, dest: string): boolean {
+    if (!src || !dest || src === dest) return false
+    const sep = src.includes('\\') ? '\\' : '/'
+    if (dest.startsWith(src + sep)) return false
+    return src.slice(0, src.lastIndexOf(sep)) !== dest
+  }
+
+  /** after a move: stay on the moved item if you were looking at it (or inside it) */
+  async afterMove(from: string, to: string) {
+    const sep = from.includes('\\') ? '\\' : '/'
+    const cur = this.current?.path ?? ''
+    const wasHere = this.selected?.path === from || cur === from || cur.startsWith(from + sep)
+    this.setTree(await lib.Tree())
+    if (wasHere) this.goToPath(to)
   }
 
   goToPath(path: string) {

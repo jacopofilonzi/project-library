@@ -4,6 +4,7 @@
   import { icons } from '../lib/icons'
   import LauncherIcon from './LauncherIcon.svelte'
   import { nodeMenu, addMenu, openCtx } from '../lib/menus'
+  import { dragSource, dropTarget } from '../lib/drag'
   import { lib, errMessage, type Node } from '../lib/api'
 
   let width = $state(window.innerWidth)
@@ -60,7 +61,7 @@
   {#each columns as col (col.index + ':' + col.node.path)}
     {@const kids = (col.node.children ?? []).filter((c): c is Node => !!c)}
     <div class="col" role="group" aria-label={col.label}>
-      <div class="colhead">
+      <div class="colhead" class:drop={store.dropTarget === col.node.path} {...col.node.kind !== 'root' && !col.node.missing ? dropTarget(col.node.path) : {}}>
         <span title={col.node.path}>{col.label}</span>
         {#if col.node.kind !== 'root' && !col.node.missing}
           <button title={t('col.add')} aria-label={t('col.add')} onclick={(e) => addClick(e, col.node)}>+</button>
@@ -70,7 +71,7 @@
         {#if c.kind === 'project'}
           {@const on = col.index === store.path.length && store.sel === c.name}
           {@const ln = store.launcherFor(c).launcher}
-          <button class="row" class:on title={c.desc || c.name}
+          <button class="row" class:on title={c.desc || c.name} class:dragging={store.dragging === c.path} {...dragSource(c.path)}
             onclick={() => clickProject(col.index, c)}
             ondblclick={() => store.open(c)}
             onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); store.open(c) } }}
@@ -82,7 +83,8 @@
           </button>
         {:else}
           {@const on = store.path[col.index] === c.name}
-          <button class="row" class:on title={c.path}
+          <button class="row" class:on title={c.path} class:dragging={store.dragging === c.path} class:drop={store.dropTarget === c.path}
+            {...c.missing ? {} : { ...dragSource(c.path), ...dropTarget(c.path, () => clickDir(col.index, c)) }}
             onclick={() => clickDir(col.index, c)}
             oncontextmenu={(e) => { e.preventDefault(); openCtx(e, nodeMenu(c)) }}>
             {@html icons.folder()}

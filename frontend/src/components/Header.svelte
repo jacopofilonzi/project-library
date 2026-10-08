@@ -2,6 +2,7 @@
   import { store, ui } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
   import { icons } from '../lib/icons'
+  import { dropTarget } from '../lib/drag'
   import logo from '../assets/logo.svg'
 
   let crumbs = $derived([store.rootLabel, ...store.path])
@@ -16,7 +17,10 @@
   <nav class="crumbs" aria-label="Path">
     {#each crumbs as c, i}
       {#if i > 0}<i>/</i>{/if}
-      <button onclick={() => store.go(store.path.slice(0, i))}>{c}</button>
+      {@const target = store.nodeAt(store.path.slice(0, i))}
+      <button class:drop={!!target && store.dropTarget === target.path}
+        {...target && target.kind !== 'root' ? dropTarget(target.path) : {}}
+        onclick={() => store.go(store.path.slice(0, i))}>{c}</button>
     {/each}
   </nav>
   <button class="search-btn" onclick={() => (store.paletteOpen = true)}>

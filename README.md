@@ -14,6 +14,7 @@ Il riferimento visivo è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html
 - **Editor**: 14 editor noti rilevati automaticamente (VS Code, JetBrains, Android Studio…) più quelli aggiunti a mano.
 - **Preset e regole**: un preset riconosce un tipo di progetto (Android, Gradle, Node…), una regola gli associa un editor. Le regole sono in ordine di priorità.
 - **Ricerca**: palette `Ctrl/⌘ K` nella finestra e ricerca flottante globale (`Win+Ctrl+K`), con i comandi `>`.
+- **GitHub e GitLab** (con `gh` o `glab` installate e collegate): clona scegliendo tra i tuoi repository, pull/merge request, issue e CI nella scheda, pubblica un progetto locale senza remote.
 - **File**: clona, nuova cartella, rinomina, sposta nel Cestino, "Inizializza progetto" sulle cartelle vuote; la vista si aggiorna da sola quando i file cambiano.
 - **Sistema**: tray, avvio con il sistema (no / finestra / solo tray), ripartenza dall'ultima posizione, wizard al primo avvio, esportazione e importazione della configurazione.
 
@@ -34,6 +35,8 @@ Il riferimento visivo è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html
 
 **git** è quello installato dall'utente, invocato da riga di comando. Se manca, le funzioni git restano disattivate.
 
+**GitHub CLI (`gh`) e GitLab CLI (`glab`)** sono facoltative e si usano con il login già fatto dall'utente (`gh auth login`, `glab auth login`): l'app non chiede né salva token. Senza di loro le funzioni collegate non compaiono; il dialog di clone le suggerisce e Impostazioni → Git le rileva, propone l'installazione e mostra gli account. Un remote viene gestito dalla CLI che ha un account sul suo host (github.com, gitlab.com o un'istanza propria).
+
 ## Multipiattaforma
 
 Tutto il codice è comune tranne `internal/platform`, che ha un file per sistema (`_windows.go`, `_darwin.go`, `_linux.go`).
@@ -44,6 +47,7 @@ Tutto il codice è comune tranne `internal/platform`, che ha un file per sistema
 | Avvio staccato | `CREATE_NO_WINDOW` + `DETACHED_PROCESS` | `Setsid` | `Setsid` |
 | Nomi non validi | `\ / : * ? " < > \|`, nomi riservati, punto o spazio finale | `/` e `:` | `/` |
 | Installare git (wizard) | `winget install Git.Git` | `xcode-select --install` | comando della distro da copiare |
+| Installare gh / glab | `winget install GitHub.cli` / `GLab.GLab` | `brew install gh` / `glab` (da copiare) | pacchetto della distro, dove esiste |
 | Cartella config | `%APPDATA%\project-library` | `~/Library/Application Support/project-library` | `~/.config/project-library` |
 
 I nomi si confrontano senza distinguere maiuscole su Windows e macOS. Su Linux la tray richiede il supporto StatusNotifier (GNOME ha bisogno di un'estensione).
@@ -83,6 +87,7 @@ internal/
   languages/          composizione dei linguaggi di un progetto
   readme/             trova e legge il README, estrae la descrizione
   gitinfo/            stato git e clone tramite il git di sistema
+  forge/              GitHub e GitLab tramite gh e glab: account, repository, PR, CI, creazione
   launcher/           segnaposti e avvio degli editor
   fsops/              crea, rinomina, sposta nel Cestino
   watcher/            fsnotify sulle cartelle di raggruppamento

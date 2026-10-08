@@ -2,7 +2,8 @@
   import { store } from '../lib/state.svelte'
   import { t, tn, ago } from '../lib/i18n/index.svelte'
   import { icons } from '../lib/icons'
-  import { lib, errMessage, type GitInfo } from '../lib/api'
+  import { lib, errMessage, serviceName, type GitInfo } from '../lib/api'
+  import ForgePanel from './ForgePanel.svelte'
 
   let { info, path, onrefresh }: { info: GitInfo; path: string; onrefresh: () => void } = $props()
 
@@ -46,6 +47,16 @@
   function toggleChanges() {
     showChanges = !showChanges
     if (showChanges) loadChanges()
+  }
+
+  // pubblicazione su GitHub/GitLab: servono un account collegato e un repository senza remote
+  let publishLabel = $derived.by(() => {
+    const kinds = new Set(store.forgeAccounts.map((a) => a.kind))
+    return t('forge.publishOn', { service: kinds.size === 1 ? serviceName([...kinds][0]) : 'GitHub / GitLab' })
+  })
+  function publish() {
+    const node = store.index.get(path)?.node
+    if (node) store.dialog = { kind: 'publish', node }
   }
 
   // legenda dei codici di git status
@@ -94,6 +105,9 @@
         <button class="btn" disabled={!!busy} onclick={fetchNow}>{busy === 'fetch' ? t('git.fetching') : t('git.fetch')}</button>
         <button class="btn" disabled={!!busy || !info.hasUpstream} title={info.hasUpstream ? t('git.pullHint') : t('card.noUpstream')} onclick={pull}>{busy === 'pull' ? t('git.pulling') : t('git.pull')}</button>
       </div>
+      {#if store.forgeAccounts.length}<ForgePanel remote={info.remote} branch={info.branch} />{/if}
+    {:else if store.forgeAccounts.length}
+      <div class="gitacts"><button class="btn" onclick={publish}>{publishLabel}</button></div>
     {/if}
     {#if showChanges}
       <div class="changes">

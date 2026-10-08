@@ -1,6 +1,6 @@
 // Stato globale dell'app (Svelte 5 runes).
 import { Events } from '@wailsio/runtime'
-import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset } from './api'
+import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset, type ForgeStatus, type ForgeAccount, type ForgeKind } from './api'
 import { setLang, t } from './i18n/index.svelte'
 
 export type Dialog =
@@ -9,6 +9,7 @@ export type Dialog =
   | { kind: 'delete'; node: Node }
   | { kind: 'clone'; parent: string | null }
   | { kind: 'init'; path: string; name: string }
+  | { kind: 'publish'; node: Node }
 
 export type CtxItem = { label: string; key?: string; danger?: boolean; run: () => void } | '-'
 export type Ctx = { x: number; y: number; items: CtxItem[] }
@@ -25,6 +26,10 @@ class Store {
   launcherStatus = $state<Record<string, string>>({})
   /** catalogo dei preset integrati (dall'app) */
   catalog = $state<Preset[]>([])
+  /** stato di gh e glab (percorso e account), caricato in background */
+  forges = $state<ForgeStatus[]>([])
+  /** cresce quando un'azione cambia lo stato git del progetto aperto (la scheda lo ricarica) */
+  gitChanged = $state(0)
 
   /** percorso corrente come nomi a partire dalla radice dell'albero */
   path = $state<string[]>([])
@@ -220,6 +225,16 @@ class Store {
     this.launcherStatus = ((await lib.LauncherStatus()) ?? {}) as Record<string, string>
   }
 
+  // ---------- GitHub e GitLab ----------
+  async loadForges(refresh = false) {
+    const list = (await lib.Forges(refresh).catch(() => null)) ?? []
+    this.forges = list.map((f) => ({ ...f, accounts: f.accounts ?? [] }))
+  }
+  /** account con il login fatto, di entrambe le CLI */
+  get forgeAccounts(): (ForgeAccount & { kind: ForgeKind })[] {
+    return this.forges.flatMap((f) => (f.accounts ?? []).map((a) => ({ ...a, kind: f.kind as unknown as ForgeKind })))
+  }
+
   // ---------- azioni ----------
   async open(node: Node, launcherId?: string) {
     const l = launcherId ? this.cfg.launchers.find((x) => x.id === launcherId) : this.launcherFor(node).launcher
@@ -309,6 +324,7 @@ class Store {
     this.catalog = ((await lib.Presets()) ?? []).map((p) => ({ ...p, patterns: p.patterns ?? [], builtin: true }))
     this.dirty = ((await lib.Dirty()) ?? {}) as Record<string, number>
     this.refreshLaunchers()
+    if (!isSpotlight) this.loadForges()
     this.wizardOpen = !this.cfg.setupDone
     // git non trovato dopo la configurazione iniziale: avviso una sola volta
     if (this.cfg.setupDone && !this.st?.gitAvailable && !this.cfg.gitWarningShown) {

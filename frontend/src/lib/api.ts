@@ -48,6 +48,11 @@ export type CloneProgress = { id: string; phase: string; percent: number }
 export type { Node } from '../../bindings/github.com/jacopofilonzi/project-library/internal/scanner/models.js'
 export type { Info as GitInfo } from '../../bindings/github.com/jacopofilonzi/project-library/internal/gitinfo/models.js'
 export type { InstallInfo } from '../../bindings/github.com/jacopofilonzi/project-library/internal/platform/models.js'
+export type { ForgeStatus, RepoList, PublishRequest, PublishResult } from '../../bindings/github.com/jacopofilonzi/project-library/internal/core/models.js'
+export type { Account as ForgeAccount, Repo, Info as ForgeInfo, PR, CI, Owner } from '../../bindings/github.com/jacopofilonzi/project-library/internal/forge/models.js'
+/** servizio di una CLI (il Kind dei binding è un enum TypeScript: qui si confronta come stringa) */
+export type ForgeKind = 'github' | 'gitlab'
+export const serviceName = (k: unknown) => (k === 'gitlab' ? 'GitLab' : 'GitHub')
 
 import { t } from './i18n/index.svelte'
 

@@ -34,6 +34,7 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 - Editor noti: tabella `platform.Editors` (+ percorsi di ricerca per sistema). Uno nuovo va aggiunto anche a `LauncherIcon.svelte` (logo) e, se serve, ai consigli di `frontend/src/lib/presets.ts`.
 - `internal/platform`: tutto ciò che dipende dal sistema operativo, nei file `_windows.go`, `_darwin.go`, `_linux.go`. Nessun `runtime.GOOS` fuori da qui.
 - `internal/gitinfo`: usa il `git` installato dall'utente, mai una libreria. Niente gestione credenziali.
+- `internal/forge`: GitHub e GitLab tramite le CLI `gh` e `glab` installate dall'utente (`gh api`/`glab api`), con il loro login. Mai token o librerie. Le funzioni che ne dipendono restano nascoste se la CLI manca o non ha un account sull'host; fanno eccezione il suggerimento nel dialog di clone e la sezione in Impostazioni → Git.
 - `internal/fsops`: crea, rinomina, sposta nel Cestino. Gli errori hanno un codice (`name.badChars`, `exists`…) che il frontend traduce.
 - `frontend/src/lib/state.svelte.ts`: stato globale (runes). `frontend/src/lib/i18n/{en,it}.ts`: testi; `it.ts` deve avere le stesse chiavi di `en.ts` (lo verifica il type-check).
 

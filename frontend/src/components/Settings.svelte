@@ -1,7 +1,7 @@
 <script lang="ts">
   import { store } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
-  import { lib, errMessage, type Launcher, type InstallInfo, type Preset } from '../lib/api'
+  import { lib, errMessage, serviceName, type Launcher, type InstallInfo, type Preset } from '../lib/api'
   import { suggestedLauncher } from '../lib/presets'
   import LauncherIcon from './LauncherIcon.svelte'
 
@@ -224,6 +224,49 @@
     if (p) { gitPath = p; applyGit() }
   }
 
+  // ---------- GitHub e GitLab ----------
+  let checking = $state(false)
+  let cliInstall = $state<Record<string, InstallInfo>>({})
+  let cliStarted = $state<Record<string, boolean>>({})
+  let cliPaths = $state<Record<string, string>>({ github: store.cfg.ghPath, gitlab: store.cfg.glabPath })
+  let copiedCmd = $state('')
+  const binOf = (k: string) => (k === 'gitlab' ? 'glab' : 'gh')
+  const configuredPath = (k: string) => (k === 'gitlab' ? store.cfg.glabPath : store.cfg.ghPath)
+  // all'apertura della sezione: stato in cache, caricato all'avvio
+  $effect(() => {
+    if (store.settingsSection === 'git' && !store.forges.length) store.loadForges()
+  })
+  async function recheckForges() {
+    checking = true
+    await store.loadForges(true)
+    checking = false
+  }
+  async function applyCliPath(k: string) {
+    const p = (cliPaths[k] ?? '').trim()
+    await store.save((c) => (k === 'gitlab' ? (c.glabPath = p) : (c.ghPath = p)))
+    await recheckForges()
+  }
+  async function browseCli(k: string) {
+    const p = await lib.PickFile(t('settings.git.cliPath')).catch(() => '')
+    if (p) { cliPaths[k] = p; applyCliPath(k) }
+  }
+  async function installCli(k: string) {
+    const info = await lib.ForgeInstallInfo(k)
+    cliInstall[k] = info
+    if (!info.canRun) return
+    try {
+      await lib.RunForgeInstall(k)
+      cliStarted[k] = true
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+  }
+  async function copyCmd(cmd: string) {
+    await navigator.clipboard.writeText(cmd).catch(() => {})
+    copiedCmd = cmd
+    setTimeout(() => (copiedCmd = ''), 1500)
+  }
+
   let overrides = $derived(Object.entries(store.cfg.overrides ?? {}).sort(([a], [b]) => a.localeCompare(b)))
   const configDir = $derived((store.st?.configPath ?? '').replace(/[\\/][^\\/]*$/, ''))
   // stesso file che scrive ResetConfig nel backend, accanto a config.json
@@ -429,6 +472,44 @@
               <button class="btn" style="margin-top:10px" onclick={async () => (install = await lib.GitInstallInfo())}>{t('settings.git.install')}</button>
             {/if}
           {/if}
+
+          <div class="grp">{t('settings.git.forges')}</div>
+          <p class="sub2">{t('settings.git.forgesText')}</p>
+          {#each store.forges as f (f.kind)}
+            {@const k = String(f.kind)}
+            {@const bin = binOf(k)}
+            <div class="cli">
+              <div class="f"><div class="l"><b>{serviceName(k)} CLI <code>{bin}</code></b>
+                <span title={f.path}>{f.path ? t('settings.git.cliFound', { path: f.path }) : t('settings.git.cliNotFound')}</span></div>
+                {#if !f.path}<button class="btn" onclick={() => installCli(k)}>{t('settings.git.installCli')}</button>{/if}
+              </div>
+              {#if f.path}
+                {#each f.accounts ?? [] as a (a.host)}
+                  <div class="acc">✓ {t('settings.git.loggedAs', { user: a.user, host: a.host })} <span class="proto">{a.protocol}</span></div>
+                {:else}
+                  <div class="note warn">{t('settings.git.notLogged')} <code>{bin} auth login</code>
+                    <button class="btn" onclick={() => copyCmd(bin + ' auth login')}>{copiedCmd === bin + ' auth login' ? t('settings.git.copied') : t('settings.git.copy')}</button></div>
+                {/each}
+              {:else if cliInstall[k]}
+                {@const inf = cliInstall[k]}
+                {#if cliStarted[k]}
+                  <div class="note">{t('settings.git.installStarted')}</div>
+                {:else}
+                  <div class="note warn">
+                    {#if inf.command}{t('settings.git.installManual')} <code>{inf.command}</code>
+                      <button class="btn" onclick={() => copyCmd(inf.command)}>{copiedCmd === inf.command ? t('settings.git.copied') : t('settings.git.copy')}</button> · {/if}
+                    <a href={inf.url} onclick={(e) => { e.preventDefault(); lib.OpenURL(inf.url) }}>{inf.url}</a>
+                  </div>
+                {/if}
+              {/if}
+              {#if !f.path || configuredPath(k)}
+                <div class="f"><div class="l"><b>{t('settings.git.cliPath')}</b><span>{t('settings.git.cliPathSub')}</span></div>
+                  <input type="text" bind:value={cliPaths[k]} style="width:260px" onkeydown={(e) => e.key === 'Enter' && applyCliPath(k)} />
+                  <button class="btn" onclick={() => browseCli(k)}>{t('settings.launchers.browse')}</button></div>
+              {/if}
+            </div>
+          {/each}
+          <button class="btn" style="margin-top:12px" disabled={checking} onclick={recheckForges}>{checking ? t('settings.git.checking') : t('settings.git.recheck')}</button>
 
         {:else if store.settingsSection === 'exceptions'}
           <div class="grp">{t('settings.exceptions.group')}</div>

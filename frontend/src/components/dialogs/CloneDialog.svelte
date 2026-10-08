@@ -3,7 +3,7 @@
   import { Events } from '@wailsio/runtime'
   import { store } from '../../lib/state.svelte'
   import { t } from '../../lib/i18n/index.svelte'
-  import { lib, errMessage, errCode, type CloneSuggestion, type CloneProgress } from '../../lib/api'
+  import { lib, errMessage, errCode, type CloneSuggestion, type CloneProgress, type Repo } from '../../lib/api'
 
   // parent: cartella da cui è stato aperto; null = dalla navbar (si propone github/<owner>)
   let { parent }: { parent: string | null } = $props()
@@ -19,8 +19,31 @@
 
   let url = $state('')
   let urlInput: HTMLInputElement | undefined = $state()
+  let searchInput: HTMLInputElement | undefined = $state()
+
+  // con gh o glab collegati si sceglie tra i propri repository, altrimenti si incolla l'URL
+  const hasForge = store.forgeAccounts.length > 0
+  let tab = $state<'url' | 'repos'>(hasForge ? 'repos' : 'url')
+  let repos = $state<Repo[] | null>(null)
+  let repoErrors = $state<string[]>([])
+  let q = $state('')
+  async function loadRepos(refresh = false) {
+    repos = null
+    const r = await lib.ForgeRepos(refresh).catch(() => null)
+    repos = r?.repos ?? []
+    repoErrors = r?.errors ?? []
+  }
+  if (hasForge) loadRepos()
+  let filtered = $derived.by(() => {
+    const words = q.toLowerCase().split(/\s+/).filter(Boolean)
+    return (repos ?? []).filter((r) => words.every((w) => (r.fullName + ' ' + r.description).toLowerCase().includes(w))).slice(0, 200)
+  })
+  function pick(r: Repo) {
+    url = r.cloneUrl
+  }
+
   // autofocus non funziona sugli elementi aggiunti dopo il caricamento: il focus va dato a mano
-  $effect(() => urlInput?.focus())
+  $effect(() => (tab === 'repos' ? searchInput : urlInput)?.focus())
   let dest = $state(startRel)
   let name = $state('')
   let openAfter = $state(true)
@@ -37,7 +60,7 @@
   })
   onDestroy(() => off())
 
-  let suggestedDest = $derived(sug?.ok && sug.host === 'github.com' ? `github/${sug.owner}` : '')
+  let suggestedDest = $derived(sug?.ok && sug.host === 'github.com' ? `github/${sug.owner}` : sug?.ok && sug.host === 'gitlab.com' ? `gitlab/${sug.owner}` : '')
   let parentAbs = $derived(root + (dest.trim() ? sep + dest.split('/').filter(Boolean).join(sep) : ''))
   let finalPath = $derived(parentAbs + (name ? sep + name : ''))
 
@@ -102,9 +125,42 @@
 <h3>{t('dlg.clone')}</h3>
 <div class="bd">
   {#if !store.st?.gitAvailable}<div class="warn">{t('dlg.noGit')}</div>{/if}
-  <label>{t('dlg.url')}
-    <input type="text" bind:this={urlInput} bind:value={url} placeholder={t('dlg.urlPlaceholder')} autocomplete="off" spellcheck="false" disabled={running} onkeydown={(e) => e.key === 'Enter' && run()} />
-  </label>
+  {#if hasForge}
+    <div class="tabs" role="tablist">
+      <button role="tab" aria-selected={tab === 'repos'} class:on={tab === 'repos'} disabled={running} onclick={() => (tab = 'repos')}>{t('dlg.fromRepos')}</button>
+      <button role="tab" aria-selected={tab === 'url'} class:on={tab === 'url'} disabled={running} onclick={() => (tab = 'url')}>{t('dlg.fromUrl')}</button>
+    </div>
+  {/if}
+  {#if tab === 'repos'}
+    <div class="repos-h">
+      <input type="text" bind:this={searchInput} bind:value={q} placeholder={t('dlg.searchRepos')} autocomplete="off" spellcheck="false" disabled={running}
+        onkeydown={(e) => { if (e.key === 'Enter') { if (filtered.length === 1) pick(filtered[0]); else run() } }} />
+      <button class="lnk" type="button" disabled={running || repos === null} onclick={() => loadRepos(true)}>{t('dlg.reposRefresh')}</button>
+    </div>
+    <div class="repos" role="listbox" aria-label={t('dlg.fromRepos')}>
+      {#if repos === null}
+        <div class="hint">{t('dlg.reposLoading')}</div>
+      {:else}
+        {#each filtered as r (r.kind + r.host + r.fullName)}
+          <button type="button" role="option" aria-selected={url === r.cloneUrl} class="repo" class:on={url === r.cloneUrl} disabled={running} onclick={() => pick(r)}>
+            <span class="rn">{r.fullName}{#if r.private}<span class="tg">{t('dlg.private')}</span>{/if}</span>
+            <span class="rh">{r.host}</span>
+            {#if r.description}<span class="rd">{r.description}</span>{/if}
+          </button>
+        {:else}
+          <div class="hint">{t('dlg.reposNone')}</div>
+        {/each}
+      {/if}
+    </div>
+    {#if repoErrors.length}<div class="hint err">{t('dlg.reposErrors', { list: repoErrors.join(' · ') })}</div>{/if}
+  {:else}
+    <label>{t('dlg.url')}
+      <input type="text" bind:this={urlInput} bind:value={url} placeholder={t('dlg.urlPlaceholder')} autocomplete="off" spellcheck="false" disabled={running} onkeydown={(e) => e.key === 'Enter' && run()} />
+    </label>
+    {#if !hasForge}
+      <div class="hint">{t('dlg.cliHint')} <button class="lnk" type="button" onclick={() => store.openSettings('git')}>{t('dlg.cliHintLink')}</button></div>
+    {/if}
+  {/if}
   <label>{t('dlg.dest')}
     <div class="pre"><span title={root}>{root}{sep}</span><input type="text" bind:value={dest} oninput={() => (destTouched = true)} autocomplete="off" spellcheck="false" disabled={running} /></div>
     {#if suggestedDest && dest !== suggestedDest}

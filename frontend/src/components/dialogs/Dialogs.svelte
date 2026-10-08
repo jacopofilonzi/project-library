@@ -4,11 +4,12 @@
   import DeleteDialog from './DeleteDialog.svelte'
   import CloneDialog from './CloneDialog.svelte'
   import InitDialog from './InitDialog.svelte'
+  import PublishDialog from './PublishDialog.svelte'
 
   let d = $derived(store.dialog)
   // il clone in corso non si chiude cliccando fuori: va annullato col pulsante
   function backdrop(e: MouseEvent) {
-    if (e.target === e.currentTarget && d?.kind !== 'clone') store.dialog = null
+    if (e.target === e.currentTarget && d?.kind !== 'clone' && d?.kind !== 'publish') store.dialog = null
   }
 </script>
 
@@ -27,6 +28,8 @@
           <CloneDialog parent={d.parent} />
         {:else if d.kind === 'init'}
           <InitDialog path={d.path} name={d.name} />
+        {:else if d.kind === 'publish'}
+          <PublishDialog node={d.node} />
         {/if}
       {/key}
     </div>

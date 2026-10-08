@@ -50,6 +50,10 @@
     const p = node.path
     untrack(() => load(p))
   })
+  // aggiorna lo stato git dopo un'azione che lo cambia (es. pubblicazione)
+  $effect(() => {
+    if (store.gitChanged) untrack(() => loadGit(node.path))
+  })
   // aggiorna lo stato git quando la finestra torna in primo piano
   $effect(() => {
     const f = () => loadGit(node.path)

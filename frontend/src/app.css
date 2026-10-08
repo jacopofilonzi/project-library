@@ -124,6 +124,15 @@ img.lico { border-radius: 0; }
 .pill.mono { font-family: var(--mono); }
 .pill.ok { background: var(--ok-soft); color: var(--ok); }
 .pill.warn { background: var(--warn-soft); color: var(--warn); }
+.pill.bad { background: var(--danger-soft); color: var(--danger); }
+.forge { display: flex; flex-wrap: wrap; gap: 8px; padding: 10px 14px; border-top: 1px solid var(--line); }
+.prs { border-top: 1px solid var(--line); padding: 6px 8px 8px; display: flex; flex-direction: column; }
+.prs .pr { display: flex; align-items: baseline; gap: 10px; text-align: left; background: none; border: 0; border-radius: 6px; padding: 5px 6px; font: inherit; font-size: 13px; color: var(--ink); cursor: pointer; }
+.prs .pr:hover { background: var(--hover); }
+.prs .pr code { font-family: var(--mono); font-size: 12px; color: var(--accent); }
+.prs .pr .pt { flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.prs .pr .tg { font-size: 11px; color: var(--mute); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; }
+.prs .pr .pa { font-size: 12px; color: var(--mute); white-space: nowrap; }
 .git .remote { margin-left: auto; font-family: var(--mono); font-size: 12px; color: var(--accent); text-decoration: none; background: none; border: 0; cursor: pointer; padding: 0; }
 .git .remote:hover { text-decoration: underline; }
 .git .remote.none { color: var(--mute); cursor: default; text-decoration: none; }
@@ -189,6 +198,28 @@ img.lico { border-radius: 0; }
 .dlg .final { font: 12px var(--mono); background: var(--bg); border-radius: 8px; padding: 9px 11px; word-break: break-all; }
 .dlg .prog { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 .dlg .prog i { display: block; height: 100%; background: var(--accent); transition: width .2s; }
+.dlg .tabs { display: flex; gap: 4px; background: var(--bg); border-radius: 9px; padding: 3px; }
+.dlg .tabs button { flex: 1; border: 0; background: none; font: inherit; font-size: 13px; font-weight: 500; color: var(--text2); padding: 6px 10px; border-radius: 7px; cursor: pointer; }
+.dlg .tabs button.on { background: var(--card); color: var(--ink); box-shadow: 0 0 0 1px var(--line); }
+.dlg .repos-h { display: flex; align-items: center; gap: 10px; }
+.dlg .repos-h input { flex: 1; min-width: 0; }
+.dlg .lnk { background: none; border: 0; padding: 0; font: inherit; font-size: 12px; color: var(--accent); cursor: pointer; text-decoration: underline; }
+.dlg .lnk:disabled { opacity: .45; cursor: default; }
+.dlg .repos { max-height: 220px; overflow-y: auto; border: 1px solid var(--line); border-radius: 8px; padding: 4px; display: flex; flex-direction: column; gap: 2px; }
+.dlg .repos .hint { padding: 8px; }
+.dlg .repo { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 2px 10px; text-align: left; background: none; border: 0; border-radius: 6px; padding: 7px 9px; font: inherit; color: var(--ink); cursor: pointer; }
+.dlg .repo:hover { background: var(--hover); }
+.dlg .repo.on { background: var(--accent-soft); }
+.dlg .repo .rn { font: 13px var(--mono); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlg .repo .rn .tg { font: 11px var(--sans); color: var(--mute); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 6px; }
+.dlg .repo .rh { font-size: 11px; color: var(--mute); }
+.dlg .repo .rd { grid-column: 1 / -1; font-size: 12px; color: var(--mute); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dlg select { font: 14px var(--sans); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 8px; padding: 8px 9px; }
+.dlg .row2 { display: flex; align-items: flex-end; gap: 8px; }
+.dlg .row2 .grow { flex: 1; min-width: 0; }
+.dlg .row2 select { max-width: 180px; }
+.dlg .slash { padding-bottom: 9px; color: var(--mute); }
+.dlg .vis { display: flex; gap: 18px; }
 .dlg .ft { display: flex; justify-content: flex-end; gap: 8px; padding: 16px 20px; }
 .dlg .ft button { border: 1px solid var(--line); background: var(--card); color: var(--ink); border-radius: 8px; padding: 8px 14px; font: inherit; font-weight: 600; cursor: pointer; }
 .dlg .ft button.p { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
@@ -293,6 +324,12 @@ img.lico { border-radius: 0; }
 .ln .edit .acts2 { grid-column: 1 / -1; display: flex; justify-content: flex-end; gap: 8px; }
 .note { font-size: 12px; color: var(--mute); background: var(--bg); border-radius: 8px; padding: 10px 12px; margin-top: 10px; }
 .note.warn { background: var(--warn-soft); color: var(--warn); }
+.note code, .f .l b code { font: 12px var(--mono); }
+.note .btn { font-size: 12px; padding: 3px 9px; margin-left: 6px; }
+.note a { color: inherit; }
+.cli { margin-bottom: 6px; }
+.cli .acc { font-size: 13px; color: var(--ok); padding: 8px 0 10px; border-bottom: 1px solid var(--line); }
+.cli .acc .proto { font-size: 11px; color: var(--mute); border: 1px solid var(--line); border-radius: 4px; padding: 0 5px; margin-left: 4px; }
 .tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
 .tbl td { padding: 9px 0; border-bottom: 1px solid var(--line); }
 .tbl td:last-child { text-align: right; }

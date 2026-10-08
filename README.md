@@ -20,6 +20,7 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 - **Search**: `Ctrl/⌘ K` palette in the window and global floating search (`Win+Ctrl+K`), with `>` commands.
 - **GitHub and GitLab** (with `gh` or `glab` installed and logged in): clone by picking from your repositories, pull/merge requests, issues and CI in the card, publish a local project that has no remote.
 - **Files**: clone, new folder, rename, move (drag a row onto a folder, or "Move to…" in the menu, always with a confirmation), move to the trash, "Initialize project" on empty folders; the view updates by itself when files change.
+- **Window**: on Windows the app header is the title bar, with its own minimize / maximize / close buttons that behave like the native ones (snap layouts, drag to the screen edges, double click to maximize). macOS and Linux keep the system title bar.
 - **System**: interface size from 80% to 150% (`Ctrl/⌘ +`, `Ctrl/⌘ −`, `Ctrl/⌘ 0` or the slider in Settings → General), tray, start with the system (off / window / tray only), resume from the last location, first-run wizard, configuration export and import.
 - **Updates**: at startup the app checks GitHub for a new release; if there is one you get a desktop notification and a small banner with the direct link to the installer. It can be turned off in Settings → About, where you can also check by hand.
 

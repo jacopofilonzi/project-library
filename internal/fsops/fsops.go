@@ -130,3 +130,62 @@ func Within(path string, roots []string) bool {
 	}
 	return false
 }
+
+// Move moves path (a folder or project) into the folder dest, keeping its name.
+// path must be inside the roots; dest can be a root or a folder inside one. Moving between
+// disks is refused: it would be a copy and a delete, not a move.
+func Move(path, dest string, roots []string) (string, error) {
+	path, dest = filepath.Clean(path), filepath.Clean(dest)
+	if !Within(path, roots) || !(Within(dest, roots) || isRoot(dest, roots)) {
+		return "", &Error{Code: "outsideRoots"}
+	}
+	if samePath(filepath.Dir(path), dest) {
+		return "", &Error{Code: "sameFolder"}
+	}
+	if samePath(path, dest) || inside(dest, path) {
+		return "", &Error{Code: "moveInside"}
+	}
+	fi, err := os.Stat(dest)
+	if err != nil || !fi.IsDir() {
+		return "", fail("io", err)
+	}
+	name := filepath.Base(path)
+	if exists(dest, name) {
+		return "", &Error{Code: "exists"}
+	}
+	target := filepath.Join(dest, name)
+	if err := os.Rename(path, target); err != nil {
+		if platform.CrossDevice(err) {
+			return "", &Error{Code: "crossDevice"}
+		}
+		return "", fail("io", err)
+	}
+	return target, nil
+}
+
+func isRoot(path string, roots []string) bool {
+	for _, r := range roots {
+		if samePath(path, r) {
+			return true
+		}
+	}
+	return false
+}
+
+// samePath compares two paths, case-insensitively where the file system is.
+func samePath(a, b string) bool {
+	a, b = filepath.Clean(a), filepath.Clean(b)
+	if platform.CaseInsensitive() {
+		return strings.EqualFold(a, b)
+	}
+	return a == b
+}
+
+// inside tells whether p is strictly inside dir.
+func inside(p, dir string) bool {
+	if platform.CaseInsensitive() {
+		p, dir = strings.ToLower(p), strings.ToLower(dir)
+	}
+	rel, err := filepath.Rel(dir, p)
+	return err == nil && rel != "." && rel != ".." && !strings.HasPrefix(rel, ".."+string(filepath.Separator)) && !filepath.IsAbs(rel)
+}

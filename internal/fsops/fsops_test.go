@@ -57,3 +57,42 @@ func TestWithin(t *testing.T) {
 		t.Error(".. escapes the root")
 	}
 }
+
+func TestMove(t *testing.T) {
+	root := t.TempDir()
+	for _, d := range []string{"a/proj/src", "b", "c/proj"} {
+		if err := os.MkdirAll(filepath.Join(root, d), 0o755); err != nil {
+			t.Fatal(err)
+		}
+	}
+	roots := []string{root}
+	src := filepath.Join(root, "a", "proj")
+
+	// errors, nothing moves
+	cases := map[string][2]string{
+		"sameFolder":   {src, filepath.Join(root, "a")},
+		"moveInside":   {src, filepath.Join(src, "src")},
+		"exists":       {src, filepath.Join(root, "c")},
+		"outsideRoots": {src, t.TempDir()},
+	}
+	for want, c := range cases {
+		if _, err := Move(c[0], c[1], roots); code(err) != want {
+			t.Errorf("Move(%s → %s) = %v, want %s", c[0], c[1], err, want)
+		}
+	}
+	if _, err := Move(root, filepath.Join(root, "b"), roots); code(err) != "outsideRoots" {
+		t.Errorf("moving a root: %v", err)
+	}
+
+	// into a folder and back into the root itself
+	got, err := Move(src, filepath.Join(root, "b"), roots)
+	if err != nil || got != filepath.Join(root, "b", "proj") {
+		t.Fatalf("Move = %s, %v", got, err)
+	}
+	if _, err := os.Stat(filepath.Join(got, "src")); err != nil {
+		t.Fatal("content not moved")
+	}
+	if got, err = Move(got, root, roots); err != nil || got != filepath.Join(root, "proj") {
+		t.Fatalf("Move to root = %s, %v", got, err)
+	}
+}

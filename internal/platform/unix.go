@@ -3,6 +3,7 @@
 package platform
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -23,6 +24,9 @@ func startSetsid(command string, args []string, dir string) error {
 	go cmd.Wait() // reap the process when it ends, avoiding zombies
 	return nil
 }
+
+// CrossDevice tells whether a rename failed because source and destination are on different file systems.
+func CrossDevice(err error) bool { return errors.Is(err, syscall.EXDEV) }
 
 // ExpandEnv expands $VAR and ~.
 func ExpandEnv(s string) string {

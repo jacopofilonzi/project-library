@@ -505,6 +505,19 @@ func (l *Library) Rename(path, newName string) (string, error) {
 	return dest, nil
 }
 
+// Move moves path into the folder dest and updates the overrides, per-project launchers and
+// history that point to it, as Rename does.
+func (l *Library) Move(path, dest string) (string, error) {
+	target, err := fsops.Move(path, dest, l.store.Get().Roots)
+	if err != nil {
+		return "", err
+	}
+	l.store.Update(func(c *config.Config) { c.RenamePath(path, target) })
+	emitEvent(EventConfig, l.store.Get())
+	l.rescan(true)
+	return target, nil
+}
+
 func (l *Library) IsEmptyDir(path string) bool { return fsops.IsEmptyDir(path) }
 
 // Trash moves path to the trash and cleans up overrides and history.

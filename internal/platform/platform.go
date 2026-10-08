@@ -18,6 +18,7 @@
 //	ExpandEnv(s string) string
 //	CaseInsensitive() bool
 //	UpdateAsset() string
+//	CrossDevice(err error) bool
 package platform
 
 import (

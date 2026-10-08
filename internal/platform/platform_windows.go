@@ -1,6 +1,7 @@
 package platform
 
 import (
+	"errors"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -134,6 +135,9 @@ func ExpandEnv(s string) string {
 }
 
 func CaseInsensitive() bool { return true }
+
+// CrossDevice tells whether a rename failed because source and destination are on different drives.
+func CrossDevice(err error) bool { return errors.Is(err, syscall.Errno(17)) } // ERROR_NOT_SAME_DEVICE
 
 // UpdateAsset is the end of the installer's name among the release files.
 func UpdateAsset() string { return "-installer.exe" }

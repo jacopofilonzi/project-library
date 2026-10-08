@@ -33,7 +33,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 - `internal/presets`: catalog of the built-in presets (how a project type is recognized). Built-in presets are linked: rules reference them by id and they update with the app; a user preset with a catalog id is ignored (the catalog wins). Rules (`config.Rules`, preset → launcher) are in priority order.
 - `internal/languages`: language breakdown of a project (the bar in the card).
 - Known editors: the `platform.Editors` table (+ per-system search paths). A new one must also be added to `LauncherIcon.svelte` (logo) and, if needed, to the suggestions in `frontend/src/lib/presets.ts`.
-- `internal/platform`: everything that depends on the operating system, in the `_windows.go`, `_darwin.go`, `_linux.go` files. No `runtime.GOOS` outside of it.
+- `internal/platform`: everything that depends on the operating system, in the `_windows.go`, `_darwin.go`, `_linux.go` files. No branching on `runtime.GOOS` outside of it (`core` only reports the OS to the frontend).
 - `internal/gitinfo`: uses the `git` installed by the user, never a library. No credential handling.
 - `internal/forge`: GitHub and GitLab through the `gh` and `glab` CLIs installed by the user (`gh api`/`glab api`), with their login. Never tokens or libraries. The features that depend on them stay hidden if the CLI is missing or has no account on the host; the exceptions are the hint in the clone dialog and the section in Settings → Git.
 - `internal/fsops`: create, rename, move to the trash. Errors have a code (`name.badChars`, `exists`…) that the frontend translates.
@@ -41,7 +41,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 
 ## Conventions
 
-- Everything is written in English: code, comments, documentation, commit messages, test names and messages. The only Italian in the repository is the UI translation in `frontend/src/lib/i18n/it.ts` (and the Italian tray labels in `main.go`).
+- Everything is written in English, except the language packs.
 - Every UI text goes through `t()`; always add both the English and the Italian key.
 - Deleting means moving to the trash, never deleting permanently.
 - Small, step-by-step commits (`feat:`, `fix:`, `chore:`, `docs:`), never a single commit at the end.
@@ -53,7 +53,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 ## Versions and releases
 
 - We stay on `0.1.x`: every released feature or fix bumps the last number (`0.1.0` → `0.1.1` → …). Moving to `0.2` is the user's decision.
-- The version is written in 11 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh 0.1.x`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
+- The version is written in 12 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh 0.1.x`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
 - Every completed feature or fix ends with `scripts/set-version.sh` and a `chore: version 0.1.x` commit. Tags and releases are made only when the user asks and include the intermediate versions.
 - Release (only when the user asks): annotated `v0.1.x` tag on the current version, push of commits and tag. The tag starts `.github/workflows/release.yml` (runs on Linux and compiles for Windows without cgo): tests, checks, e2e, installer and a GitHub release with notes built from the commits since the previous tag. The workflow stops if the tag does not match the version in `build/config.yml`.
 - CI does not run on normal pushes, to save GitHub Actions minutes (private repository: 2,000 a month; that is why Linux is used, which counts half of Windows). To try the build without releasing: Actions → Release → Run workflow, the installer stays as an artifact for 7 days. Development commits can be pushed freely.

@@ -2,9 +2,11 @@
 
 # Project Library
 
-Desktop app to browse the projects in `~/Development/{source}/…`, see their README and git status, and open them with the right editor.
+Your `~/Development` folder, finally easy to get around.
 
-Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the window, Svelte 5 + Vite for the UI. Built for Windows, macOS and Linux (so far tested on Windows only). UI in English and Italian, light and dark theme.
+Project Library is a small desktop app for people with too many repositories. Browse your projects in columns, just like they sit on disk, read their README, see at a glance what changed in git, and open each one in the right editor: IntelliJ for the Gradle project, VS Code for the Node one, without thinking about it. Need something fast? Hit `Win+Ctrl+K` from anywhere, type a few letters and you're in.
+
+Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the window, Svelte 5 + Vite for the UI. Built for Windows, macOS and Linux (so far tested on Windows only). UI in English and Italian, light and dark theme.
 
 ## Features
 
@@ -25,7 +27,7 @@ Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the window, Svel
 2. Ignored names (`node_modules`, `vendor`, `target`, `.venv`…) and hidden folders: skipped.
 3. Markers (`.git`, `package.json`, `go.mod`, `Cargo.toml`, `pom.xml`, `build.gradle*`, `*.sln`, `README*`…): project, the scan does not go further down.
 4. At least one regular file: project (on by default; `desktop.ini`, `Thumbs.db` and `.DS_Store` do not count).
-5. Only subfolders: folder, the scan goes down. No symlinks or junctions, maximum depth 20.
+5. Only subfolders: folder, the scan goes down, up to 20 levels. Symlinks and junctions are followed only if enabled in Settings → Scanning.
 6. Empty: empty folder, with New folder, Clone, Initialize project and Mark as project.
 
 **Which editor opens a project**: first the one chosen by hand for that project, then the first matching preset → editor rule, finally the default editor.
@@ -42,8 +44,8 @@ All the code is shared except `internal/platform`, which has one file per system
 
 | Feature | Windows | macOS | Linux |
 | --- | --- | --- | --- |
-| Trash | `IFileOperation` (shell) | Finder via `osascript`, otherwise `~/.Trash` | `gio trash`, otherwise the freedesktop spec |
-| Detached start | `CREATE_NO_WINDOW` + `DETACHED_PROCESS` | `Setsid` | `Setsid` |
+| Trash | `SHFileOperationW` (shell, can be undone) | Finder via `osascript`, otherwise `~/.Trash` | `gio trash`, otherwise the freedesktop spec |
+| Detached start | `CREATE_NO_WINDOW` + `CREATE_NEW_PROCESS_GROUP` | `Setsid` | `Setsid` |
 | Invalid names | `\ / : * ? " < > \|`, reserved names, trailing dot or space | `/` and `:` | `/` |
 | Install git (wizard) | `winget install Git.Git` | `xcode-select --install` | distro command to copy |
 | Install gh / glab | `winget install GitHub.cli` / `GLab.GLab` | `brew install gh` / `glab` (to copy) | distro package, where there is one |
@@ -53,8 +55,8 @@ Names are compared case-insensitively on Windows and macOS. On Linux the tray ne
 
 ## Requirements
 
-- Go 1.24+
-- Node 20+ and npm
+- Go 1.25+
+- Node 20.19+ or 22.12+ (required by Vite 8) and npm
 - Wails v3 CLI: `go install github.com/wailsapp/wails/v3/cmd/wails3@latest`, then `wails3 doctor`
 - macOS: Xcode Command Line Tools. Linux: GTK3 and WebKit2GTK (`wails3 doctor` tells which packages are missing)
 - At runtime: `git` (optional)
@@ -93,7 +95,7 @@ internal/
   platform/           everything that depends on the operating system
 frontend/
   src/components/     columns, card, palette, spotlight, settings, wizard, dialogs
-  src/lib/            state, i18n (en, it), commands, markdown, menus
+  src/lib/            state, backend access, i18n (en, it), commands, markdown, menus, icons, editor suggestions
   e2e/                Playwright tests and fake backend
 ```
 

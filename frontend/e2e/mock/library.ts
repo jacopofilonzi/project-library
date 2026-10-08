@@ -255,6 +255,42 @@ export const DetectGit = async (path: string) => (gitAvailable() || path ? 'C:/G
 export const GitInstallInfo = async () => ({ command: 'winget install --id Git.Git -e --source winget', canRun: true, url: 'https://git-scm.com/download/win' })
 export const RunGitInstall = async () => { log('RunGitInstall') }
 export const PickFolder = async () => options.pickFolder ?? ''
+
+// ---------- GitHub e GitLab finti: gh installata (secondo options.forges), glab mai ----------
+const ghAccount = { host: 'github.com', user: 'jacopofilonzi', protocol: 'ssh' }
+export async function Forges(refresh: boolean) {
+  log('Forges', refresh)
+  const mode = options.forges ?? 'none'
+  const gh = mode === 'none'
+    ? { kind: 'github', path: '', accounts: [], message: '' }
+    : { kind: 'github', path: 'C:/Program Files/GitHub CLI/gh.exe', accounts: mode === 'loggedIn' ? [ghAccount] : [], message: mode === 'loggedIn' ? '' : 'You are not logged into any GitHub hosts. To log in, run: gh auth login' }
+  return [gh, { kind: 'gitlab', path: '', accounts: [], message: '' }]
+}
+export const ForgeInstallInfo = async (kind: string) => ({ command: `winget install --id ${kind === 'gitlab' ? 'GLab.GLab' : 'GitHub.cli'} -e --source winget`, canRun: true, url: kind === 'gitlab' ? 'https://gitlab.com/gitlab-org/cli#installation' : 'https://cli.github.com' })
+export const RunForgeInstall = async (kind: string) => { log('RunForgeInstall', kind) }
+const ghRepo = (fullName: string, description: string, priv = false) => ({ kind: 'github', host: 'github.com', fullName, description, private: priv, cloneUrl: `git@github.com:${fullName}.git`, web: `https://github.com/${fullName}`, updated: '2026-10-01T10:00:00Z' })
+export async function ForgeRepos(refresh: boolean) {
+  log('ForgeRepos', refresh)
+  if (options.forges !== 'loggedIn') return { repos: [], errors: [] }
+  return { repos: [ghRepo('jacopofilonzi/ShellyPlot', 'Charts for Shelly power meters'), ghRepo('dity-dev/discord-bot-java', 'Discord bot of the Dity community', true), ghRepo('jacopofilonzi/NtfyJS', 'An ntfy client for Javascript and Typescript')], errors: [] }
+}
+export async function ForgeInfo(remote: string, branch: string) {
+  log('ForgeInfo', remote, branch)
+  if (options.forges !== 'loggedIn' || !remote.includes('github.com')) return null
+  const web = 'https://' + remote.replace(/^git@|\.git$/g, '').replace(':', '/')
+  return {
+    kind: 'github', host: 'github.com', web, prCount: 2, prMore: false, issues: 3,
+    prs: [{ number: 12, title: 'Retry on 429 responses', url: web + '/pull/12', author: 'octocat', draft: false }, { number: 11, title: 'Typed events', url: web + '/pull/11', author: 'jacopofilonzi', draft: true }],
+    ci: { state: 'failure', name: 'CI', url: web + '/actions/runs/1' },
+  }
+}
+export const ForgeOwners = async (kind: string, host: string) => { log('ForgeOwners', kind, host); return [{ name: 'jacopofilonzi', personal: true, id: 0 }, { name: 'dity-dev', personal: false, id: 0 }] }
+export async function Publish(req: any) {
+  log('Publish', req)
+  const full = `${req.owner.name}/${req.name}`
+  gitData[req.path] = { ...gitOf(req.path), remote: `git@github.com:${full}.git`, remoteWeb: `https://github.com/${full}`, hasUpstream: true }
+  return { web: `https://github.com/${full}`, pushed: true, pushError: '' }
+}
 export const PickFile = async () => ''
 export async function InitProject(path: string, git: boolean, readme: boolean) {
   log('InitProject', path, git, readme)

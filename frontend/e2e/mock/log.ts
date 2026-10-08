@@ -20,6 +20,8 @@ export type MockOptions = {
   missingRoot?: boolean
   /** percorso restituito dal selettore di cartelle di sistema */
   pickFolder?: string
+  /** GitHub CLI: assente (default), installata senza login o con il login fatto su github.com */
+  forges?: 'none' | 'notLoggedIn' | 'loggedIn'
 }
 
 window.__mock = window.__mock ?? { calls: [] }

@@ -493,3 +493,29 @@ test('dropping a project on a folder asks for confirmation; cancel moves nothing
   expect(await calls(page)).toContainEqual({ fn: 'Move', args: [`${ROOT}/local/dity-bot-rs`, ROOT] })
   await expect(row(page, 'dity-bot-rs')).toBeVisible()
 })
+
+test('deleting a folder with a risky project inside needs its name', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'local').click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Delete…' }).click()
+  const dlg = page.locator('.dlg')
+  // awake has no remote, BuildPatternDemo and pocket-app are not git repositories
+  await expect(dlg.locator('.warn.risky')).toContainText('3 projects inside would lose work')
+  await expect(dlg.locator('.warn.risky')).toContainText('awake: no remote: this is the only copy')
+  const del = dlg.getByRole('button', { name: 'Delete' })
+  await expect(del).toBeDisabled()
+  await dlg.getByRole('textbox').fill('local')
+  await del.click()
+  expect(await calls(page)).toContainEqual({ fn: 'Trash', args: [`${ROOT}/local`] })
+})
+
+test('deleting a folder whose projects are all safe needs no name', async ({ page }) => {
+  await openApp(page)
+  await row(page, 'github').click()
+  await row(page, 'curishi').click({ button: 'right' })
+  await page.getByRole('menuitem', { name: 'Delete…' }).click()
+  const dlg = page.locator('.dlg')
+  await expect(dlg.getByRole('button', { name: 'Delete' })).toBeEnabled()
+  await expect(dlg.locator('.warn.risky')).toHaveCount(0)
+  await expect(dlg.getByRole('textbox')).toHaveCount(0)
+})

@@ -167,6 +167,8 @@ img.lico { border-radius: 0; }
 
 /* dialog */
 .backdrop { position: fixed; inset: 0; background: rgba(23,23,26,.35); display: flex; align-items: flex-start; justify-content: center; padding: 12vh 16px; z-index: 50; }
+/* dialog sopra le impostazioni */
+.backdrop.over { z-index: 75; }
 .dlg { width: 480px; max-width: 100%; background: var(--card); border-radius: 14px; box-shadow: 0 30px 80px rgba(0,0,0,.25); overflow: hidden; }
 .dlg h3 { margin: 0; padding: 18px 20px 4px; font-size: 17px; word-break: break-word; }
 .dlg .bd { padding: 8px 20px 4px; display: flex; flex-direction: column; gap: 12px; color: var(--text2); }
@@ -251,6 +253,8 @@ img.lico { border-radius: 0; }
 .btn:hover { border-color: var(--faint); }
 .btn.p { background: var(--ink); color: var(--on-ink); border-color: var(--ink); }
 .btn.d { color: var(--danger); }
+.btn.danger { background: #c4291c; color: #fff; border-color: #c4291c; }
+.btn.danger:hover { background: #a82317; border-color: #a82317; }
 .btn:disabled { opacity: .45; cursor: not-allowed; }
 .seg { display: inline-flex; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 2px; }
 .seg button { border: 0; background: none; font: inherit; font-size: 13px; color: var(--mute); padding: 5px 12px; border-radius: 6px; cursor: pointer; }

@@ -95,7 +95,7 @@ frontend/
 
 ## Dati
 
-La configurazione è in `config.json` nella cartella indicata sopra. Il wizard del primo avvio si può ripetere da Impostazioni → Info; la configurazione si esporta e importa dalla stessa sezione.
+La configurazione è in `config.json` nella cartella indicata sopra. Da Impostazioni → Info si esporta, si importa o si reimposta: "Reimposta impostazioni" salva una copia in `config.backup.json`, riporta tutto ai valori iniziali (resta solo la lingua) e riapre il wizard.
 
 ## Versioni
 

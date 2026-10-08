@@ -3,6 +3,7 @@ package core
 import (
 	"encoding/json"
 	"os"
+	"path/filepath"
 	"strings"
 	"sync"
 	"time"
@@ -137,4 +138,31 @@ func (l *Library) ImportConfig(title string) (AppState, error) {
 		return l.State(), &fsops.Error{Code: "badConfig"}
 	}
 	return l.SaveConfig(next)
+}
+
+// ResetConfig riporta la configurazione ai valori iniziali: al ritorno il frontend riapre il wizard.
+// Resta solo la lingua, così il wizard parla quella dell'utente. La configurazione precedente
+// viene salvata in config.backup.json, accanto a config.json, e si può reimportare.
+func (l *Library) ResetConfig() (AppState, error) {
+	prev := l.store.Get()
+	data, err := json.MarshalIndent(prev, "", "  ")
+	if err == nil {
+		err = os.WriteFile(l.backupPath(), data, 0o644)
+	}
+	if err != nil {
+		return l.State(), &fsops.Error{Code: "io", Detail: err.Error()}
+	}
+	home, _ := os.UserHomeDir()
+	next := config.Default(home)
+	next.Language = prev.Language
+	if _, err := l.SaveConfig(next); err != nil {
+		return l.State(), err
+	}
+	l.SyncEditors() // gli editor noti installati tornano nella lista, disattivati, come al primo avvio
+	return l.State(), nil
+}
+
+// backupPath è il file in cui ResetConfig salva la configurazione precedente.
+func (l *Library) backupPath() string {
+	return filepath.Join(filepath.Dir(l.store.Path()), "config.backup.json")
 }

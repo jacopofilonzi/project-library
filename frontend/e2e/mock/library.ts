@@ -162,6 +162,12 @@ export const Languages = async (path: string) => ({
 })
 export const ExportConfig = async (title: string) => { log('ExportConfig', title); return '/home/u/project-library-config.json' }
 export const ImportConfig = async (title: string) => { log('ImportConfig', title); return state() }
+export async function ResetConfig() {
+  log('ResetConfig')
+  config = { ...config, roots: [ROOT], rules: [], presets: [], projectLaunchers: {}, overrides: {}, recent: [], lastPath: '', lastSelected: '', setupDone: false }
+  emitConfig()
+  return state()
+}
 
 export async function Readme(path: string) {
   const f = find(path)?.node

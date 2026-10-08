@@ -306,3 +306,23 @@ test('the configuration can be exported', async ({ page }) => {
   await page.getByRole('button', { name: 'Export…' }).click()
   await expect(page.locator('.toast')).toContainText('Configuration exported: /home/u/project-library-config.json')
 })
+
+test('resetting the settings asks for confirmation, then runs the wizard', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'About' }).click()
+  await page.getByRole('button', { name: 'Reset…' }).click()
+  const dlg = page.getByRole('alertdialog', { name: 'Reset all settings?' })
+  await expect(dlg).toContainText('/cfg/config.backup.json')
+  // Esc chiude solo il popup, non le impostazioni
+  await page.keyboard.press('Escape')
+  await expect(dlg).toBeHidden()
+  await expect(page.locator('.set')).toBeVisible()
+  expect((await calls(page)).some((c) => c.fn === 'ResetConfig')).toBe(false)
+
+  await page.getByRole('button', { name: 'Reset…' }).click()
+  await dlg.getByRole('button', { name: 'Reset settings' }).click()
+  await expect(page.locator('.set')).toBeHidden()
+  await expect(page.locator('.wiz-bg')).toBeVisible()
+  expect((await calls(page)).filter((c) => c.fn === 'ResetConfig')).toHaveLength(1)
+})

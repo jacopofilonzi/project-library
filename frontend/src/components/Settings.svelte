@@ -177,6 +177,23 @@
       store.toast(errMessage(e), true)
     }
   }
+  // ---------- reimposta ----------
+  let resetAsk = $state(false)
+  let resetCancel: HTMLButtonElement | undefined = $state()
+  $effect(() => { if (resetAsk) resetCancel?.focus() })
+  async function resetConfig() {
+    resetAsk = false
+    try {
+      store.applyState(await lib.ResetConfig())
+      store.setTree(await lib.Tree())
+      store.refreshLaunchers()
+      store.go([])
+      store.settingsOpen = false
+      store.wizardOpen = true
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+  }
   async function browseExe() {
     const p = await lib.PickFile(t('settings.launchers.exe')).catch(() => '')
     if (p) draft.command = p
@@ -209,9 +226,14 @@
 
   let overrides = $derived(Object.entries(store.cfg.overrides ?? {}).sort(([a], [b]) => a.localeCompare(b)))
   const configDir = $derived((store.st?.configPath ?? '').replace(/[\\/][^\\/]*$/, ''))
+  // stesso file che scrive ResetConfig nel backend, accanto a config.json
+  const backupPath = $derived((store.st?.configPath ?? '').replace(/[^\\/]*$/, 'config.backup.json'))
 
   function onkey(e: KeyboardEvent) {
-    if (e.key === 'Escape') { e.stopPropagation(); store.settingsOpen = false }
+    if (e.key !== 'Escape') return
+    e.stopPropagation()
+    if (resetAsk) resetAsk = false
+    else store.settingsOpen = false
   }
 </script>
 
@@ -449,7 +471,24 @@
           {#if importAsk}
             <div class="note warn">{t('settings.about.importConfirm')} <button class="btn d" onclick={importConfig}>{t('settings.about.importGo')}</button> <button class="btn" onclick={() => (importAsk = false)}>{t('settings.about.cancel')}</button></div>
           {/if}
-          <div class="f"><div class="l"><b>{t('settings.about.wizard')}</b><span>{t('settings.about.wizardSub')}</span></div><button class="btn" onclick={() => { store.settingsOpen = false; store.wizardOpen = true }}>{t('settings.about.runWizard')}</button></div>
+          <div class="f"><div class="l"><b>{t('settings.about.reset')}</b><span>{t('settings.about.resetSub')}</span></div><button class="btn danger" onclick={() => (resetAsk = true)}>{t('settings.about.resetBtn')}</button></div>
+          {#if resetAsk}
+            <!-- svelte-ignore a11y_no_static_element_interactions -->
+            <div class="backdrop over" onmousedown={(e) => e.target === e.currentTarget && (resetAsk = false)}>
+              <div class="dlg" role="alertdialog" aria-modal="true" aria-labelledby="reset-title">
+                <h3 id="reset-title">{t('settings.about.resetTitle')}</h3>
+                <div class="bd">
+                  <p>{t('settings.about.resetText')}</p>
+                  <p class="hint">{t('settings.about.resetBackup')}</p>
+                  <div class="final selectable">{backupPath}</div>
+                </div>
+                <div class="ft">
+                  <button bind:this={resetCancel} onclick={() => (resetAsk = false)}>{t('settings.about.cancel')}</button>
+                  <button class="d" onclick={resetConfig}>{t('settings.about.resetGo')}</button>
+                </div>
+              </div>
+            </div>
+          {/if}
         {/if}
       </div>
     </div>

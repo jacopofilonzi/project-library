@@ -183,5 +183,8 @@ func freedesktopTrash(path string) error {
 
 func CaseInsensitive() bool { return false }
 
+// CustomTitleBar: Linux keeps the system title bar.
+func CustomTitleBar() bool { return false }
+
 // UpdateAsset: no Linux package is published yet, the update links to the release page.
 func UpdateAsset() string { return "" }

@@ -161,5 +161,8 @@ func FileID(path string) string {
 	return fmt.Sprintf("%x-%x%08x", info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow)
 }
 
+// CustomTitleBar: on Windows the app header is the title bar, with its own caption buttons.
+func CustomTitleBar() bool { return true }
+
 // UpdateAsset is the end of the installer's name among the release files.
 func UpdateAsset() string { return "-installer.exe" }

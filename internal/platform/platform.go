@@ -20,6 +20,7 @@
 //	UpdateAsset() string
 //	CrossDevice(err error) bool
 //	FileID(path string) string
+//	CustomTitleBar() bool
 package platform
 
 import (

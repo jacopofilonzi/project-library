@@ -16,6 +16,7 @@ import (
 	"github.com/jacopofilonzi/project-library/internal/config"
 	"github.com/jacopofilonzi/project-library/internal/core"
 	"github.com/jacopofilonzi/project-library/internal/fsops"
+	"github.com/jacopofilonzi/project-library/internal/platform"
 	"github.com/jacopofilonzi/project-library/internal/update"
 )
 
@@ -79,7 +80,14 @@ func main() {
 		MinWidth: 920, MinHeight: 600,
 		Hidden:           hidden,
 		BackgroundColour: bg,
-		URL:              "/",
+		// Windows: the app header is the title bar (see WindowControls.svelte). Composition hosting
+		// lets Wails answer Windows' hit tests from the --wails-non-client-region CSS areas, so the
+		// caption buttons behave like native ones (snap layouts, drag, double click to maximize).
+		Frameless: platform.CustomTitleBar(),
+		Windows: application.WindowsWindow{
+			WebView2CompositionHosting: platform.CustomTitleBar(),
+		},
+		URL: "/",
 		// Ctrl/⌘ P does not reach the page (WebView2 reserves it for printing): the window handles it.
 		KeyBindings: map[string]func(application.Window){
 			"CmdOrCtrl+P": func(application.Window) { app.Event.Emit("shortcut:settings") },

@@ -109,18 +109,21 @@ type AppState struct {
 	GitAvailable bool          `json:"gitAvailable"`
 	ConfigPath   string        `json:"configPath"`
 	Home         string        `json:"home"`
+	// CustomTitleBar: the window has no system title bar, the header draws the caption buttons.
+	CustomTitleBar bool `json:"customTitleBar"`
 }
 
 func (l *Library) State() AppState {
 	home, _ := os.UserHomeDir()
 	return AppState{
-		Config:       l.store.Get(),
-		OS:           runtime.GOOS,
-		Version:      Version,
-		GitPath:      l.git.Path(),
-		GitAvailable: l.git.Available(),
-		ConfigPath:   l.store.Path(),
-		Home:         home,
+		Config:         l.store.Get(),
+		OS:             runtime.GOOS,
+		Version:        Version,
+		GitPath:        l.git.Path(),
+		GitAvailable:   l.git.Available(),
+		ConfigPath:     l.store.Path(),
+		Home:           home,
+		CustomTitleBar: platform.CustomTitleBar(),
 	}
 }
 

@@ -11,7 +11,7 @@ App desktop (Go + Wails v3 beta, Svelte 5 + Vite) per sfogliare i progetti in `~
 ```sh
 wails3 build ARCH=amd64        # build in bin/ (ARCH=amd64 serve se `go env GOARCH` è 386)
 wails3 dev                     # sviluppo con hot reload
-wails3 package ARCH=amd64      # installer NSIS per utente in bin/ (richiede makensis, es. "C:Program Files (x86)NSIS")
+wails3 package ARCH=amd64      # installer NSIS per utente in bin/ (richiede makensis nel PATH, di solito in C:/Program Files (x86)/NSIS)
 wails3 generate bindings -clean=true -ts -i   # rigenera frontend/bindings dopo aver cambiato i metodi esposti
 go test ./internal/...
 go vet ./...                   # con GOARCH=amd64 su Windows

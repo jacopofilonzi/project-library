@@ -244,6 +244,18 @@ class Store {
     applyTheme(s.config.theme)
   }
 
+  // ---------- UI scale ----------
+  static readonly SCALE_MIN = 0.8
+  static readonly SCALE_MAX = 1.5
+  /** sets the UI scale (1 = 100%), rounded to 10% steps; the backend zooms the window */
+  setScale(v: number) {
+    const s = Math.round(Math.min(Math.max(v, Store.SCALE_MIN), Store.SCALE_MAX) * 10) / 10
+    if (s !== this.cfg.uiScale) this.save((c) => (c.uiScale = s))
+  }
+  zoom(dir: 1 | -1 | 0) {
+    this.setScale(dir === 0 ? 1 : (this.cfg.uiScale || 1) + dir * 0.1)
+  }
+
   /** changes the config with fn, saves it and applies the returned state */
   async save(fn: (c: Config) => void): Promise<boolean> {
     const next = structuredClone($state.snapshot(this.cfg)) as Config

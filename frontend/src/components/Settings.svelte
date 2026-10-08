@@ -325,6 +325,11 @@
             </select></div>
           <div class="f"><div class="l"><b>{t('settings.general.theme')}</b><span>{t('settings.general.themeSub')}</span></div>
             <div class="seg">{#each ['system', 'light', 'dark'] as v}<button class:on={store.cfg.theme === v} onclick={() => store.save((c) => (c.theme = v))}>{t('settings.general.' + v)}</button>{/each}</div></div>
+          <div class="f"><div class="l"><b>{t('settings.general.scale')}</b><span>{t('settings.general.scaleSub', { mod: store.mod })}</span></div>
+            <input type="range" class="scale" aria-label={t('settings.general.scale')} min="80" max="150" step="10" value={Math.round((store.cfg.uiScale || 1) * 100)}
+              onchange={(e) => store.setScale(+(e.currentTarget as HTMLInputElement).value / 100)} />
+            <span class="scalev">{Math.round((store.cfg.uiScale || 1) * 100)}%</span>
+            <button class="btn" disabled={(store.cfg.uiScale || 1) === 1} onclick={() => store.zoom(0)}>{t('settings.general.scaleReset')}</button></div>
           <div class="grp">{t('settings.sections.general')}</div>
           <div class="f"><div class="l"><b>{t('settings.general.startMode')}</b><span>{t('settings.general.startModeSub')}</span></div>
             <div class="seg">{#each ['off', 'window', 'tray'] as v}<button class:on={store.cfg.startMode === v} onclick={() => store.save((c) => (c.startMode = v))}>{t('settings.general.start.' + v)}</button>{/each}</div></div>
@@ -546,7 +551,7 @@
             {#each [
               [store.mod + ' K', 'search'], ['>', 'commands'], [store.mod + ' P  /  ' + store.mod + ' ,', 'settings'], ['↵', 'open'], [store.mod + ' 1…9', 'openN'],
               [store.mod + ' E', 'reveal'], [store.mod + ' Shift N', 'newFolder'], ['F2', 'rename'], [store.os === 'darwin' ? '⌘ ⌫' : 'Del', 'delete'],
-              ['← ↑ ↓ →', 'navigate'], ['Esc', 'close'],
+              [store.mod + ' +  /  ' + store.mod + ' −  /  ' + store.mod + ' 0', 'zoom'], ['← ↑ ↓ →', 'navigate'], ['Esc', 'close'],
             ] as [k, d]}
               <tr><td>{t('settings.shortcuts.' + d)}</td><td><kbd>{k}</kbd></td></tr>
             {/each}

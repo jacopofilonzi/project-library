@@ -69,6 +69,21 @@
   function onkey(e: KeyboardEvent) {
     const mod = e.ctrlKey || e.metaKey
     const k = e.key.toLowerCase()
+    if (mod && !e.altKey && (e.key === '+' || e.key === '=' || e.code === 'NumpadAdd')) {
+      e.preventDefault()
+      store.zoom(1)
+      return
+    }
+    if (mod && !e.altKey && (e.key === '-' || e.code === 'NumpadSubtract')) {
+      e.preventDefault()
+      store.zoom(-1)
+      return
+    }
+    if (mod && !e.altKey && (e.key === '0' || e.code === 'Numpad0')) {
+      e.preventDefault()
+      store.zoom(0)
+      return
+    }
     if (store.wizardOpen) return
     if (mod && k === 'k') {
       e.preventDefault()

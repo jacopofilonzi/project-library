@@ -274,7 +274,7 @@ img.lico { border-radius: 0; }
 
 /* settings */
 .set-bg { position: fixed; inset: 0; background: rgba(10,10,12,.4); z-index: 70; display: flex; align-items: center; justify-content: center; padding: 16px; }
-.set { width: 880px; height: 600px; max-width: 100%; max-height: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 40px 100px rgba(0,0,0,.35); display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; }
+.set { width: max(760px, 70vw); height: max(540px, 70vh); max-width: 100%; max-height: 100%; background: var(--panel); border: 1px solid var(--line); border-radius: 16px; box-shadow: 0 40px 100px rgba(0,0,0,.35); display: grid; grid-template-columns: 210px minmax(0, 1fr); overflow: hidden; }
 .set nav { background: var(--bg); border-right: 1px solid var(--line); padding: 18px 10px; display: flex; flex-direction: column; gap: 2px; }
 .set nav h2 { font-size: 15px; margin: 0 10px 14px; }
 .set nav button { display: flex; align-items: center; gap: 10px; background: none; border: 0; font: inherit; color: var(--text2); text-align: left; padding: 8px 10px; border-radius: 7px; cursor: pointer; }
@@ -381,6 +381,9 @@ img.lico { border-radius: 0; }
 .toasts { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); display: flex; flex-direction: column; gap: 8px; align-items: center; z-index: 90; pointer-events: none; }
 .toast { background: #17171a; color: #fff; font-size: 13px; padding: 10px 16px; border-radius: 8px; box-shadow: 0 8px 24px rgba(0,0,0,.3); max-width: 560px; }
 .toast.err { background: #8f1d14; }
+
+.set input.scale { width: 160px; accent-color: var(--accent); }
+.set .scalev { font: 12px var(--mono); color: var(--mute); width: 38px; text-align: right; }
 
 /* launcher rules */
 .sub2 { color: var(--mute); margin: 4px 0 10px; font-size: 13px; }

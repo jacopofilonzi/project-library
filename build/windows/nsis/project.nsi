@@ -82,8 +82,43 @@ OutFile "..\..\..\bin\${INFO_PROJECTNAME}-${ARCH}-installer.exe" # Name of the i
 !endif
 ShowInstDetails show # This will always show the installation details.
 
+# The running app locks its executable: before installing (or uninstalling) offer to close it.
+# Only this user's instance is closed. In silent mode (/S) it is closed without asking.
+# System tools by full path: with Git in the PATH, `find` may be the Unix one.
+!macro closeRunningApp
+    StrCpy $R1 0
+    check:
+        nsExec::ExecToStack '"$SYSDIR\cmd.exe" /c ""$SYSDIR\tasklist.exe" /FI "IMAGENAME eq ${PRODUCT_EXECUTABLE}" /FI "USERNAME eq %USERNAME%" /NH | "$SYSDIR\find.exe" /I "${PRODUCT_EXECUTABLE}""'
+        Pop $R0 # exit code of find: 0 = running
+        Pop $R2 # output, unused
+        StrCmp $R0 0 0 done
+        IntCmp $R1 0 ask
+        IntCmp $R1 5 stuck kill stuck
+    ask:
+        MessageBox MB_OKCANCEL|MB_ICONINFORMATION "${INFO_PRODUCTNAME} is running.$\n$\nClick OK to close it and continue." /SD IDOK IDOK kill
+        Abort
+    kill:
+        nsExec::Exec '"$SYSDIR\taskkill.exe" /F /IM "${PRODUCT_EXECUTABLE}" /FI "USERNAME eq %USERNAME%"'
+        Pop $R0
+        IntOp $R1 $R1 + 1
+        Sleep 800
+        Goto check
+    stuck:
+        MessageBox MB_RETRYCANCEL|MB_ICONEXCLAMATION "${INFO_PRODUCTNAME} could not be closed.$\n$\nQuit it from the tray icon, then click Retry." /SD IDCANCEL IDRETRY retry
+        Abort
+    retry:
+        StrCpy $R1 1
+        Goto check
+    done:
+!macroend
+
 Function .onInit
    !insertmacro wails.checkArchitecture
+   !insertmacro closeRunningApp
+FunctionEnd
+
+Function un.onInit
+   !insertmacro closeRunningApp
 FunctionEnd
 
 Section

@@ -71,7 +71,7 @@
         {#if c.kind === 'project'}
           {@const on = col.index === store.path.length && store.sel === c.name}
           {@const ln = store.launcherFor(c).launcher}
-          <button class="row" class:on title={c.desc || c.name} class:dragging={store.dragging === c.path} {...dragSource(c.path)}
+          <button class="row" class:on title={c.desc || c.name} class:dragging={store.dragging === c.path} {...dragSource(c.path, c.name)}
             onclick={() => clickProject(col.index, c)}
             ondblclick={() => store.open(c)}
             onkeydown={(e) => { if (e.key === 'Enter') { e.preventDefault(); store.open(c) } }}
@@ -84,7 +84,7 @@
         {:else}
           {@const on = store.path[col.index] === c.name}
           <button class="row" class:on title={c.path} class:dragging={store.dragging === c.path} class:drop={store.dropTarget === c.path}
-            {...c.missing ? {} : { ...dragSource(c.path), ...dropTarget(c.path, () => clickDir(col.index, c)) }}
+            {...c.missing ? {} : { ...dragSource(c.path, c.name), ...dropTarget(c.path, () => clickDir(col.index, c)) }}
             onclick={() => clickDir(col.index, c)}
             oncontextmenu={(e) => { e.preventDefault(); openCtx(e, nodeMenu(c)) }}>
             {@html icons.folder()}

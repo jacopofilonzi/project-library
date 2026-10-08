@@ -105,4 +105,4 @@ The configuration is in `config.json` in the folder listed above. Settings → A
 
 ## Versions
 
-Versions are `0.1.x`: every released feature or fix bumps the last number. Releases are on GitHub, with the Windows installer attached: `.github/workflows/release.yml` creates them when a `v0.1.x` tag is pushed (or it can be run by hand from Actions to get just the installer).
+Versions are `x.y.z`: major, feature, fix. Releases are on GitHub, with the Windows installer attached: `.github/workflows/release.yml` creates them when a `vx.y.z` tag is pushed (or it can be run by hand from Actions to get just the installer).

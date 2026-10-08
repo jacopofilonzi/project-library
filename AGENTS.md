@@ -52,10 +52,10 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 
 ## Versions and releases
 
-- We stay on `0.1.x`: every released feature or fix bumps the last number (`0.1.0` → `0.1.1` → …). Moving to `0.2` is the user's decision.
-- The version is written in 12 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh 0.1.x`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
-- Every completed feature or fix ends with `scripts/set-version.sh` and a `chore: version 0.1.x` commit. Tags and releases are made only when the user asks and include the intermediate versions.
-- Release (only when the user asks): annotated `v0.1.x` tag on the current version, push of commits and tag. The tag starts `.github/workflows/release.yml` (runs on Linux and compiles for Windows without cgo): tests, checks, e2e, installer and a GitHub release with notes built from the commits since the previous tag. The workflow stops if the tag does not match the version in `build/config.yml`.
+- Versions are `x.y.z`: `x` major (only when the user decides), `y` feature, `z` fix. A new feature bumps `y` and resets `z` (`1.2.3` → `1.3.0`); a fix bumps `z` (`1.3.0` → `1.3.1`).
+- The version is written in 12 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh x.y.z`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
+- Every completed feature or fix ends with `scripts/set-version.sh` and a `chore: version x.y.z` commit. Tags and releases are made only when the user asks and include the intermediate versions.
+- Release (only when the user asks): annotated `vx.y.z` tag on the current version, push of commits and tag. The tag starts `.github/workflows/release.yml` (runs on Linux and compiles for Windows without cgo): tests, checks, e2e, installer and a GitHub release with notes built from the commits since the previous tag. The workflow stops if the tag does not match the version in `build/config.yml`.
 - CI does not run on normal pushes, to save GitHub Actions minutes (private repository: 2,000 a month; that is why Linux is used, which counts half of Windows). To try the build without releasing: Actions → Release → Run workflow, the installer stays as an artifact for 7 days. Development commits can be pushed freely.
 
 ## Known pitfalls

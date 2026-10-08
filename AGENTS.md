@@ -36,6 +36,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 - `internal/platform`: everything that depends on the operating system, in the `_windows.go`, `_darwin.go`, `_linux.go` files. No branching on `runtime.GOOS` outside of it (`core` only reports the OS to the frontend).
 - `internal/gitinfo`: uses the `git` installed by the user, never a library. No credential handling.
 - `internal/forge`: GitHub and GitLab through the `gh` and `glab` CLIs installed by the user (`gh api`/`glab api`), with their login. Never tokens or libraries. The features that depend on them stay hidden if the CLI is missing or has no account on the host; the exceptions are the hint in the clone dialog and the section in Settings → Git.
+- `internal/update`: new release check through the public GitHub releases API (no login). It runs at startup if `CheckUpdates` is on; the desktop notification is sent by `main.go` (`core.OnUpdate`), once per version (`NotifiedVersion`). The installer is found by the end of its name (`platform.UpdateAsset`).
 - `internal/fsops`: create, rename, move to the trash. Errors have a code (`name.badChars`, `exists`…) that the frontend translates.
 - `frontend/src/lib/state.svelte.ts`: global state (runes). `frontend/src/lib/i18n/{en,it}.ts`: UI texts; `it.ts` must have the same keys as `en.ts` (the type check verifies it).
 
@@ -56,7 +57,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 - The version is written in 12 files (`build/config.yml`, `build/windows/*`, `build/darwin/Info*.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go`, `frontend/package*.json`): change it only with `scripts/set-version.sh x.y.z`, which updates them all and checks that the previous version is left nowhere. Do not use `wails3 update build-assets`: it would regenerate customized files too.
 - Every completed feature or fix ends with `scripts/set-version.sh` and a `chore: version x.y.z` commit. Tags and releases are made only when the user asks and include the intermediate versions.
 - Release (only when the user asks): annotated `vx.y.z` tag on the current version, push of commits and tag. The tag starts `.github/workflows/release.yml` (runs on Linux and compiles for Windows without cgo): tests, checks, e2e, installer and a GitHub release with notes built from the commits since the previous tag. The workflow stops if the tag does not match the version in `build/config.yml`.
-- CI does not run on normal pushes, to save GitHub Actions minutes (private repository: 2,000 a month; that is why Linux is used, which counts half of Windows). To try the build without releasing: Actions → Release → Run workflow, the installer stays as an artifact for 7 days. Development commits can be pushed freely.
+- CI does not run on normal pushes, to save GitHub Actions minutes (the repository is public now, so they are free, but runs still take time). To try the build without releasing: Actions → Release → Run workflow, the installer stays as an artifact for 7 days. Development commits can be pushed freely.
 
 ## Known pitfalls
 

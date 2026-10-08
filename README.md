@@ -18,6 +18,7 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 - **GitHub and GitLab** (with `gh` or `glab` installed and logged in): clone by picking from your repositories, pull/merge requests, issues and CI in the card, publish a local project that has no remote.
 - **Files**: clone, new folder, rename, move to the trash, "Initialize project" on empty folders; the view updates by itself when files change.
 - **System**: tray, start with the system (off / window / tray only), resume from the last location, first-run wizard, configuration export and import.
+- **Updates**: at startup the app checks GitHub for a new release; if there is one you get a desktop notification and a small banner with the direct link to the installer. It can be turned off in Settings → About, where you can also check by hand.
 
 ## How it works
 
@@ -88,6 +89,7 @@ internal/
   languages/          language breakdown of a project
   readme/             finds and reads the README, extracts the description
   gitinfo/            git status and clone through the system git
+  update/             new release check on GitHub
   forge/              GitHub and GitLab through gh and glab: accounts, repositories, PRs, CI, creation
   launcher/           placeholders and editor launch
   fsops/              create, rename, move to the trash
@@ -105,4 +107,4 @@ The configuration is in `config.json` in the folder listed above. Settings → A
 
 ## Versions
 
-Versions are `x.y.z`: major, feature, fix. Releases are on GitHub, with the Windows installer attached: `.github/workflows/release.yml` creates them when a `vx.y.z` tag is pushed (or it can be run by hand from Actions to get just the installer).
+Versions are `x.y.z`: major, feature, fix. Releases are on GitHub, with the Windows installer attached: `.github/workflows/release.yml` creates them when a `vx.y.z` tag is pushed (or it can be run by hand from Actions to get just the installer). The app's update check reads the latest release from the public GitHub API: drafts and pre-releases are never offered, and the installer must keep the `-installer.exe` name ending.

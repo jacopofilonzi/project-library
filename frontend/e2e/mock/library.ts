@@ -1,0 +1,234 @@
+// Backend finto per i test end-to-end: stesse funzioni dei binding di internal/core (Library),
+// con un piccolo albero di progetti in memoria che crea, rinomina ed elimina davvero.
+import { Events } from './runtime'
+import { log, options } from './log'
+
+const ROOT = '/home/u/Development'
+const join = (...p: string[]) => p.join('/')
+const base = (p: string) => p.slice(p.lastIndexOf('/') + 1)
+const parentOf = (p: string) => p.slice(0, p.lastIndexOf('/'))
+
+// ---------- file system finto ----------
+type FNode = { name: string; kind: 'dir' | 'project' | 'empty'; lang?: string; desc?: string; hasGit?: boolean; files?: string[]; children?: FNode[] }
+
+const proj = (name: string, lang: string, files: string[], extra: Partial<FNode> = {}): FNode => ({ name, kind: 'project', lang, files, ...extra })
+const dir = (name: string, children: FNode[]): FNode => ({ name, kind: 'dir', children })
+
+const fs: FNode = dir('Development', [
+  dir('github', [
+    dir('curishi', [proj('play.evons.gg', 'Node', ['package.json', 'README.md', '.git'], { hasGit: true, desc: 'Web game client for the Evons CCG.' })]),
+    dir('jacopofilonzi', [
+      proj('discord-bot-java', 'Java', ['settings.gradle.kts', 'gradlew', '.git'], { hasGit: true }),
+      proj('NtfyJS', 'Node', ['package.json', 'README.md', '.git'], { hasGit: true, desc: 'An ntfy client for Javascript and Typescript' }),
+      proj('TimeTable', '', ['README.md', '.git'], { hasGit: true, desc: "Subscribe to your university's lesson timetable." }),
+    ]),
+  ]),
+  dir('local', [
+    { name: 'Nuova cartella', kind: 'empty' },
+    dir('UNI', [dir('Ingegneria del Software', [proj('BuildPatternDemo', 'Java', ['build.gradle.kts', 'gradlew'])])]),
+    proj('awake', 'Node', ['package.json', 'README.md', '.git'], { hasGit: true, desc: 'Self-hosted Wake-on-LAN over the internet.' }),
+    proj('dity-bot-rs', 'Rust', ['Cargo.toml', '.git'], { hasGit: true }),
+  ]),
+])
+
+function find(path: string): { node: FNode; parent: FNode | null } | null {
+  if (path === ROOT) return { node: fs, parent: null }
+  if (!path.startsWith(ROOT + '/')) return null
+  let node = fs
+  let parent: FNode | null = null
+  for (const seg of path.slice(ROOT.length + 1).split('/')) {
+    const next = node.children?.find((c) => c.name === seg)
+    if (!next) return null
+    parent = node
+    node = next
+  }
+  return { node, parent }
+}
+
+const globRe = (g: string) => new RegExp('^' + g.replace(/[.+^${}()|[\]\\]/g, '\\$&').replace(/\*/g, '.*').replace(/\?/g, '.') + '$', 'i')
+
+function toTree(n: FNode, path: string): any {
+  if (n.kind === 'project') {
+    const ruleLaunchers: string[] = []
+    for (const r of config.launcherRules ?? []) {
+      if (!ruleLaunchers.includes(r.launcher) && r.patterns.some((p) => (n.files ?? []).some((f) => globRe(p).test(f)))) ruleLaunchers.push(r.launcher)
+    }
+    return { name: n.name, path, kind: 'project', lang: n.lang, desc: n.desc, hasGit: n.hasGit, count: 1, ruleLaunchers }
+  }
+  const children = (n.children ?? [])
+    .map((c) => toTree(c, join(path, c.name)))
+    .sort((a, b) => (a.kind === 'project') === (b.kind === 'project') ? a.name.toLowerCase().localeCompare(b.name.toLowerCase()) : a.kind === 'project' ? 1 : -1)
+  const kind = n.kind === 'empty' || !children.length ? (n === fs ? 'dir' : 'empty') : 'dir'
+  return { name: n.name, path, kind, count: children.reduce((s: number, c: any) => s + c.count, 0), children }
+}
+
+// ---------- git finto ----------
+const gitData: Record<string, any> = {
+  [join(ROOT, 'github/jacopofilonzi/TimeTable')]: { isRepo: true, branch: 'main', remote: 'git@github.com:jacopofilonzi/TimeTable.git', remoteWeb: 'https://github.com/jacopofilonzi/TimeTable', hasUpstream: true, ahead: 0, behind: 0, dirty: 0, commit: { hash: 'af8c550', subject: 'Feat: usage tracking', author: 'Filonzi Jacopo', time: 1791000000 } },
+  [join(ROOT, 'github/jacopofilonzi/NtfyJS')]: { isRepo: true, branch: 'main', remote: 'https://github.com/jacopofilonzi/NtfyJS', remoteWeb: 'https://github.com/jacopofilonzi/NtfyJS', hasUpstream: true, ahead: 1, behind: 0, dirty: 7, commit: { hash: '5428c14', subject: 'Blanked gitignore', author: 'Filonzi Jacopo', time: 1788000000 } },
+  [join(ROOT, 'local/awake')]: { isRepo: true, branch: 'master', remote: '', remoteWeb: '', hasUpstream: false, ahead: 0, behind: 0, dirty: 0, commit: { hash: '06e157a', subject: 'Initial Awake implementation', author: 'Filonzi Jacopo', time: 1790000000 } },
+}
+const gitOf = (p: string) => gitData[p] ?? { isRepo: true, branch: 'main', remote: 'git@github.com:x/y.git', remoteWeb: 'https://github.com/x/y', hasUpstream: true, ahead: 0, behind: 0, dirty: 0, commit: null }
+
+// ---------- config ----------
+let config: any = {
+  version: 2,
+  language: options.language ?? 'en',
+  theme: 'light',
+  roots: [ROOT],
+  launchers: [
+    { id: 'vscode', name: 'VS Code', command: '', args: '"{path}"', enabled: true, builtin: 'vscode' },
+    { id: 'intellij', name: 'IntelliJ IDEA', command: '', args: '"{path}"', enabled: true, builtin: 'intellij' },
+  ],
+  defaultLauncher: 'vscode',
+  launcherRules: [{ patterns: ['pom.xml', 'build.gradle*', 'settings.gradle*', 'gradlew', '*.iml'], launcher: 'intellij' }],
+  projectLaunchers: {},
+  markers: ['.git', 'package.json', 'README*'],
+  ignore: ['node_modules'],
+  filesAsProject: true,
+  showEmpty: true,
+  maxDepth: 20,
+  followLinks: false,
+  overrides: {},
+  gitPath: '',
+  gitInfo: true,
+  gitFetch: false,
+  gitFetchMinutes: 15,
+  gitWarningShown: true,
+  recent: [{ path: join(ROOT, 'local/awake'), launcher: 'vscode', at: Date.now() - 3600_000 }],
+  startMode: 'off',
+  closeToTray: false,
+  hotkey: 'CmdOrCtrl+Alt+Space',
+  spotlightHotkey: 'Super+Ctrl+K',
+  lastPath: options.lastSelected ? parentOf(options.lastSelected) : '',
+  lastSelected: options.lastSelected ?? '',
+  setupDone: !options.firstRun,
+}
+
+const gitAvailable = () => !options.noGit
+const state = () => ({ config: structuredClone(config), os: 'windows', version: '0.0.0-e2e', gitPath: gitAvailable() ? 'C:/Git/git.exe' : '', gitAvailable: gitAvailable(), configPath: '/cfg/config.json', home: '/home/u' })
+const emitTree = () => Events.Emit('tree:updated', Tree_())
+const emitConfig = () => Events.Emit('config:updated', structuredClone(config))
+const fail = (code: string) => Promise.reject(new Error(code))
+const Tree_ = () => toTree(fs, ROOT)
+
+function nameProblem(name: string): string {
+  if (!name.trim()) return 'name.empty'
+  if (name.includes('/')) return 'name.separator'
+  if (/[<>:"\\|?*]/.test(name)) return 'name.badChars'
+  return ''
+}
+
+// ---------- binding ----------
+export const State = async () => state()
+export const SaveConfig = async (c: any) => { log('SaveConfig', c); config = structuredClone(c); emitConfig(); emitTree(); return state() }
+export const Tree = async () => Tree_()
+export const Rescan = async () => { log('Rescan'); return Tree_() }
+export const Dirty = async () => ({ [join(ROOT, 'github/jacopofilonzi/NtfyJS')]: 7 })
+export const RefreshDirty = async () => {}
+export const LauncherStatus = async () => ({ vscode: 'C:/VSCode/Code.exe', intellij: 'C:/JetBrains/idea64.exe' })
+
+export async function Readme(path: string) {
+  const f = find(path)?.node
+  if (!f?.files?.includes('README.md')) return { found: false, name: '', format: 'markdown', content: '', truncated: false }
+  return { found: true, name: 'README.md', format: 'markdown', content: `# ${f.name}\n\n${f.desc ?? ''}\n\n## Usage\n\nRun \`make dev\`.`, truncated: false }
+}
+export const GitInfo = async (path: string) => (find(path)?.node.hasGit ? structuredClone(gitOf(path)) : { isRepo: false })
+export const GitChanges = async (path: string) => Array.from({ length: gitOf(path).dirty }, (_, i) => ({ status: i === 0 ? 'M' : '??', path: `src/file${i}.ts` }))
+export const GitFetch = async (path: string) => { log('GitFetch', path) }
+export const GitPull = async (path: string) => { log('GitPull', path); return 'Already up to date.' }
+
+export async function Open(path: string, launcher: string) {
+  log('Open', path, launcher)
+  config.recent = [{ path, launcher, at: Date.now() }, ...config.recent.filter((r: any) => r.path !== path)]
+  emitConfig()
+}
+export const TestLauncher = async (l: any, path: string) => { log('TestLauncher', l.id, path) }
+export const DetectEditor = async (id: string) => (id === 'vscode' ? 'C:/VSCode/Code.exe' : 'C:/JetBrains/idea64.exe')
+export const ResolveCommand = async (cmd: string) => cmd
+export const Reveal = async (path: string) => { log('Reveal', path) }
+export const OpenURL = async (url: string) => { log('OpenURL', url) }
+
+export async function CheckName(parent: string, name: string) {
+  const p = nameProblem(name)
+  if (p) return p
+  return find(parent)?.node.children?.some((c) => c.name.toLowerCase() === name.trim().toLowerCase()) ? 'exists' : ''
+}
+export async function Mkdir(parent: string, name: string) {
+  const code = await CheckName(parent, name)
+  if (code) return fail(code)
+  const p = find(parent)!.node
+  if (p.kind === 'empty') { p.kind = 'dir'; p.children = [] }
+  p.children!.push({ name: name.trim(), kind: 'empty' })
+  emitTree()
+  return join(parent, name.trim())
+}
+export async function Rename(path: string, newName: string) {
+  const f = find(path)
+  if (!f?.parent) return fail('outsideRoots')
+  const code = await CheckName(parentOf(path), newName)
+  if (code && code !== 'exists') return fail(code)
+  f.node.name = newName.trim()
+  emitTree()
+  return join(parentOf(path), newName.trim())
+}
+export const IsEmptyDir = async (path: string) => find(path)?.node.kind === 'empty'
+export async function Trash(path: string) {
+  log('Trash', path)
+  const f = find(path)
+  if (!f?.parent) return fail('outsideRoots')
+  f.parent.children = f.parent.children!.filter((c) => c !== f.node)
+  emitTree()
+}
+export async function SetOverride(path: string, kind: string) {
+  if (kind) config.overrides[path] = kind
+  else delete config.overrides[path]
+  const n = find(path)?.node
+  if (n && kind === 'project') n.kind = 'project'
+  emitConfig()
+  emitTree()
+  return state()
+}
+export const CreateRoot = async (path: string) => { log('CreateRoot', path) }
+export const Exists = async (path: string) => !!find(path)
+export async function ParseRepoURL(url: string) {
+  const m = url.trim().match(/github\.com[/:]([^/]+)\/([^/]+?)(?:\.git)?\/?$/)
+  return m ? { ok: true, host: 'github.com', owner: m[1], repo: m[2] } : { ok: false, host: '', owner: '', repo: '' }
+}
+export async function Clone(id: string, url: string, parent: string, name: string) {
+  log('Clone', url, parent, name)
+  Events.Emit('clone:progress', { id, phase: 'Receiving objects', percent: 100 })
+  let node = fs
+  for (const seg of parent.slice(ROOT.length + 1).split('/').filter(Boolean)) {
+    let next = node.children?.find((c) => c.name === seg)
+    if (!next) { next = dir(seg, []); node.children!.push(next) }
+    if (next.kind === 'empty') { next.kind = 'dir'; next.children = [] }
+    node = next
+  }
+  node.children!.push(proj(name, 'Node', ['README.md', '.git'], { hasGit: true }))
+  emitTree()
+  return join(parent, name)
+}
+export const CancelClone = async (id: string) => { log('CancelClone', id) }
+export const DetectGit = async (path: string) => (gitAvailable() || path ? 'C:/Git/git.exe' : '')
+export const GitInstallInfo = async () => ({ command: 'winget install --id Git.Git -e --source winget', canRun: true, url: 'https://git-scm.com/download/win' })
+export const RunGitInstall = async () => { log('RunGitInstall') }
+export const PickFolder = async () => ''
+export const PickFile = async () => ''
+export async function InitProject(path: string, git: boolean, readme: boolean) {
+  log('InitProject', path, git, readme)
+  const n = find(path)!.node
+  n.kind = 'project'
+  n.files = [...(readme ? ['README.md'] : []), ...(git ? ['.git'] : [])]
+  n.hasGit = git
+  emitTree()
+}
+export async function SetLastLocation(dir: string, selected: string) {
+  config.lastPath = dir
+  config.lastSelected = selected
+}
+export const ShowInMain = async (path: string) => { log('ShowInMain', path) }
+export const RunInMain = async (cmd: string) => { log('RunInMain', cmd) }
+export const OpenSpotlight = async () => { log('OpenSpotlight') }
+export const HideSpotlight = async () => { log('HideSpotlight') }
+export const Quit = async () => { log('Quit') }

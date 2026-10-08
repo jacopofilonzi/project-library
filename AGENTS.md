@@ -16,6 +16,7 @@ wails3 generate bindings -clean=true -ts -i   # rigenera frontend/bindings dopo 
 go test ./internal/...
 go vet ./...                   # con GOARCH=amd64 su Windows
 cd frontend && npx svelte-check --tsconfig ./tsconfig.json
+cd frontend && npm run test:e2e   # Playwright: interfaccia in Chromium con backend finto (e2e/mock), niente Wails né disco
 ```
 
 Il pacchetto `internal/platform` va controllato anche per gli altri sistemi: `GOOS=darwin go vet ./internal/...` e `GOOS=linux go vet ./internal/...` (l'app intera richiede cgo fuori da Windows e non si cross-compila).
@@ -39,7 +40,8 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 - Ogni testo dell'interfaccia passa da `t()`; aggiungere sempre sia la chiave inglese sia quella italiana.
 - Eliminare significa spostare nel Cestino, mai cancellare definitivamente.
 - Commit piccoli e per passo (`feat:`, `fix:`, `chore:`, `docs:`), mai un unico commit alla fine.
-- Dopo una modifica: `go test`, `go vet`, `svelte-check` e una build devono passare.
+- Dopo una modifica: `go test`, `go vet`, `svelte-check` (0 errori e 0 avvisi), `npm run test:e2e` e una build devono passare.
+- Un metodo nuovo in `internal/core` va aggiunto anche al backend finto `frontend/e2e/mock/library.ts`, altrimenti i test e2e non lo trovano.
 
 ## Insidie note
 

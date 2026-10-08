@@ -24,7 +24,8 @@ wails3 dev            # sviluppo con hot reload
 wails3 build          # build di produzione in bin/
 wails3 package ARCH=amd64   # installer Windows (NSIS, per utente) in bin/; serve makensis nel PATH
 go test ./internal/...
-cd frontend && npm run check   # controllo dei tipi Svelte/TypeScript
+cd frontend && npm run check      # controllo dei tipi Svelte/TypeScript
+cd frontend && npm run test:e2e   # test end-to-end (Playwright, backend finto)
 ```
 
 I binding TypeScript (`frontend/bindings/`) sono generati da `wails3 build`/`wails3 dev` e non sono nel repo.

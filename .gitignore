@@ -21,3 +21,7 @@ desktop.ini
 
 # task runner di Wails
 /.task/
+
+# test end-to-end
+/frontend/test-results/
+/frontend/playwright-report/

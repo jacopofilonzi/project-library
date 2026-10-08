@@ -1,6 +1,6 @@
 # AGENTS.md
 
-Guida per gli agenti (e le persone) che lavorano su questo repo. Le decisioni di prodotto sono in [PLAN.md](PLAN.md); il riferimento visivo approvato è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html) (congelato: non modificarlo).
+Guida per gli agenti (e le persone) che lavorano su questo repo. Funzionalità, regole di comportamento e differenze tra sistemi sono descritte in [README.md](README.md); il riferimento visivo approvato è [mockups/09-colonne-v2.html](mockups/09-colonne-v2.html) (congelato: non modificarlo).
 
 ## Cos'è
 
@@ -45,6 +45,13 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 - Commit piccoli e per passo (`feat:`, `fix:`, `chore:`, `docs:`), mai un unico commit alla fine.
 - Dopo una modifica: `go test`, `go vet`, `svelte-check` (0 errori e 0 avvisi), `npm run test:e2e` e una build devono passare.
 - Un metodo nuovo in `internal/core` va aggiunto anche al backend finto `frontend/e2e/mock/library.ts`, altrimenti i test e2e non lo trovano.
+- La documentazione si aggiorna insieme al codice, nello stesso commit o subito dopo: una funzione nuova, una regola che cambia, un comando o un pacchetto nuovo vanno riportati in README.md (e qui, se riguardano chi sviluppa). Non si accumula a fine lavoro.
+
+## Versioni e release
+
+- Si resta su `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero (`0.1.0` → `0.1.1` → …). Si passa a `0.2` solo se lo decide l'utente.
+- La versione è scritta in più file, da aggiornare tutti insieme: `build/config.yml` (`info.version`), `build/windows/info.json`, `build/darwin/Info.plist`, `build/darwin/Info.dev.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go` (`Version`) e `frontend/package.json` (+ `npm install --package-lock-only`). Si modificano a mano: `wails3 update build-assets` rigenererebbe anche file personalizzati.
+- Rilascio: commit `chore: release v0.1.x`, tag annotato `v0.1.x`, push di commit e tag, poi una release su GitHub con le novità e l'installer `bin/project-library-amd64-installer.exe` allegato.
 
 ## Insidie note
 

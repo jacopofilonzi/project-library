@@ -1,7 +1,8 @@
 <script lang="ts">
   import { store } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
-  import { lib, errMessage, type Launcher, type InstallInfo } from '../lib/api'
+  import { lib, errMessage, type Launcher, type InstallInfo, type Preset } from '../lib/api'
+  import { suggestedLauncher } from '../lib/presets'
   import LauncherIcon from './LauncherIcon.svelte'
 
   const sections = ['general', 'launchers', 'scan', 'git', 'exceptions', 'shortcuts', 'about'] as const
@@ -68,36 +69,113 @@
     editing = null
     store.save((c) => {
       const [gone] = c.launchers.splice(i, 1)
-      c.launcherRules = c.launcherRules.filter((r) => r.launcher !== gone.id)
+      c.rules = c.rules.filter((r) => r.launcher !== gone.id)
       for (const [p, id] of Object.entries(c.projectLaunchers)) if (id === gone.id) delete c.projectLaunchers[p]
     })
   }
 
-  // ---------- regole ----------
-  function addRule() {
-    const id = store.cfg.launchers.find((l) => l.builtin === 'intellij')?.id ?? store.cfg.launchers[0]?.id ?? ''
-    store.save((c) => c.launcherRules.push({ patterns: [], launcher: id }))
+  // ---------- regole (preset → launcher, in ordine di priorità) ----------
+  let picking = $state(false)
+  let allPresets = $derived([...store.catalog, ...store.cfg.presets])
+  let usedPresets = $derived(new Set(store.cfg.rules.map((r) => r.preset)))
+
+  function addRule(preset: Preset) {
+    picking = false
+    const id = suggestedLauncher(preset.id)?.id ?? ''
+    store.save((c) => {
+      c.rules.push({ preset: preset.id, launcher: id })
+      // un editor installato ma spento si accende: la regola altrimenti verrebbe saltata
+      const l = c.launchers.find((x) => x.id === id)
+      if (l) l.enabled = true
+    })
   }
   function moveRule(i: number, d: number) {
     store.save((c) => {
-      const [r] = c.launcherRules.splice(i, 1)
-      c.launcherRules.splice(i + d, 0, r)
+      const [r] = c.rules.splice(i, 1)
+      c.rules.splice(i + d, 0, r)
     })
   }
-  function addPattern(e: KeyboardEvent, i: number) {
+  // "Personalizza": copia modificabile del preset integrato, che prende il suo posto nella regola
+  function customize(i: number, p: Preset) {
+    const id = 'custom-' + Date.now()
+    store.save((c) => {
+      c.presets.push({ id, name: t('settings.launchers.copyName', { name: p.name }), patterns: [...p.patterns], builtin: false })
+      c.rules[i].preset = id
+    })
+  }
+
+  // ---------- preset dell'utente ----------
+  function newPreset() {
+    picking = false
+    const id = 'custom-' + Date.now()
+    store.save((c) => c.presets.push({ id, name: t('settings.launchers.newPreset'), patterns: [], builtin: false }))
+  }
+  function presetIndex(c: { presets: Preset[] }, id: string) {
+    return c.presets.findIndex((p) => p.id === id)
+  }
+  function renamePreset(id: string, name: string) {
+    if (name.trim()) store.save((c) => (c.presets[presetIndex(c, id)].name = name.trim()))
+  }
+  function addPattern(e: KeyboardEvent, id: string) {
     const el = e.currentTarget as HTMLInputElement
     if (e.key !== 'Enter' || !el.value.trim()) return
     const v = el.value.trim()
     el.value = ''
-    if (!store.cfg.launcherRules[i].patterns.includes(v)) store.save((c) => c.launcherRules[i].patterns.push(v))
+    store.save((c) => {
+      const p = c.presets[presetIndex(c, id)]
+      if (!p.patterns.includes(v)) p.patterns.push(v)
+    })
   }
+  // elimina il preset e le regole che lo usano
+  function deletePreset(id: string) {
+    store.save((c) => {
+      c.presets.splice(presetIndex(c, id), 1)
+      c.rules = c.rules.filter((r) => r.preset !== id)
+    })
+  }
+
   let forcedProjects = $derived(Object.entries(store.cfg.projectLaunchers).sort(([a], [b]) => a.localeCompare(b)))
 
   async function detect() {
+    const added = (await lib.SyncEditors()) ?? []
     const found: string[] = []
     for (const l of store.cfg.launchers.filter((x) => x.builtin)) if (await lib.DetectEditor(l.builtin!)) found.push(l.name)
     await store.refreshLaunchers()
-    store.toast(found.length ? t('settings.launchers.detected', { list: found.join(', ') }) : t('settings.launchers.detectedNone'))
+    if (added.length) store.toast(t('settings.launchers.added', { list: added.join(', ') }))
+    else store.toast(found.length ? t('settings.launchers.detected', { list: found.join(', ') }) : t('settings.launchers.detectedNone'))
+  }
+
+  // apertura dal wizard: mostra direttamente le regole
+  $effect(() => {
+    const a = store.settingsAnchor
+    if (!a || !pb) return
+    if (a === 'rules' && !store.cfg.rules.length) picking = true
+    queueMicrotask(() => document.getElementById(a)?.scrollIntoView({ block: 'start' }))
+    store.settingsAnchor = ''
+  })
+
+  // ---------- export / import ----------
+  async function exportConfig() {
+    try {
+      const p = await lib.ExportConfig(t('settings.about.export'))
+      if (p) store.toast(t('settings.about.exported', { path: p }))
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
+  }
+  let importAsk = $state(false)
+  async function importConfig() {
+    importAsk = false
+    try {
+      const before = JSON.stringify(store.cfg)
+      store.applyState(await lib.ImportConfig(t('settings.about.import')))
+      if (JSON.stringify(store.cfg) === before) return // annullato o identico
+      store.setTree(await lib.Tree())
+      store.refreshLaunchers()
+      store.toast(t('settings.about.imported'))
+    } catch (e) {
+      store.toast(errMessage(e), true)
+    }
   }
   async function browseExe() {
     const p = await lib.PickFile(t('settings.launchers.exe')).catch(() => '')
@@ -220,31 +298,64 @@
           <div style="display:flex;gap:8px;margin-top:4px"><button class="btn" onclick={addLauncher}>{t('settings.launchers.add')}</button><button class="btn" onclick={detect}>{t('settings.launchers.detect')}</button></div>
           <div class="note">{t('settings.launchers.note', { mod: store.mod })}</div>
 
-          <div class="grp">{t('settings.launchers.rules')}</div>
+          <div class="grp" id="rules">{t('settings.launchers.rules')}</div>
           <p class="sub2">{t('settings.launchers.rulesText')}</p>
-          {#each store.cfg.launcherRules as r, i (i)}
+          {#each store.cfg.rules as r, i (r.preset + ':' + i)}
+            {@const p = store.presetById(r.preset)}
             <div class="rule">
               <div class="ord">
                 <button aria-label={t('settings.launchers.up')} disabled={i === 0} onclick={() => moveRule(i, -1)}>▲</button>
-                <button aria-label={t('settings.launchers.down')} disabled={i === store.cfg.launcherRules.length - 1} onclick={() => moveRule(i, 1)}>▼</button>
+                <button aria-label={t('settings.launchers.down')} disabled={i === store.cfg.rules.length - 1} onclick={() => moveRule(i, 1)}>▼</button>
               </div>
               <div class="rb">
-                <span class="lbl">{t('settings.launchers.ifContains')}</span>
-                <div class="chips">
-                  {#each r.patterns as p, j (p)}<span>{p}<button aria-label="×" onclick={() => store.save((c) => c.launcherRules[i].patterns.splice(j, 1))}>×</button></span>{/each}
-                  <input type="text" placeholder={t('settings.scan.addChip')} onkeydown={(e) => addPattern(e, i)} />
-                </div>
+                <div><b>{p?.name ?? r.preset}</b>
+                  {#if !p}<span class="tg bad">{t('settings.launchers.presetMissing')}</span>{:else if p.builtin}<span class="tg">{t('settings.launchers.builtinTag')}</span>{:else}<span class="tg">{t('settings.launchers.custom')}</span>{/if}</div>
+                {#if p}<code class="pats" title={p.patterns.join('  ')}>{p.patterns.join('  ') || t('settings.launchers.noPatterns')}</code>{/if}
               </div>
+              {#if p?.builtin}<button class="btn" title={t('settings.launchers.customizeSub')} onclick={() => customize(i, p)}>{t('settings.launchers.customize')}</button>{/if}
               <span class="lbl">{t('settings.launchers.openWith')}</span>
-              <select value={r.launcher} onchange={(e) => store.save((c) => (c.launcherRules[i].launcher = (e.currentTarget as HTMLSelectElement).value))}>
+              <select value={r.launcher} onchange={(e) => store.save((c) => (c.rules[i].launcher = (e.currentTarget as HTMLSelectElement).value))}>
                 {#each store.cfg.launchers as l (l.id)}<option value={l.id}>{l.name}{l.enabled ? '' : ` (${t('settings.launchers.disabled')})`}</option>{/each}
               </select>
-              <button class="x" aria-label={t('settings.launchers.removeRule')} title={t('settings.launchers.removeRule')} onclick={() => store.save((c) => c.launcherRules.splice(i, 1))}>✕</button>
+              <button class="x" aria-label={t('settings.launchers.removeRule')} title={t('settings.launchers.removeRule')} onclick={() => store.save((c) => c.rules.splice(i, 1))}>✕</button>
             </div>
           {:else}
             <div class="note">{t('settings.launchers.noRules')}</div>
           {/each}
-          <button class="btn" style="margin-top:4px" onclick={addRule}>{t('settings.launchers.addRule')}</button>
+          {#if picking}
+            <div class="pick">
+              <div class="pk-h">{t('settings.launchers.library')}<button class="x" aria-label={t('settings.launchers.close')} onclick={() => (picking = false)}>✕</button></div>
+              {#each allPresets as p (p.id)}
+                {@const sl = suggestedLauncher(p.id)}
+                <button class="pk" disabled={usedPresets.has(p.id)} onclick={() => addRule(p)}>
+                  <span class="pn"><b>{p.name}</b>{#if !p.builtin}<span class="tg">{t('settings.launchers.custom')}</span>{/if}<code>{p.patterns.join('  ')}</code></span>
+                  {#if usedPresets.has(p.id)}<span class="lbl">{t('settings.launchers.inUse')}</span>
+                  {:else if sl}<span class="lbl">→</span><LauncherIcon launcher={sl} /><span class="sl">{sl.name}</span>{/if}
+                </button>
+              {/each}
+            </div>
+          {:else}
+            <div style="display:flex;gap:8px;margin-top:4px"><button class="btn" onclick={() => (picking = true)}>{t('settings.launchers.addRule')}</button><button class="btn" onclick={newPreset}>{t('settings.launchers.addPreset')}</button></div>
+          {/if}
+
+          <div class="grp">{t('settings.launchers.presets')}</div>
+          <p class="sub2">{t('settings.launchers.presetsText')}</p>
+          {#each store.cfg.presets as p (p.id)}
+            <div class="rule preset">
+              <div class="rb">
+                <input type="text" class="pname" aria-label={t('settings.launchers.name')} value={p.name} onchange={(e) => renamePreset(p.id, (e.currentTarget as HTMLInputElement).value)} />
+                <div class="chips">
+                  {#each p.patterns as pat, j (pat)}<span>{pat}<button aria-label="×" onclick={() => store.save((c) => c.presets[presetIndex(c, p.id)].patterns.splice(j, 1))}>×</button></span>{/each}
+                  <input type="text" placeholder={t('settings.scan.addChip')} onkeydown={(e) => addPattern(e, p.id)} />
+                </div>
+              </div>
+              {#if !usedPresets.has(p.id)}<button class="btn" onclick={() => addRule(p)}>{t('settings.launchers.useInRule')}</button>{/if}
+              <button class="x" aria-label={t('settings.launchers.deletePreset')} title={t('settings.launchers.deletePreset')} onclick={() => deletePreset(p.id)}>✕</button>
+            </div>
+          {:else}
+            <div class="note">{t('settings.launchers.noPresets')}</div>
+          {/each}
+          <div class="note">{t('settings.launchers.patternsHelp')}</div>
 
           <div class="grp">{t('settings.launchers.forced')}</div>
           {#if forcedProjects.length}
@@ -333,6 +444,11 @@
           <div class="grp">Project Library</div>
           <div class="f"><div class="l"><b>{t('settings.about.version')}</b><span>{store.st?.version} · {store.os}</span></div></div>
           <div class="f"><div class="l"><b>{t('settings.about.config')}</b><span class="selectable">{store.st?.configPath}</span></div><button class="btn" onclick={() => store.reveal(configDir)}>{t('settings.about.openFolder')}</button></div>
+          <div class="f"><div class="l"><b>{t('settings.about.export')}</b><span>{t('settings.about.exportSub')}</span></div><button class="btn" onclick={exportConfig}>{t('settings.about.exportBtn')}</button></div>
+          <div class="f"><div class="l"><b>{t('settings.about.import')}</b><span>{t('settings.about.importSub')}</span></div><button class="btn" onclick={() => (importAsk = !importAsk)}>{t('settings.about.importBtn')}</button></div>
+          {#if importAsk}
+            <div class="note warn">{t('settings.about.importConfirm')} <button class="btn d" onclick={importConfig}>{t('settings.about.importGo')}</button> <button class="btn" onclick={() => (importAsk = false)}>{t('settings.about.cancel')}</button></div>
+          {/if}
           <div class="f"><div class="l"><b>{t('settings.about.wizard')}</b><span>{t('settings.about.wizardSub')}</span></div><button class="btn" onclick={() => { store.settingsOpen = false; store.wizardOpen = true }}>{t('settings.about.runWizard')}</button></div>
         {/if}
       </div>

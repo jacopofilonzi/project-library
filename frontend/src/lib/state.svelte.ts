@@ -1,6 +1,6 @@
 // Stato globale dell'app (Svelte 5 runes).
 import { Events } from '@wailsio/runtime'
-import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher } from './api'
+import { lib, errMessage, normalizeState, normalizeConfig, type AppState, type Config, type Node, type Launcher, type Preset } from './api'
 import { setLang, t } from './i18n/index.svelte'
 
 export type Dialog =
@@ -23,6 +23,8 @@ class Store {
   tree = $state<Node | null>(null)
   dirty = $state<Record<string, number>>({})
   launcherStatus = $state<Record<string, string>>({})
+  /** catalogo dei preset integrati (dall'app) */
+  catalog = $state<Preset[]>([])
 
   /** percorso corrente come nomi a partire dalla radice dell'albero */
   path = $state<string[]>([])
@@ -74,6 +76,11 @@ class Store {
       if (l) return { launcher: l, reason: 'rule' }
     }
     return { launcher: this.defaultLauncher, reason: 'default' }
+  }
+
+  /** preset per id, cercato nel catalogo e poi tra quelli dell'utente (come nel backend) */
+  presetById(id: string): Preset | undefined {
+    return this.catalog.find((p) => p.id === id) ?? this.cfg.presets.find((p) => p.id === id)
   }
 
   /** sceglie (id) o toglie ('') il launcher fisso di un progetto */
@@ -277,11 +284,15 @@ class Store {
     }
   }
 
-  openSettings(section?: string) {
+  /** elemento (id) delle impostazioni da mostrare all'apertura */
+  settingsAnchor = $state('')
+
+  openSettings(section?: string, anchor = '') {
     this.paletteOpen = false
     this.ctx = null
     this.dialog = null
     if (section) this.settingsSection = section
+    this.settingsAnchor = anchor
     this.settingsOpen = true
   }
 
@@ -295,6 +306,7 @@ class Store {
   async init() {
     this.applyState(await lib.State())
     this.setTree(await lib.Tree())
+    this.catalog = ((await lib.Presets()) ?? []).map((p) => ({ ...p, patterns: p.patterns ?? [], builtin: true }))
     this.dirty = ((await lib.Dirty()) ?? {}) as Record<string, number>
     this.refreshLaunchers()
     this.wizardOpen = !this.cfg.setupDone

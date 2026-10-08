@@ -24,7 +24,9 @@
   let gitChecked = $state(false)
   let copied = $state(false)
 
-  const steps = needGit ? ['lang', 'roots', 'editors', 'git'] : ['lang', 'roots', 'editors']
+  const steps = needGit ? ['lang', 'roots', 'editors', 'git', 'multi'] : ['lang', 'roots', 'editors', 'multi']
+  // ultimo passo: chi usa più IDE viene portato alle associazioni preset → editor
+  let multi = $state(false)
   let step = $state(0)
   let busy = $state(false)
 
@@ -76,7 +78,7 @@
     setTimeout(() => (copied = false), 1500)
   }
 
-  let canNext = $derived(steps[step] !== 'roots' || roots.length > 0)
+  let canNext = $derived((steps[step] !== 'roots' || roots.length > 0) && (steps[step] !== 'git' || !!gitFound))
 
   async function finish() {
     busy = true
@@ -97,6 +99,7 @@
       store.setTree(await lib.Rescan())
       store.go([])
       store.wizardOpen = false
+      if (multi) store.openSettings('launchers', 'rules')
     }
     busy = false
   }
@@ -177,16 +180,22 @@
           <div style="display:flex;gap:6px"><input type="text" style="flex:1" bind:value={gitPath} spellcheck="false" /><button class="btn" onclick={recheck}>{t('wizard.git.recheck')}</button></div>
           {#if gitChecked && !gitFound}<div class="note warn">{t('wizard.git.stillMissing')}</div>{/if}
         {/if}
+
+      {:else if steps[step] === 'multi'}
+        <h2>{t('wizard.multi.title')}</h2>
+        <p class="sub">{t('wizard.multi.sub')}</p>
+        <button class="opt" class:on={!multi} onclick={() => (multi = false)}><span><b>{t('wizard.multi.one')}</b><small>{t('wizard.multi.oneSub')}</small></span>{#if !multi}✓{/if}</button>
+        <button class="opt" class:on={multi} onclick={() => (multi = true)}><span><b>{t('wizard.multi.many')}</b><small>{t('wizard.multi.manySub')}</small></span>{#if multi}✓{/if}</button>
       {/if}
     </div>
     <div class="ft">
       {#if step > 0}<button class="btn" onclick={() => step--}>{t('wizard.back')}</button>{/if}
       <span class="sp"></span>
-      {#if steps[step] === 'git' && !gitFound}<button class="btn" disabled={busy} onclick={finish}>{t('wizard.skip')}</button>{/if}
+      {#if steps[step] === 'git' && !gitFound}<button class="btn" onclick={() => step++}>{t('wizard.skip')}</button>{/if}
       {#if step < steps.length - 1}
         <button class="btn p" disabled={!canNext} onclick={() => step++}>{t('wizard.next')}</button>
       {:else}
-        <button class="btn p" disabled={busy || !roots.length || (steps[step] === 'git' && !gitFound)} onclick={finish}>{t('wizard.finish')}</button>
+        <button class="btn p" disabled={busy || !roots.length} onclick={finish}>{t('wizard.finish')}</button>
       {/if}
     </div>
   </div>

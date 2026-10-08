@@ -2,7 +2,8 @@
   import { untrack, tick } from 'svelte'
   import { store } from '../lib/state.svelte'
   import { t } from '../lib/i18n/index.svelte'
-  import { icons, colorOf } from '../lib/icons'
+  import { icons } from '../lib/icons'
+  import LangBar from './LangBar.svelte'
   import { lib, errMessage, type Node, type GitInfo, type ReadmeResult } from '../lib/api'
   import OpenWith from './OpenWith.svelte'
   import GitPanel from './GitPanel.svelte'
@@ -63,7 +64,7 @@
       <div>
         <div class="path selectable">{node.path}</div>
         <h1>{node.name}</h1>
-        {#if node.lang}<span class="tag"><span class="dot" style="background:{colorOf(node.lang)}"></span>{node.lang}</span>{/if}
+        <LangBar path={node.path} />
       </div>
       <div class="acts">
         <OpenWith {node} />

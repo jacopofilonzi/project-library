@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { tick, onMount } from 'svelte'
+  import { tick, onMount, untrack } from 'svelte'
   import { Events } from '@wailsio/runtime'
   import { store, type Indexed } from '../lib/state.svelte'
   import { t, tn, ago } from '../lib/i18n/index.svelte'
@@ -12,7 +12,8 @@
   let { spotlight = false }: { spotlight?: boolean } = $props()
 
   let q = $state('')
-  let global = $state(spotlight || !store.path.length)
+  // valore iniziale: la ricerca flottante parte sempre da "ovunque", la palette da "ovunque" solo alla radice
+  let global = $state(untrack(() => spotlight || !store.path.length))
   let idx = $state(0)
   let input: HTMLInputElement | undefined = $state()
   let list: HTMLDivElement | undefined = $state()

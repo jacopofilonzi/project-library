@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { store } from '../../lib/state.svelte'
   import { t } from '../../lib/i18n/index.svelte'
   import { lib, errMessage } from '../../lib/api'
@@ -6,12 +7,13 @@
   // mode "new": crea una cartella in parent; mode "rename": rinomina path
   let { mode, parent = '', path = '', name: initial = '' }: { mode: 'new' | 'rename'; parent?: string; path?: string; name?: string } = $props()
 
-  let name = $state(initial)
+  // il dialog viene ricreato a ogni apertura: le props servono solo come valori iniziali
+  let name = $state(untrack(() => initial))
   let problem = $state('')
   let busy = $state(false)
   let input: HTMLInputElement | undefined = $state()
 
-  const dir = mode === 'new' ? parent : path.slice(0, Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')))
+  const dir = untrack(() => (mode === 'new' ? parent : path.slice(0, Math.max(path.lastIndexOf('\\'), path.lastIndexOf('/')))))
 
   $effect(() => {
     input?.focus()

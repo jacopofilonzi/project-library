@@ -1,5 +1,5 @@
 <script lang="ts">
-  import { onDestroy } from 'svelte'
+  import { onDestroy, untrack } from 'svelte'
   import { Events } from '@wailsio/runtime'
   import { store } from '../../lib/state.svelte'
   import { t } from '../../lib/i18n/index.svelte'
@@ -8,12 +8,14 @@
   // parent: cartella da cui è stato aperto; null = dalla navbar (si propone github/<owner>)
   let { parent }: { parent: string | null } = $props()
 
+  // il dialog viene ricreato a ogni apertura: parent serve solo come valore iniziale
+  const from = untrack(() => parent)
   const roots = store.cfg.roots
   // radice di riferimento: quella che contiene parent, altrimenti la prima
-  const root = (parent && roots.find((r) => parent === r || parent.startsWith(r + '\\') || parent.startsWith(r + '/'))) || roots[0] || ''
+  const root = (from && roots.find((r) => from === r || from.startsWith(r + '\\') || from.startsWith(r + '/'))) || roots[0] || ''
   const sep = root.includes('\\') ? '\\' : '/'
   const relOf = (p: string) => (p.length > root.length ? p.slice(root.length + 1) : '').split(/[\\/]/).filter(Boolean).join('/')
-  const startRel = parent ? relOf(parent) : relOf(store.current?.path ?? root)
+  const startRel = from ? relOf(from) : relOf(store.current?.path ?? root)
 
   let url = $state('')
   let urlInput: HTMLInputElement | undefined = $state()
@@ -24,7 +26,7 @@
   let openAfter = $state(true)
   let sug = $state<CloneSuggestion | null>(null)
   let nameTouched = false
-  let destTouched = !!parent
+  let destTouched = !!from
   let problem = $state('')
   let running = $state(false)
   let progress = $state<{ phase: string; percent: number } | null>(null)

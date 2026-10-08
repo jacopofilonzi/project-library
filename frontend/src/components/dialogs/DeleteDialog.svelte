@@ -1,4 +1,5 @@
 <script lang="ts">
+  import { untrack } from 'svelte'
   import { store } from '../../lib/state.svelte'
   import { t, tn } from '../../lib/i18n/index.svelte'
   import { lib, type Node } from '../../lib/api'
@@ -7,7 +8,7 @@
 
   let warnings = $state<string[]>([])
   let strong = $state(false) // conferma forte: bisogna scrivere il nome
-  let loading = $state(node.kind === 'project')
+  let loading = $state(untrack(() => node.kind === 'project'))
   let typed = $state('')
   let nameInput: HTMLInputElement | undefined = $state()
   let cancelBtn: HTMLButtonElement | undefined = $state()

@@ -92,6 +92,7 @@ let config: any = {
   version: 3,
   language: options.language ?? 'en',
   theme: 'light',
+  uiScale: 1,
   roots: [ROOT],
   launchers: [
     { id: 'vscode', name: 'VS Code', command: '', args: '"{path}"', enabled: true, builtin: 'vscode' },

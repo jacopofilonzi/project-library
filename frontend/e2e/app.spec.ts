@@ -519,3 +519,24 @@ test('deleting a folder whose projects are all safe needs no name', async ({ pag
   await expect(dlg.locator('.warn.risky')).toHaveCount(0)
   await expect(dlg.getByRole('textbox')).toHaveCount(0)
 })
+
+test('the interface scale changes with the shortcuts and the slider', async ({ page }) => {
+  await openApp(page)
+  await expect(page.locator('.row').first()).toBeVisible()
+  const lastScale = async () => ((await calls(page)).filter((c) => c.fn === 'SaveConfig').at(-1)?.args[0] as { uiScale: number } | undefined)?.uiScale
+  await page.keyboard.press('Control+=')
+  await expect.poll(lastScale).toBe(1.1)
+  await page.keyboard.press('Control+-')
+  await page.keyboard.press('Control+-')
+  await expect.poll(lastScale).toBe(0.9)
+  await page.keyboard.press('Control+0')
+  await expect.poll(lastScale).toBe(1)
+
+  await page.getByRole('button', { name: 'Settings' }).click()
+  const slider = page.getByRole('slider', { name: 'Interface size' })
+  await slider.fill('130')
+  await expect.poll(lastScale).toBe(1.3)
+  await expect(page.locator('.scalev')).toHaveText('130%')
+  await page.getByRole('button', { name: 'Reset' }).click()
+  await expect.poll(lastScale).toBe(1)
+})

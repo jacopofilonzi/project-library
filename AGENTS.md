@@ -14,6 +14,7 @@ wails3 dev                     # sviluppo con hot reload
 wails3 package ARCH=amd64      # installer NSIS per utente in bin/ (richiede makensis nel PATH, di solito in C:/Program Files (x86)/NSIS)
 wails3 generate bindings -clean=true -ts -i   # rigenera frontend/bindings dopo aver cambiato i metodi esposti
 go test ./internal/...
+PL_FORGE_LIVE=gh PL_FORGE_REPO=owner/nome go test ./internal/forge -run TestLive -v   # prova dal vivo con la gh (o glab) installata, solo letture
 go vet ./...                   # con GOARCH=amd64 su Windows
 cd frontend && npx svelte-check --tsconfig ./tsconfig.json
 cd frontend && npm run test:e2e   # Playwright: interfaccia in Chromium con backend finto (e2e/mock), niente Wails né disco

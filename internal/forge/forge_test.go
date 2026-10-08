@@ -104,3 +104,21 @@ func TestNames(t *testing.T) {
 		t.Error("splitOwner without owner")
 	}
 }
+
+func TestGhCIWorstOfLastCommit(t *testing.T) {
+	runs := []ghRun{
+		{Name: "Lint", HeadSHA: "b", Status: "completed", Conclusion: "success", HTMLURL: "u1"},
+		{Name: "Tests", HeadSHA: "b", Status: "completed", Conclusion: "failure", HTMLURL: "u2"},
+		{Name: "Tests", HeadSHA: "a", Status: "in_progress", HTMLURL: "old"},
+	}
+	ci := ghCI(runs)
+	if ci == nil || ci.State != "failure" || ci.URL != "u2" || ci.Name != "Tests" || ci.Runs != 2 {
+		t.Fatalf("got %+v", ci)
+	}
+	if ghCI(nil) != nil {
+		t.Fatal("no runs")
+	}
+	if ci := ghCI(runs[:1]); ci.Name != "Lint" || ci.State != "success" {
+		t.Fatalf("single: %+v", ci)
+	}
+}

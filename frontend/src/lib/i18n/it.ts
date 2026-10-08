@@ -203,6 +203,7 @@ const it: Dict = {
     mrs: '{n} merge request', mrs1: '1 merge request', noMrs: 'Nessuna merge request aperta',
     issues: '{n} issue', issues1: '1 issue',
     draft: 'bozza',
+    workflows: 'il peggiore di {n} workflow',
     ci: { success: 'CI superata', failure: 'CI fallita', running: 'CI in corso', pending: 'CI in attesa', cancelled: 'CI annullata', skipped: 'CI saltata' } as Record<string, string>,
     publishOn: 'Pubblica su {service}…',
   },

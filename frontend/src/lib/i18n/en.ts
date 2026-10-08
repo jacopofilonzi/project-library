@@ -202,6 +202,7 @@ const en = {
     mrs: '{n} merge requests', mrs1: '1 merge request', noMrs: 'No open merge requests',
     issues: '{n} issues', issues1: '1 issue',
     draft: 'draft',
+    workflows: 'worst of {n} workflows',
     ci: { success: 'CI passed', failure: 'CI failed', running: 'CI running', pending: 'CI pending', cancelled: 'CI cancelled', skipped: 'CI skipped' } as Record<string, string>,
     publishOn: 'Publish on {service}…',
   },

@@ -281,7 +281,7 @@ export async function ForgeInfo(remote: string, branch: string) {
   return {
     kind: 'github', host: 'github.com', web, prCount: 2, prMore: false, issues: 3,
     prs: [{ number: 12, title: 'Retry on 429 responses', url: web + '/pull/12', author: 'octocat', draft: false }, { number: 11, title: 'Typed events', url: web + '/pull/11', author: 'jacopofilonzi', draft: true }],
-    ci: { state: 'failure', name: 'CI', url: web + '/actions/runs/1' },
+    ci: { state: 'failure', name: 'CI', url: web + '/actions/runs/1', runs: 2 },
   }
 }
 export const ForgeOwners = async (kind: string, host: string) => { log('ForgeOwners', kind, host); return [{ name: 'jacopofilonzi', personal: true, id: 0 }, { name: 'dity-dev', personal: false, id: 0 }] }

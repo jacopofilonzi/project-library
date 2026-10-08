@@ -22,6 +22,8 @@ type CI struct {
 	State string `json:"state"`
 	Name  string `json:"name"`
 	URL   string `json:"url"`
+	// Runs è il numero di workflow o pipeline dell'ultimo commit (stato e link sono del peggiore).
+	Runs int `json:"runs"`
 }
 
 // Info è quello che la scheda progetto mostra del repository remoto.
@@ -89,21 +91,16 @@ func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 		if branch != "" {
 			run(func() error {
 				var r struct {
-					Runs []struct {
-						Name       string `json:"name"`
-						Status     string `json:"status"`
-						Conclusion string `json:"conclusion"`
-						HTMLURL    string `json:"html_url"`
-					} `json:"workflow_runs"`
+					Runs []ghRun `json:"workflow_runs"`
 				}
-				q := "repos/" + fullName + "/actions/runs?per_page=1&branch=" + url.QueryEscape(branch)
+				// solo le esecuzioni partite da un push: quelle pianificate o manuali non dicono nulla dell'ultimo commit
+				q := "repos/" + fullName + "/actions/runs?per_page=20&event=push&branch=" + url.QueryEscape(branch)
 				if err := c.api(ctx, host, &r, q); err != nil {
 					return err
 				}
-				if len(r.Runs) > 0 {
-					w := r.Runs[0]
+				if ci := ghCI(r.Runs); ci != nil {
 					mu.Lock()
-					info.CI = &CI{State: ghState(w.Status, w.Conclusion), Name: w.Name, URL: w.HTMLURL}
+					info.CI = ci
 					mu.Unlock()
 				}
 				return nil
@@ -163,7 +160,7 @@ func (c *CLI) Info(host, fullName, branch string) (Info, error) {
 				}
 				if len(r) > 0 {
 					mu.Lock()
-					info.CI = &CI{State: glState(r[0].Status), Name: fmt.Sprintf("#%d", r[0].ID), URL: r[0].WebURL}
+					info.CI = &CI{State: glState(r[0].Status), Name: fmt.Sprintf("#%d", r[0].ID), URL: r[0].WebURL, Runs: 1}
 					mu.Unlock()
 				}
 				return nil
@@ -208,6 +205,40 @@ type ghGraph struct {
 			} `json:"pullRequests"`
 		} `json:"repository"`
 	} `json:"data"`
+}
+
+type ghRun struct {
+	Name       string `json:"name"`
+	HeadSHA    string `json:"head_sha"`
+	Status     string `json:"status"`
+	Conclusion string `json:"conclusion"`
+	HTMLURL    string `json:"html_url"`
+}
+
+// stateRank: a parità di commit vince lo stato peggiore (un workflow fallito pesa più di uno superato).
+var stateRank = map[string]int{"failure": 5, "running": 4, "pending": 3, "cancelled": 2, "success": 1, "skipped": 0}
+
+// ghCI unisce i workflow dell'ultimo commit (il primo delle esecuzioni, che arrivano dalla più recente):
+// stato, nome e link sono quelli del workflow peggiore.
+func ghCI(runs []ghRun) *CI {
+	if len(runs) == 0 {
+		return nil
+	}
+	sha := runs[0].HeadSHA
+	var ci *CI
+	n := 0
+	for _, r := range runs {
+		if r.HeadSHA != sha {
+			continue
+		}
+		n++
+		st := ghState(r.Status, r.Conclusion)
+		if ci == nil || stateRank[st] > stateRank[ci.State] {
+			ci = &CI{State: st, Name: r.Name, URL: r.HTMLURL}
+		}
+	}
+	ci.Runs = n
+	return ci
 }
 
 // ghState riduce status/conclusion di un workflow di GitHub Actions agli stati comuni.

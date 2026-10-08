@@ -44,7 +44,7 @@
     {/if}
     {#if info.ci}
       {@const ci = info.ci}
-      <button class="pill act {ciClass[ci.state] ?? ''}" title={ci.name} onclick={() => open(ci.url)}>{t('forge.ci.' + ci.state)} ↗</button>
+      <button class="pill act {ciClass[ci.state] ?? ''}" title={ci.runs > 1 ? `${ci.name} · ${t('forge.workflows', { n: ci.runs })}` : ci.name} onclick={() => open(ci.url)}>{t('forge.ci.' + ci.state)} ↗</button>
     {/if}
   </div>
   {#if showPrs}

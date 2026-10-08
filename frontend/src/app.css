@@ -196,6 +196,8 @@ img.lico { border-radius: 0; }
 .dlg .hint.sug button { background: none; border: 0; color: inherit; font: inherit; text-decoration: underline; cursor: pointer; padding: 0; }
 .dlg .chk { flex-direction: row; align-items: center; font-weight: 500; color: var(--ink); font-size: 13px; }
 .dlg .warn { background: var(--warn-soft); color: var(--warn); border-radius: 8px; padding: 10px 12px; font-size: 13px; }
+.dlg .warn.risky ul { margin: 6px 0 0; padding-left: 18px; }
+.dlg .warn.risky li { margin: 2px 0; }
 .dlg .final { font: 12px var(--mono); background: var(--bg); border-radius: 8px; padding: 9px 11px; word-break: break-all; }
 .dlg .prog { height: 6px; background: var(--bg); border-radius: 3px; overflow: hidden; }
 .dlg .prog i { display: block; height: 100%; background: var(--accent); transition: width .2s; }

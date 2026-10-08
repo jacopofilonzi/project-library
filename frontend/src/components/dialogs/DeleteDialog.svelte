@@ -8,7 +8,9 @@
 
   let warnings = $state<string[]>([])
   let strong = $state(false) // strong confirmation: the name must be typed
-  let loading = $state(untrack(() => node.kind === 'project'))
+  // projects inside a folder that would lose work: name and reasons
+  let risky = $state<{ name: string; reasons: string[] }[]>([])
+  let loading = $state(untrack(() => node.kind === 'project' || node.count > 0))
   let typed = $state('')
   let nameInput: HTMLInputElement | undefined = $state()
   let cancelBtn: HTMLButtonElement | undefined = $state()
@@ -19,25 +21,60 @@
   })
   let busy = $state(false)
 
-  // for projects: check uncommitted changes, unpushed commits, missing remote
-  $effect(() => {
-    if (node.kind !== 'project') return
-    ;(async () => {
-      const w: string[] = []
-      if (node.hasGit && store.st?.gitAvailable) {
-        try {
-          const g = await lib.GitInfo(node.path)
-          if (g.dirty) w.push(t('dlg.warnDirty', { n: g.dirty }))
-          if (g.ahead) w.push(t('dlg.warnAhead', { n: g.ahead }))
-          if (!g.remote) w.push(t('dlg.warnNoRemote'))
-        } catch {
-          w.push(t('dlg.warnNoGit'))
-        }
-      } else if (!node.hasGit) {
+  // what a project would lose: uncommitted changes, unpushed commits, missing remote, no git at all
+  async function risks(p: Node): Promise<string[]> {
+    const w: string[] = []
+    if (p.hasGit && store.st?.gitAvailable) {
+      try {
+        const g = await lib.GitInfo(p.path)
+        if (g.dirty) w.push(t('dlg.warnDirty', { n: g.dirty }))
+        if (g.ahead) w.push(t('dlg.warnAhead', { n: g.ahead }))
+        if (!g.remote) w.push(t('dlg.warnNoRemote'))
+      } catch {
         w.push(t('dlg.warnNoGit'))
       }
-      warnings = w
-      strong = w.length > 0
+    } else if (!p.hasGit) {
+      w.push(t('dlg.warnNoGit'))
+    }
+    return w
+  }
+
+  // projects anywhere inside a folder
+  function projectsIn(n: Node): Node[] {
+    const out: Node[] = []
+    const walk = (x: Node) => {
+      for (const c of x.children ?? []) {
+        if (!c) continue
+        if (c.kind === 'project') out.push(c)
+        else walk(c)
+      }
+    }
+    walk(n)
+    return out
+  }
+
+  // a project needs the strong confirmation if it would lose work; a folder if any project inside would
+  $effect(() => {
+    if (node.kind === 'project') {
+      risks(node).then((w) => {
+        warnings = w
+        strong = w.length > 0
+        loading = false
+      })
+      return
+    }
+    const inside = projectsIn(node)
+    if (!inside.length) return
+    ;(async () => {
+      const found: { name: string; reasons: string[] }[] = []
+      // a few at a time: a folder can hold many repositories
+      for (let i = 0; i < inside.length; i += 6) {
+        const batch = inside.slice(i, i + 6)
+        const res = await Promise.all(batch.map(risks))
+        res.forEach((r, j) => r.length && found.push({ name: batch[j].name, reasons: r }))
+      }
+      risky = found
+      strong = found.length > 0
       loading = false
     })()
   })
@@ -68,6 +105,17 @@
       {/if}
     </p>
     <div class="warn">{t('dlg.deleteDirWarn')}</div>
+    {#if loading}
+      <p class="hint">{t('dlg.checkingProjects')}</p>
+    {:else if risky.length}
+      <div class="warn risky">
+        <b>{tn('dlg.riskyProjects', risky.length)}</b>
+        <ul>
+          {#each risky.slice(0, 6) as r (r.name)}<li><b>{r.name}</b>: {r.reasons.join(' · ')}</li>{/each}
+        </ul>
+        {#if risky.length > 6}<span>{t('dlg.riskyMore', { n: risky.length - 6 })}</span>{/if}
+      </div>
+    {/if}
   {/if}
   <div class="final selectable">{node.path}</div>
   {#if strong}

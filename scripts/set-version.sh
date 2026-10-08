@@ -20,8 +20,16 @@ sed -i -E "s/(var Version = \")$q\"/\1$new\"/" internal/core/library.go
 sed -i -E "0,/\"version\": \"$q\"/s//\"version\": \"$new\"/" frontend/package.json
 (cd frontend && npm install --package-lock-only --silent)
 
-# check: the old version (as a whole: 0.1.9 must not match 0.1.91) must not appear anywhere any more, except the sample comment in project.nsi
-if left=$(git grep -nIE "(^|[^0-9.])$q([^0-9]|$)" -- build internal frontend/package.json frontend/package-lock.json | grep -v 'project.nsi'); then
+# check: the old version (as a whole: 0.1.9 must not match 0.1.91) is left in none of the version files.
+# Only these files: elsewhere (tests, npm dependencies) the same number can appear legitimately.
+files=(build/config.yml build/linux/nfpm/nfpm.yaml build/windows/info.json build/darwin/Info.plist build/darwin/Info.dev.plist
+  build/windows/nsis/wails_tools.nsh build/windows/wails.exe.manifest build/windows/msix/app_manifest.xml build/windows/msix/template.xml
+  internal/core/library.go frontend/package.json)
+pattern="(^|[^0-9.])$q([^0-9]|$)"
+left=$(grep -nHE "$pattern" "${files[@]}" || true)
+# package-lock.json: only the app's own entries (the first lines), not the dependencies
+left+=$(head -12 frontend/package-lock.json | grep -nE "$pattern" | sed 's#^#frontend/package-lock.json:#' || true)
+if [ -n "$left" ]; then
   echo "version $old still present:" >&2
   echo "$left" >&2
   exit 1

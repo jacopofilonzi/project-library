@@ -28,7 +28,7 @@ import (
 )
 
 // Version is set at build time (-ldflags "-X …core.Version=…").
-var Version = "1.1.1"
+var Version = "1.2.0"
 
 // Events emitted to the frontend.
 const (

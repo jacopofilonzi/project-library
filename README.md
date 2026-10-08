@@ -6,6 +6,9 @@ Your `~/Development` folder, finally easy to get around.
 
 Project Library is a small desktop app for people with too many repositories. Browse your projects in columns, just like they sit on disk, read their README, see at a glance what changed in git, and open each one in the right editor: IntelliJ for the Gradle project, VS Code for the Node one, without thinking about it. Need something fast? Hit `Win+Ctrl+K` from anywhere, type a few letters and you're in.
 
+> [!NOTE]
+> The Windows installer is not code-signed. The first time you run it, SmartScreen shows "Windows protected your PC": choose **More info → Run anyway**. See [Good to know](#good-to-know) for details.
+
 Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the window, Svelte 5 + Vite for the UI. Built for Windows, macOS and Linux (so far tested on Windows only). UI in English and Italian, light and dark theme.
 
 ## Features
@@ -19,6 +22,20 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 - **Files**: clone, new folder, rename, move to the trash, "Initialize project" on empty folders; the view updates by itself when files change.
 - **System**: tray, start with the system (off / window / tray only), resume from the last location, first-run wizard, configuration export and import.
 - **Updates**: at startup the app checks GitHub for a new release; if there is one you get a desktop notification and a small banner with the direct link to the installer. It can be turned off in Settings → About, where you can also check by hand.
+
+## Good to know
+
+**Project status.** This is a personal project, built for my own workflow and shared as is. It runs on [Wails v3](https://v3.wails.io), which is still in beta. It is used daily on Windows; the macOS and Linux code compiles but has never been run, and no package is published for them yet.
+
+**Installing on Windows.** The installer is not code-signed, so Windows SmartScreen shows a "Windows protected your PC" warning the first time. Choose **More info → Run anyway**. The installer works per user: it needs no administrator rights and installs to `%LOCALAPPDATA%\Programs\Project Library`.
+
+**Network and privacy.** The app has no telemetry and collects no data. It goes online only for:
+
+- the update check at startup, a request to the public GitHub API (turn it off in Settings → About);
+- `git` fetch, pull and clone, when you ask for them or turn on the background fetch;
+- `gh` and `glab`, only if you installed them, with the login you already did.
+
+**What it changes on your disk and accounts.** Browsing is read-only. The app writes only when you ask: new folders, renames, clones, "Initialize project". Deleting always moves to the trash, never deletes permanently. "Publish" is the one action that reaches outside your computer: it creates a real repository on your GitHub or GitLab account and pushes your commits to it.
 
 ## How it works
 
@@ -108,3 +125,7 @@ The configuration is in `config.json` in the folder listed above. Settings → A
 ## Versions
 
 Versions are `x.y.z`: major, feature, fix. Releases are on GitHub, with the Windows installer attached: `.github/workflows/release.yml` creates them when a `vx.y.z` tag is pushed (or it can be run by hand from Actions to get just the installer). The app's update check reads the latest release from the public GitHub API: drafts and pre-releases are never offered, and the installer must keep the `-installer.exe` name ending.
+
+## License
+
+[MIT](LICENSE) © 2026 Jacopo Filonzi. You can use, modify and redistribute it, also in your own projects, as long as you keep the copyright notice.

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 
@@ -68,6 +69,9 @@ type Config struct {
 	LauncherRules []LauncherRule `json:"launcherRules,omitempty"`
 	// ProjectLaunchers: launcher chosen by hand for a project (path → id). Takes precedence over the rules.
 	ProjectLaunchers map[string]string `json:"projectLaunchers"`
+	// FolderIDs: file system identity (see platform.FileID) of the folders that have per-path settings
+	// (ProjectLaunchers, Overrides), so they can be found again after a rename or move outside the app.
+	FolderIDs map[string]string `json:"folderIds"`
 
 	Markers        []string          `json:"markers"`
 	Ignore         []string          `json:"ignore"`
@@ -146,6 +150,7 @@ func Default(home string) Config {
 		Presets:          []presets.Preset{},
 		Rules:            []Rule{},
 		ProjectLaunchers: map[string]string{},
+		FolderIDs:        map[string]string{},
 		Markers:          append([]string(nil), DefaultMarkers...),
 		Ignore:           append([]string(nil), DefaultIgnore...),
 		FilesAsProject:   true,
@@ -202,6 +207,9 @@ func (c *Config) normalize(home string) {
 	}
 	if c.ProjectLaunchers == nil {
 		c.ProjectLaunchers = map[string]string{}
+	}
+	if c.FolderIDs == nil {
+		c.FolderIDs = map[string]string{}
 	}
 	if len(c.Recent) > MaxRecent {
 		c.Recent = c.Recent[:MaxRecent]
@@ -335,6 +343,10 @@ func (c Config) clone() Config {
 	for k, v := range c.ProjectLaunchers {
 		out.ProjectLaunchers[k] = v
 	}
+	out.FolderIDs = make(map[string]string, len(c.FolderIDs))
+	for k, v := range c.FolderIDs {
+		out.FolderIDs[k] = v
+	}
 	// empty lists stay non-nil: "[]" in JSON, not "null"
 	out.Rules = append([]Rule{}, c.Rules...)
 	out.Presets = make([]presets.Preset, len(c.Presets))
@@ -390,6 +402,7 @@ func (c *Config) RenamePath(oldPath, newPath string) {
 	}
 	c.Overrides = moveKeys(c.Overrides)
 	c.ProjectLaunchers = moveKeys(c.ProjectLaunchers)
+	c.FolderIDs = moveKeys(c.FolderIDs)
 	if np, changed := move(c.LastPath); changed {
 		c.LastPath = np
 	}
@@ -416,4 +429,82 @@ func under(dir, p string) (string, bool) {
 		return "", false
 	}
 	return rel, true
+}
+
+// TrackedPaths returns the paths that have per-path settings (per-project launcher or override).
+func (c *Config) TrackedPaths() []string {
+	seen := map[string]bool{}
+	var out []string
+	for _, m := range []map[string]string{c.ProjectLaunchers, c.Overrides} {
+		for p := range m {
+			if !seen[p] {
+				seen[p] = true
+				out = append(out, p)
+			}
+		}
+	}
+	return out
+}
+
+// Relink keeps the per-path settings attached to their folders when these are renamed or moved
+// outside the app. It records the identity (idOf) of every tracked folder that exists; for the ones
+// that no longer exist it looks among candidates (the folders found by the scan) for the same
+// identity and moves the settings there. It returns true if the config changed.
+func (c *Config) Relink(exists func(string) bool, idOf func(string) string, candidates []string) bool {
+	changed := false
+	var orphans []string
+	for _, p := range c.TrackedPaths() {
+		if exists(p) {
+			if id := idOf(p); id != "" && c.FolderIDs[p] != id {
+				c.FolderIDs[p] = id
+				changed = true
+			}
+		} else if c.FolderIDs[p] != "" {
+			orphans = append(orphans, p)
+		}
+	}
+	if len(orphans) > 0 {
+		want := map[string]bool{}
+		for _, p := range orphans {
+			want[c.FolderIDs[p]] = true
+		}
+		found := map[string]string{} // id → new path
+		for _, p := range candidates {
+			if len(found) == len(want) {
+				break
+			}
+			if id := idOf(p); want[id] && found[id] == "" {
+				found[id] = p
+			}
+		}
+		// parents first: moving a parent's settings also moves the ones of the folders inside it
+		sort.Slice(orphans, func(i, j int) bool { return len(orphans[i]) < len(orphans[j]) })
+		for _, old := range orphans {
+			id := c.FolderIDs[old]
+			np := found[id]
+			if id == "" || np == "" || np == old {
+				continue // already moved with its parent, or not found
+			}
+			if _, taken := c.ProjectLaunchers[np]; taken {
+				continue
+			}
+			if _, taken := c.Overrides[np]; taken {
+				continue
+			}
+			c.RenamePath(old, np)
+			changed = true
+		}
+	}
+	// identities of paths that no longer have settings are not needed
+	tracked := map[string]bool{}
+	for _, p := range c.TrackedPaths() {
+		tracked[p] = true
+	}
+	for p := range c.FolderIDs {
+		if !tracked[p] {
+			delete(c.FolderIDs, p)
+			changed = true
+		}
+	}
+	return changed
 }

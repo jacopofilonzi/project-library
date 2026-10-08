@@ -2,6 +2,7 @@ package platform
 
 import (
 	"errors"
+	"fmt"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -138,6 +139,27 @@ func CaseInsensitive() bool { return true }
 
 // CrossDevice tells whether a rename failed because source and destination are on different drives.
 func CrossDevice(err error) bool { return errors.Is(err, syscall.Errno(17)) } // ERROR_NOT_SAME_DEVICE
+
+// FileID identifies a folder independently of its name: volume serial number + NTFS file index.
+// It stays the same when the folder is renamed or moved on the same volume. "" if it cannot be read.
+func FileID(path string) string {
+	p, err := syscall.UTF16PtrFromString(path)
+	if err != nil {
+		return ""
+	}
+	// FILE_FLAG_BACKUP_SEMANTICS is needed to open a directory
+	h, err := syscall.CreateFile(p, 0, syscall.FILE_SHARE_READ|syscall.FILE_SHARE_WRITE|syscall.FILE_SHARE_DELETE, nil,
+		syscall.OPEN_EXISTING, syscall.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return ""
+	}
+	defer syscall.CloseHandle(h)
+	var info syscall.ByHandleFileInformation
+	if err := syscall.GetFileInformationByHandle(h, &info); err != nil {
+		return ""
+	}
+	return fmt.Sprintf("%x-%x%08x", info.VolumeSerialNumber, info.FileIndexHigh, info.FileIndexLow)
+}
 
 // UpdateAsset is the end of the installer's name among the release files.
 func UpdateAsset() string { return "-installer.exe" }

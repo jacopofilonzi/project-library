@@ -142,6 +142,10 @@ func (l *Library) SaveConfig(next config.Config) (AppState, error) {
 		go l.rescan(true)
 	}
 	errs := l.applySystem(cfg, prev)
+	// a launcher chosen for a project gets its folder identity right away, not at the next scan
+	if len(cfg.ProjectLaunchers) != len(prev.ProjectLaunchers) {
+		go l.relink(l.Tree())
+	}
 	// the other windows (floating search) and the tray update from this event
 	emitEvent(EventConfig, l.store.Get())
 	return l.State(), errors.Join(errs...)
@@ -299,7 +303,29 @@ func (l *Library) rescan(emit bool) {
 	if emit {
 		emitEvent(EventTree, tree)
 	}
+	l.relink(tree)
 	go l.computeDirty()
+}
+
+// relink keeps per-project launchers and overrides attached to folders renamed or moved outside
+// the app (see config.Relink). The candidates are the folders of the new tree.
+func (l *Library) relink(tree *scanner.Node) {
+	var cands []string
+	scanner.Walk(tree, func(n *scanner.Node) {
+		if n.Path != "" && !n.Missing && n.Kind != scanner.KindRoot {
+			cands = append(cands, n.Path)
+		}
+	})
+	exists := func(p string) bool {
+		fi, err := os.Stat(p)
+		return err == nil && fi.IsDir()
+	}
+	// dry run on a copy first: the config file is written only when something changes
+	if cfg := l.store.Get(); !cfg.Relink(exists, platform.FileID, cands) {
+		return
+	}
+	l.store.Update(func(c *config.Config) { c.Relink(exists, platform.FileID, cands) })
+	emitEvent(EventConfig, l.store.Get())
 }
 
 func emitEvent(name string, data any) {

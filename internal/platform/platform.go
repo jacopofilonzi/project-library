@@ -19,6 +19,7 @@
 //	CaseInsensitive() bool
 //	UpdateAsset() string
 //	CrossDevice(err error) bool
+//	FileID(path string) string
 package platform
 
 import (

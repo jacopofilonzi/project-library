@@ -95,3 +95,53 @@ func TestMigrationV3TurnsOnUpdateCheck(t *testing.T) {
 		t.Fatal("disabled update check must stay disabled")
 	}
 }
+
+func TestRelinkFollowsFoldersMovedOutside(t *testing.T) {
+	sep := string(filepath.Separator)
+	p := func(s string) string { return sep + "dev" + sep + filepath.FromSlash(s) }
+	// the disk: path → identity
+	disk := map[string]string{p("a/bot"): "1", p("a/ui"): "2", p("a/ui/web"): "3", p("b"): "4"}
+	exists := func(s string) bool { _, ok := disk[s]; return ok }
+	idOf := func(s string) string { return disk[s] }
+	cands := func() []string {
+		var out []string
+		for k := range disk {
+			out = append(out, k)
+		}
+		return out
+	}
+
+	c := Default(sep)
+	c.ProjectLaunchers = map[string]string{p("a/bot"): "intellij", p("a/ui/web"): "vscode"}
+	c.Overrides = map[string]string{p("a/ui"): OverrideDir}
+	c.Recent = []Recent{{Path: p("a/bot"), Launcher: "intellij"}}
+	if !c.Relink(exists, idOf, cands()) || len(c.FolderIDs) != 3 {
+		t.Fatalf("identities not recorded: %v", c.FolderIDs)
+	}
+
+	// outside the app: bot renamed, ui (with web inside) moved under b
+	disk = map[string]string{p("a/robot"): "1", p("b"): "4", p("b/ui"): "2", p("b/ui/web"): "3"}
+	if !c.Relink(exists, idOf, cands()) {
+		t.Fatal("nothing relinked")
+	}
+	if c.ProjectLaunchers[p("a/robot")] != "intellij" || c.ProjectLaunchers[p("b/ui/web")] != "vscode" || c.Overrides[p("b/ui")] != OverrideDir {
+		t.Fatalf("settings not moved: %v %v", c.ProjectLaunchers, c.Overrides)
+	}
+	if len(c.ProjectLaunchers) != 2 || len(c.Overrides) != 1 || c.Recent[0].Path != p("a/robot") {
+		t.Fatalf("old paths left: %v %v %v", c.ProjectLaunchers, c.Overrides, c.Recent)
+	}
+	if c.FolderIDs[p("a/robot")] != "1" || c.FolderIDs[p("b/ui/web")] != "3" || len(c.FolderIDs) != 3 {
+		t.Fatalf("identities: %v", c.FolderIDs)
+	}
+	// stable: a second pass changes nothing
+	if c.Relink(exists, idOf, cands()) {
+		t.Fatal("second pass changed the config")
+	}
+
+	// a folder that disappeared for good keeps its settings (it may come back) and is not relinked elsewhere
+	delete(disk, p("a/robot"))
+	c.Relink(exists, idOf, cands())
+	if c.ProjectLaunchers[p("a/robot")] != "intellij" {
+		t.Fatal("settings of a missing folder dropped")
+	}
+}

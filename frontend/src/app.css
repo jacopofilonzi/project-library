@@ -38,7 +38,7 @@ header.top .hr { gap: 0; }
 .crumbs button:hover { background: var(--bg); color: var(--ink); }
 .crumbs button:last-child { color: var(--ink); font-weight: 500; }
 .crumbs i { color: var(--faint); font-style: normal; }
-.search-btn { display: flex; align-items: center; gap: 8px; width: 320px; max-width: 32vw; flex: none; height: 36px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 6px 0 10px; font: inherit; color: var(--mute); cursor: pointer; }
+.search-btn { display: flex; align-items: center; gap: 8px; width: 380px; max-width: calc(36vw / var(--z, 1)); flex: none; height: 38px; background: var(--bg); border: 1px solid var(--line); border-radius: 8px; padding: 0 6px 0 10px; font: inherit; color: var(--mute); cursor: pointer; }
 .search-btn span { flex: 1; text-align: left; }
 .search-btn:hover { border-color: var(--faint); color: var(--ink); }
 .ibtn { width: 36px; height: 36px; flex: none; display: flex; align-items: center; justify-content: center; background: var(--card); border: 1px solid var(--line); border-radius: 8px; cursor: pointer; color: var(--ink); padding: 0; }

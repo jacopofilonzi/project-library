@@ -13,7 +13,7 @@ wails3 build ARCH=amd64        # build in bin/ (ARCH=amd64 is needed if `go env 
 wails3 dev                     # development with hot reload
 wails3 package ARCH=amd64      # per-user NSIS installer in bin/ (needs makensis in the PATH, usually in C:/Program Files (x86)/NSIS)
 wails3 generate bindings -clean=true -ts -i   # regenerates frontend/bindings after changing the exposed methods
-go test ./internal/...
+go test ./internal/...         # with GOARCH=amd64 on Windows: internal/core loads Wails, which does not start as 386
 PL_FORGE_LIVE=gh PL_FORGE_REPO=owner/name go test ./internal/forge -run TestLive -v   # live test against the installed gh (or glab), read-only
 go vet ./...                   # with GOARCH=amd64 on Windows
 cd frontend && npx svelte-check --tsconfig ./tsconfig.json
@@ -28,7 +28,7 @@ The `wails3` CLI may be in `$(go env GOPATH)/bin/windows_amd64/` if Go is 32-bit
 
 - `main.go`: windows (main and spotlight), tray, window key bindings, middleware that serves the README images.
 - `internal/core`: the only service exposed to the frontend (`Library`). Every exported method becomes a binding: helpers for `main` are package functions, not methods.
-- `internal/config`: `config.json` (defaults, normalization of missing fields, atomic write). A new field must be added to `Default`, `normalize`, `clone` and, if it holds paths, to `RenamePath`.
+- `internal/config`: `config.json` (defaults, normalization of missing fields, atomic write). A new field must be added to `Default`, `normalize`, `clone` and, if it holds paths, to `RenamePath`. Per-path settings are keyed by absolute path; `FolderIDs` stores the folder identity (`platform.FileID`) so that `Relink`, run after every scan, moves them when a folder is renamed or moved outside the app.
 - `internal/scanner`: folder classification (override → ignore → marker → files → subfolders → empty) and launcher rules.
 - `internal/presets`: catalog of the built-in presets (how a project type is recognized). Built-in presets are linked: rules reference them by id and they update with the app; a user preset with a catalog id is ignored (the catalog wins). Rules (`config.Rules`, preset → launcher) are in priority order.
 - `internal/languages`: language breakdown of a project (the bar in the card).

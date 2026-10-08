@@ -1,4 +1,4 @@
-# Build Windows e release. Non parte a ogni push: solo quando si pubblica un tag v* (crea la release
+# Build Windows (compilata da Linux, che costa la metà dei minuti) e release. Non parte a ogni push: solo quando si pubblica un tag v* (crea la release
 # con l'installer allegato) o a mano da Actions → Release → Run workflow (installer come artefatto, niente release).
 name: Release
 
@@ -15,12 +15,12 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  windows:
-    runs-on: windows-latest
+  release:
+    runs-on: ubuntu-latest
     timeout-minutes: 40
-    defaults:
-      run:
-        shell: bash
+    env:
+      # Wails su Windows non usa cgo: senza cgo si compila per Windows da Linux e si fa vet per gli altri sistemi
+      CGO_ENABLED: '0'
     steps:
       - uses: actions/checkout@v4
         with:
@@ -53,13 +53,15 @@ jobs:
       - name: Dipendenze e binding
         run: |
           (cd frontend && npm ci)
-          wails3 generate bindings -clean=true -ts -i
+          GOOS=windows wails3 generate bindings -clean=true -ts -i
 
       - name: Test Go
         run: |
-          go vet ./...
-          GOOS=darwin go vet ./internal/...
-          GOOS=linux go vet ./internal/...
+          GOOS=windows go vet ./...
+          # internal/core importa Wails, che fuori da Windows richiede cgo: si controlla il resto
+          pkgs=$(go list ./internal/... | grep -v /internal/core)
+          GOOS=darwin go vet $pkgs
+          go vet $pkgs
           go test ./internal/...
 
       - name: Controllo dei tipi
@@ -69,18 +71,16 @@ jobs:
       - name: Test e2e
         working-directory: frontend
         run: |
-          npx playwright install chromium
+          npx playwright install --with-deps chromium
           npm run test:e2e
 
       - name: NSIS
-        run: |
-          if ! command -v makensis >/dev/null && [ ! -f "/c/Program Files (x86)/NSIS/makensis.exe" ]; then
-            choco install nsis -y --no-progress
-          fi
-          echo "C:/Program Files (x86)/NSIS" >> "$GITHUB_PATH"
+        run: sudo apt-get update -q && sudo apt-get install -y -q nsis
 
       - name: Installer
-        run: wails3 package ARCH=amd64
+        env:
+          GOOS: windows
+        run: wails3 package GOOS=windows ARCH=amd64
 
       - name: Artefatto (avvio manuale)
         if: github.event_name == 'workflow_dispatch'

@@ -19,7 +19,7 @@ cd frontend && npx svelte-check --tsconfig ./tsconfig.json
 cd frontend && npm run test:e2e   # Playwright: interfaccia in Chromium con backend finto (e2e/mock), niente Wails né disco
 ```
 
-Il pacchetto `internal/platform` va controllato anche per gli altri sistemi: `GOOS=darwin go vet ./internal/...` e `GOOS=linux go vet ./internal/...` (l'app intera richiede cgo fuori da Windows e non si cross-compila).
+Il pacchetto `internal/platform` va controllato anche per gli altri sistemi: `GOOS=darwin go vet $(go list ./internal/... | grep -v /internal/core)` e lo stesso con `GOOS=linux` (`internal/core` e l'app intera importano Wails, che fuori da Windows richiede cgo e non si cross-compila; per Windows invece si compila da qualunque sistema).
 
 La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è a 32 bit.
 
@@ -51,8 +51,8 @@ La CLI `wails3` può trovarsi in `$(go env GOPATH)/bin/windows_amd64/` se Go è 
 
 - Si resta su `0.1.x`: ogni funzione o correzione rilasciata incrementa l'ultimo numero (`0.1.0` → `0.1.1` → …). Si passa a `0.2` solo se lo decide l'utente.
 - La versione è scritta in più file, da aggiornare tutti insieme: `build/config.yml` (`info.version`), `build/windows/info.json`, `build/darwin/Info.plist`, `build/darwin/Info.dev.plist`, `build/linux/nfpm/nfpm.yaml`, `internal/core/library.go` (`Version`) e `frontend/package.json` (+ `npm install --package-lock-only`). Si modificano a mano: `wails3 update build-assets` rigenererebbe anche file personalizzati.
-- Rilascio (solo quando lo chiede l'utente): commit `chore: release v0.1.x`, tag annotato `v0.1.x`, push di commit e tag. Il tag avvia `.github/workflows/release.yml` su Windows: test, controlli, e2e, installer e release su GitHub con le note ricavate dai commit dal tag precedente. Il workflow si ferma se il tag non coincide con la versione in `build/config.yml`.
-- La CI non parte ai push normali, per non consumare i minuti di GitHub Actions (repo privato: 2.000 al mese, Windows conta doppio). Per provare la build senza rilasciare: Actions → Release → Run workflow, l'installer resta come artefatto per 7 giorni. I commit di sviluppo si pushano liberamente.
+- Rilascio (solo quando lo chiede l'utente): commit `chore: release v0.1.x`, tag annotato `v0.1.x`, push di commit e tag. Il tag avvia `.github/workflows/release.yml` (gira su Linux e compila per Windows senza cgo): test, controlli, e2e, installer e release su GitHub con le note ricavate dai commit dal tag precedente. Il workflow si ferma se il tag non coincide con la versione in `build/config.yml`.
+- La CI non parte ai push normali, per non consumare i minuti di GitHub Actions (repo privato: 2.000 al mese; per questo si usa Linux, che conta la metà di Windows). Per provare la build senza rilasciare: Actions → Release → Run workflow, l'installer resta come artefatto per 7 giorni. I commit di sviluppo si pushano liberamente.
 
 ## Insidie note
 

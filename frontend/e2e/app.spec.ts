@@ -348,6 +348,30 @@ test('settings show how to log in when GitHub CLI has no account', async ({ page
   await expect(gh).toContainText('gh auth login')
 })
 
+test('settings set the initial branch of new repositories', async ({ page }) => {
+  await openApp(page)
+  await page.getByRole('button', { name: 'Settings' }).click()
+  await page.locator('.set nav').getByRole('button', { name: 'Git' }).click()
+  const lastSaved = async () => (await calls(page)).filter((c) => c.fn === 'SaveConfig').at(-1)?.args[0]
+  const sw = page.getByRole('checkbox', { name: 'Override the initial branch name' })
+  const name = page.getByRole('textbox', { name: 'Branch name' })
+  await expect(sw).toBeChecked()
+  await expect(name).toHaveValue('main')
+
+  await name.fill('bad name')
+  await expect(page.locator('.f', { has: name })).toContainText('Not a valid branch name')
+  await name.press('Enter')
+  expect(await lastSaved()).toBeUndefined()
+
+  await name.fill('trunk')
+  await name.press('Enter')
+  await expect.poll(lastSaved).toMatchObject({ gitBranchOverride: true, gitBranch: 'trunk' })
+
+  await sw.uncheck()
+  await expect.poll(lastSaved).toMatchObject({ gitBranchOverride: false })
+  await expect(name).toBeDisabled()
+})
+
 test('without gh or glab the clone dialog only suggests them', async ({ page }) => {
   await openApp(page)
   await page.getByRole('button', { name: 'Clone', exact: true }).click()

@@ -321,6 +321,7 @@ body.pl-dragging, body.pl-dragging * { cursor: grabbing !important; user-select:
 .f .l { flex: 1; min-width: 0; }
 .f .l b { display: block; font-weight: 500; }
 .f .l span { font-size: 12px; color: var(--mute); }
+.f .l span.bad { color: var(--danger); }
 .field-input, .set input[type=text], .set input[type=number], .wiz input[type=text] { font: 13px var(--mono); color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 7px; padding: 7px 9px; outline: none; }
 .set input:focus, .wiz input:focus { border-color: var(--accent); }
 .set select, .wiz select { font: inherit; color: var(--ink); background: var(--card); border: 1px solid var(--line); border-radius: 7px; padding: 6px 8px; }

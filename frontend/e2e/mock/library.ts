@@ -114,6 +114,8 @@ let config: any = {
   gitFetch: false,
   gitFetchMinutes: 15,
   gitWarningShown: true,
+  gitBranchOverride: true,
+  gitBranch: 'main',
   recent: [{ path: join(ROOT, 'local/awake'), launcher: 'vscode', at: Date.now() - 3600_000 }],
   startMode: 'off',
   closeToTray: false,

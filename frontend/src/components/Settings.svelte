@@ -227,6 +227,15 @@
 
   // ---------- git ----------
   let gitPath = $state(store.cfg.gitPath)
+  let gitBranch = $state(store.cfg.gitBranch)
+  // the main rules of git check-ref-format --branch (the backend checks again with git)
+  const branchOk = $derived.by(() => {
+    const b = gitBranch.trim()
+    return b === '' || !/[\s~^:?*[\\\x00-\x1f\x7f]|\.\.|@\{|\/\/|\/\.|^[-./]|[/.]$|\.lock$|^@$/.test(b)
+  })
+  function applyBranch() {
+    if (branchOk) store.save((c) => (c.gitBranch = gitBranch.trim() || 'main'))
+  }
   let install = $state<InstallInfo | null>(null)
   async function applyGit() {
     await store.save((c) => (c.gitPath = gitPath.trim()))
@@ -475,6 +484,11 @@
           <div class="f"><div class="l"><b>{t('settings.git.info')}</b><span>{t('settings.git.infoSub')}</span></div><input type="checkbox" class="sw" checked={store.cfg.gitInfo} onchange={(e) => store.save((c) => (c.gitInfo = (e.currentTarget as HTMLInputElement).checked))} /></div>
           <div class="f"><div class="l"><b>{t('settings.git.fetch')}</b><span>{t('settings.git.fetchSub')}</span></div><input type="checkbox" class="sw" checked={store.cfg.gitFetch} onchange={(e) => store.save((c) => (c.gitFetch = (e.currentTarget as HTMLInputElement).checked))} /></div>
           <div class="f"><div class="l"><b>{t('settings.git.interval')}</b><span>{t('settings.git.intervalSub')}</span></div><input type="number" min="5" style="width:80px" disabled={!store.cfg.gitFetch} value={store.cfg.gitFetchMinutes} onchange={(e) => store.save((c) => (c.gitFetchMinutes = +(e.currentTarget as HTMLInputElement).value))} /></div>
+          <div class="grp">{t('settings.git.newRepos')}</div>
+          <p class="sub2">{t('settings.git.branchInfo')}</p>
+          <div class="f"><div class="l"><b>{t('settings.git.branchOverride')}</b><span>{t('settings.git.branchOverrideSub')}</span></div><input type="checkbox" class="sw" aria-label={t('settings.git.branchOverride')} checked={store.cfg.gitBranchOverride} onchange={(e) => store.save((c) => (c.gitBranchOverride = (e.currentTarget as HTMLInputElement).checked))} /></div>
+          <div class="f"><div class="l"><b>{t('settings.git.branch')}</b><span class:bad={!branchOk}>{branchOk ? t('settings.git.branchSub') : t('settings.git.branchInvalid')}</span></div>
+            <input type="text" aria-label={t('settings.git.branch')} bind:value={gitBranch} placeholder="main" style="width:160px" disabled={!store.cfg.gitBranchOverride} onkeydown={(e) => e.key === 'Enter' && applyBranch()} onblur={applyBranch} /></div>
           <div class="grp">{t('settings.git.exe')}</div>
           <div class="f"><div class="l"><b>{t('settings.git.path')}</b><span>{store.st?.gitAvailable ? t('settings.git.found', { path: store.st.gitPath }) : t('settings.git.notFound')}</span></div>
             <input type="text" bind:value={gitPath} placeholder={t('settings.git.pathSub')} style="width:260px" onkeydown={(e) => e.key === 'Enter' && applyGit()} />

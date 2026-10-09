@@ -59,6 +59,8 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 
 **git** is the one installed by the user, run from the command line. If it is missing, the git features stay disabled.
 
+**New repositories start on `main`.** A plain `git init` uses git's `init.defaultBranch`, which Git for Windows sets to `master`, while GitHub and GitLab expect `main`: pushing `main` from a `master` repository fails with "src refspec main does not match any". So "Initialize project" creates the repository on the branch set in Settings → Git (on by default, `main`), and "Publish" renames the branch of a repository without commits that is still on `master`. Turning the setting off leaves the choice to git.
+
 **GitHub CLI (`gh`) and GitLab CLI (`glab`)** are optional and are used with the login the user already did (`gh auth login`, `glab auth login`): the app never asks for or stores tokens. Without them the related features do not appear; the clone dialog suggests them, and Settings → Git detects them, offers to install them and shows the accounts. A remote is handled by the CLI that has an account on its host (github.com, gitlab.com or a self-hosted instance).
 
 ## Cross-platform

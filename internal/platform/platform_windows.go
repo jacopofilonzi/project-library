@@ -140,6 +140,17 @@ func CaseInsensitive() bool { return true }
 // CrossDevice tells whether a rename failed because source and destination are on different drives.
 func CrossDevice(err error) bool { return errors.Is(err, syscall.Errno(17)) } // ERROR_NOT_SAME_DEVICE
 
+// InUse tells whether err comes from a file or folder held open by another program. Renaming a
+// folder fails with ERROR_ACCESS_DENIED when a file inside it is open, so that counts too.
+func InUse(err error) bool {
+	var sh shError
+	if errors.As(err, &sh) {
+		return sh.inUse()
+	}
+	// ERROR_ACCESS_DENIED, ERROR_SHARING_VIOLATION, ERROR_LOCK_VIOLATION
+	return errors.Is(err, syscall.Errno(5)) || errors.Is(err, syscall.Errno(32)) || errors.Is(err, syscall.Errno(33))
+}
+
 // FileID identifies a folder independently of its name: volume serial number + NTFS file index.
 // It stays the same when the folder is renamed or moved on the same volume. "" if it cannot be read.
 func FileID(path string) string {

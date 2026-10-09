@@ -19,6 +19,7 @@
 //	CaseInsensitive() bool
 //	UpdateAsset() string
 //	CrossDevice(err error) bool
+//	InUse(err error) bool
 //	FileID(path string) string
 //	CustomTitleBar() bool
 package platform

@@ -47,7 +47,24 @@ func shFileOperationResult(ret uintptr, aborted int32) error {
 		return errors.New("operation aborted")
 	}
 	if ret != 0 {
-		return fmt.Errorf("SHFileOperation failed (code 0x%x)", ret)
+		return shError(ret)
 	}
 	return nil
+}
+
+// shError is a SHFileOperation return code (the DE_* values of shellapi.h, or a Win32 error).
+type shError uintptr
+
+func (e shError) Error() string { return fmt.Sprintf("SHFileOperation failed (code 0x%x)", uintptr(e)) }
+
+// inUse: what SHFileOperation returns when another program keeps a file or the folder open
+// (an editor, a terminal whose working directory is inside it…): DE_ACCESSDENIEDSRC (0x78),
+// DE_INVALIDFILES (0x7C, despite the name: it is what a locked file gives with FOF_NOERRORUI),
+// or the Win32 access denied, sharing and lock violations.
+func (e shError) inUse() bool {
+	switch e {
+	case 0x78, 0x7C, 5, 32, 33:
+		return true
+	}
+	return false
 }

@@ -168,6 +168,7 @@ const en = {
     cliInstall: 'Could not start the installation',
     io: 'File system error',
     trash: 'Could not move to the trash',
+    inUse: 'Another program is using it (an editor, a terminal or a process running in this folder): close it and try again',
     outsideRoots: 'Only folders inside your roots can be changed',
     launch: 'Could not start the launcher',
     launcherNotFound: 'Launcher not found',

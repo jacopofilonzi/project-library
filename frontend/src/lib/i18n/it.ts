@@ -169,6 +169,7 @@ const it: Dict = {
     cliInstall: 'Impossibile avviare l’installazione',
     io: 'Errore del file system',
     trash: 'Impossibile spostare nel Cestino',
+    inUse: 'Un altro programma la sta usando (un editor, un terminale o un processo avviato in questa cartella): chiudilo e riprova',
     outsideRoots: 'Si possono modificare solo le cartelle dentro le radici',
     launch: 'Impossibile avviare il launcher',
     launcherNotFound: 'Launcher non trovato',

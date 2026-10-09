@@ -55,7 +55,7 @@ Built with Go + [Wails v3](https://v3.wails.io) (beta) for the backend and the w
 
 **Per-folder settings** (the editor chosen for a project, the exceptions) are stored in the app's configuration, never inside your projects. They also follow folders renamed or moved outside the app, for example in the file manager: the app recognizes a folder by its file system identity, which does not change when it is renamed or moved on the same disk.
 
-**Deleting** always moves to the trash. An empty folder goes right away; anything else asks for confirmation; a project with uncommitted changes, unpushed commits or no remote asks you to type its name, and so does a folder that contains such a project, at any depth (the dialog lists them).
+**Deleting** always moves to the trash. An empty folder goes right away; anything else asks for confirmation; a project with uncommitted changes, unpushed commits or no remote asks you to type its name, and so does a folder that contains such a project, at any depth (the dialog lists them). If another program keeps the folder open (an editor, a terminal whose working directory is inside it, a running process), deleting, renaming and moving stop with a message saying so: close it and try again.
 
 **git** is the one installed by the user, run from the command line. If it is missing, the git features stay disabled.
 

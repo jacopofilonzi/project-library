@@ -30,6 +30,9 @@ func fail(code string, err error) error {
 	if err == nil {
 		return &Error{Code: code}
 	}
+	if platform.InUse(err) {
+		return &Error{Code: "inUse"} // the system detail (a numeric code) adds nothing
+	}
 	return &Error{Code: code, Detail: err.Error()}
 }
 

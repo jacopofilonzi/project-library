@@ -29,6 +29,9 @@ func startSetsid(command string, args []string, dir string) error {
 // CrossDevice tells whether a rename failed because source and destination are on different file systems.
 func CrossDevice(err error) bool { return errors.Is(err, syscall.EXDEV) }
 
+// InUse tells whether err comes from a file or folder held by another program.
+func InUse(err error) bool { return errors.Is(err, syscall.EBUSY) }
+
 // FileID identifies a folder independently of its name: device + inode.
 // It stays the same when the folder is renamed or moved on the same file system. "" if it cannot be read.
 func FileID(path string) string {

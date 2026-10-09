@@ -305,7 +305,7 @@
       <span class="ver">v{store.st?.version}</span>
     </nav>
     <div class="pane">
-      <div class="ph"><h3>{t('settings.sections.' + store.settingsSection)}</h3><small>{t('settings.saved')}</small><button class="x" aria-label={t('settings.close')} onclick={() => (store.settingsOpen = false)}>✕</button></div>
+      <div class="ph"><h3>{t('settings.sections.' + store.settingsSection)}</h3><span class="act"><small>{t('settings.saved')}</small><button class="x" aria-label={t('settings.close')} onclick={() => (store.settingsOpen = false)}>✕</button></span></div>
       <div class="pb" bind:this={pb}>
         {#if store.settingsSection === 'general'}
           <div class="grp">{t('settings.general.roots')}</div>

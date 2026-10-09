@@ -8,6 +8,8 @@ Desktop app (Go + Wails v3 beta, Svelte 5 + Vite) to browse the projects in `~/D
 
 ## Commands
 
+`make help` lists the shortcuts for the commands below (`make verify` runs every check required after a change). A new recurring command goes into the `Makefile` too.
+
 ```sh
 wails3 build ARCH=amd64        # build in bin/ (ARCH=amd64 is needed if `go env GOARCH` is 386)
 wails3 dev                     # development with hot reload

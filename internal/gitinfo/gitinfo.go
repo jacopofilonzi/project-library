@@ -245,9 +245,31 @@ func (g *Git) FetchNow(dir string) error {
 	return err
 }
 
-// Init creates an empty repository in dir.
-func (g *Git) Init(dir string) error {
-	_, err := g.runOut(dir, 30*time.Second, "init")
+// Init creates an empty repository in dir. A non-empty branch is the initial branch, instead of
+// git's init.defaultBranch.
+func (g *Git) Init(dir, branch string) error {
+	if branch == "" {
+		_, err := g.runOut(dir, 30*time.Second, "init")
+		return err
+	}
+	_, err := g.runOut(dir, 30*time.Second, "init", "--initial-branch="+branch)
+	if err == nil || !strings.Contains(err.Error(), "unknown option") {
+		return err
+	}
+	// git before 2.28 has no --initial-branch: plain init, then point the unborn HEAD at the branch
+	if _, err := g.runOut(dir, 30*time.Second, "init"); err != nil {
+		return err
+	}
+	return g.SetUnbornBranch(dir, branch)
+}
+
+// SetUnbornBranch renames the current branch of a repository without commits (HEAD points
+// to a branch that does not exist yet, so moving HEAD is enough).
+func (g *Git) SetUnbornBranch(dir, branch string) error {
+	if _, err := g.runOut(dir, 15*time.Second, "check-ref-format", "--branch", branch); err != nil {
+		return err
+	}
+	_, err := g.runOut(dir, 15*time.Second, "symbolic-ref", "HEAD", "refs/heads/"+branch)
 	return err
 }
 

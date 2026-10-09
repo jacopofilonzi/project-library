@@ -44,12 +44,20 @@ func (l *Library) InitProject(path string, gitInit, readme bool) error {
 		if !l.git.Available() {
 			return &fsops.Error{Code: "noGit"}
 		}
-		if err := l.git.Init(path); err != nil {
+		if err := l.git.Init(path, l.initialBranch()); err != nil {
 			return &fsops.Error{Code: "git", Detail: err.Error()}
 		}
 	}
 	l.rescan(true)
 	return nil
+}
+
+// initialBranch is the branch new repositories start on: empty = git's init.defaultBranch.
+func (l *Library) initialBranch() string {
+	if c := l.store.Get(); c.GitBranchOverride {
+		return c.GitBranch
+	}
+	return ""
 }
 
 // ---------- quick git actions ----------

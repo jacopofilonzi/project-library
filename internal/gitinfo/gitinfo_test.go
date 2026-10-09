@@ -1,6 +1,10 @@
 package gitinfo
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
 
 func TestWebURL(t *testing.T) {
 	cases := map[string]string{
@@ -54,5 +58,55 @@ func TestParseStatus(t *testing.T) {
 	parseStatus("# branch.oid 06e157abcdef\n# branch.head (detached)\n", &det)
 	if !det.Detached || det.Branch != "06e157a" {
 		t.Fatalf("%+v", det)
+	}
+}
+
+// newRepoGit returns a Git that sees only a global config with init.defaultBranch=master,
+// like the system config written by Git for Windows.
+func newRepoGit(t *testing.T) *Git {
+	var g Git
+	if g.Detect("") == "" {
+		t.Skip("git not installed")
+	}
+	cfg := filepath.Join(t.TempDir(), "gitconfig")
+	if err := os.WriteFile(cfg, []byte("[init]\n\tdefaultBranch = master\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	t.Setenv("GIT_CONFIG_NOSYSTEM", "1")
+	t.Setenv("GIT_CONFIG_GLOBAL", cfg)
+	return &g
+}
+
+func TestInitBranch(t *testing.T) {
+	g := newRepoGit(t)
+	for branch, want := range map[string]string{"main": "main", "trunk": "trunk", "": "master"} {
+		dir := t.TempDir()
+		if err := g.Init(dir, branch); err != nil {
+			t.Fatal(err)
+		}
+		info, err := g.Info(dir)
+		if err != nil || info.Branch != want {
+			t.Fatalf("Init(%q): branch %q, want %q (%v)", branch, info.Branch, want, err)
+		}
+	}
+	if err := g.Init(t.TempDir(), "bad name"); err == nil {
+		t.Fatal("invalid branch name accepted")
+	}
+}
+
+func TestSetUnbornBranch(t *testing.T) {
+	g := newRepoGit(t)
+	dir := t.TempDir()
+	if err := g.Init(dir, ""); err != nil {
+		t.Fatal(err)
+	}
+	if err := g.SetUnbornBranch(dir, "main"); err != nil {
+		t.Fatal(err)
+	}
+	if info, _ := g.Info(dir); info.Branch != "main" || info.Commit != nil {
+		t.Fatalf("%+v", info)
+	}
+	if err := g.SetUnbornBranch(dir, "a..b"); err == nil {
+		t.Fatal("invalid branch name accepted")
 	}
 }

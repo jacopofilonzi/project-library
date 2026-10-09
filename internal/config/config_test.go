@@ -159,3 +159,21 @@ func TestUIScaleNormalized(t *testing.T) {
 		}
 	}
 }
+
+func TestMigrationV5BranchOverride(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "config.json")
+	if err := os.WriteFile(path, []byte(`{"version":4,"gitBranch":"  "}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	s, _ := Load(path, dir)
+	if c := s.Get(); !c.GitBranchOverride || c.GitBranch != "main" {
+		t.Fatalf("migration: override %v, branch %q", c.GitBranchOverride, c.GitBranch)
+	}
+	// after the migration a disabled override stays disabled
+	s.Update(func(c *Config) { c.GitBranchOverride = false; c.GitBranch = " trunk " })
+	s2, _ := Load(path, dir)
+	if c := s2.Get(); c.GitBranchOverride || c.GitBranch != "trunk" {
+		t.Fatalf("reload: override %v, branch %q", c.GitBranchOverride, c.GitBranch)
+	}
+}

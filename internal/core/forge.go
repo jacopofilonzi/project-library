@@ -245,6 +245,13 @@ func (l *Library) Publish(req PublishRequest) (PublishResult, error) {
 		return PublishResult{}, &fsops.Error{Code: "forgeCreate", Detail: err.Error()}
 	}
 	res := PublishResult{Web: created.Web}
+	// a repository without commits still on git's master (init outside the app or before the override):
+	// the first push then goes to the configured branch, the one the forge suggests too
+	if b := l.initialBranch(); info.Commit == nil && info.Branch == "master" && b != "" && b != "master" {
+		if err := l.git.SetUnbornBranch(req.Path, b); err != nil {
+			return res, &fsops.Error{Code: "git", Detail: err.Error()}
+		}
+	}
 	if err := l.git.AddRemote(req.Path, "origin", created.CloneURL); err != nil {
 		return res, &fsops.Error{Code: "addRemote", Detail: err.Error()}
 	}

@@ -93,6 +93,10 @@ type Config struct {
 	// GhPath and GlabPath: paths of GitHub CLI and GitLab CLI (empty = automatic detection).
 	GhPath   string `json:"ghPath"`
 	GlabPath string `json:"glabPath"`
+	// GitBranchOverride: repositories created by the app start on GitBranch instead of git's
+	// init.defaultBranch (which Git for Windows sets to master), and Publish renames an unborn master.
+	GitBranchOverride bool   `json:"gitBranchOverride"`
+	GitBranch         string `json:"gitBranch"`
 
 	Recent []Recent `json:"recent"`
 
@@ -118,7 +122,7 @@ type Config struct {
 }
 
 const (
-	currentVersion = 4
+	currentVersion = 5
 	MinUIScale     = 0.8
 	MaxUIScale     = 1.5
 	MaxRecent      = 20
@@ -153,23 +157,25 @@ func Default(home string) Config {
 			{ID: "vscode", Name: "VS Code", Args: `"{path}"`, Enabled: true, Builtin: "vscode"},
 			{ID: "intellij", Name: "IntelliJ IDEA", Args: `"{path}"`, Enabled: true, Builtin: "intellij"},
 		},
-		DefaultLauncher:  "vscode",
-		Presets:          []presets.Preset{},
-		Rules:            []Rule{},
-		ProjectLaunchers: map[string]string{},
-		FolderIDs:        map[string]string{},
-		Markers:          append([]string(nil), DefaultMarkers...),
-		Ignore:           append([]string(nil), DefaultIgnore...),
-		FilesAsProject:   true,
-		ShowEmpty:        true,
-		MaxDepth:         20,
-		Overrides:        map[string]string{},
-		GitInfo:          true,
-		GitFetchMinutes:  15,
-		StartMode:        StartOff,
-		CloseToTray:      false,
-		SpotlightHotkey:  "Super+Ctrl+K",
-		CheckUpdates:     true,
+		DefaultLauncher:   "vscode",
+		Presets:           []presets.Preset{},
+		Rules:             []Rule{},
+		ProjectLaunchers:  map[string]string{},
+		FolderIDs:         map[string]string{},
+		Markers:           append([]string(nil), DefaultMarkers...),
+		Ignore:            append([]string(nil), DefaultIgnore...),
+		FilesAsProject:    true,
+		ShowEmpty:         true,
+		MaxDepth:          20,
+		Overrides:         map[string]string{},
+		GitInfo:           true,
+		GitFetchMinutes:   15,
+		StartMode:         StartOff,
+		CloseToTray:       false,
+		SpotlightHotkey:   "Super+Ctrl+K",
+		CheckUpdates:      true,
+		GitBranchOverride: true,
+		GitBranch:         "main",
 	}
 }
 
@@ -238,6 +244,14 @@ func (c *Config) normalize(home string) {
 	// migration v3 → v4: the update check arrives, on by default
 	if c.Version < 4 {
 		c.CheckUpdates = true
+	}
+	// migration v4 → v5: the initial branch override arrives, on by default
+	if c.Version < 5 {
+		c.GitBranchOverride = true
+	}
+	c.GitBranch = strings.TrimSpace(c.GitBranch)
+	if c.GitBranch == "" {
+		c.GitBranch = def.GitBranch
 	}
 	c.Version = currentVersion
 }
